@@ -1,0 +1,82 @@
+{
+  "short_name": "Square Trivia",
+  "name": "Square Trivia - Skill-Based Sports Competition",
+  "description": "Win prizes based on your sports knowledge and quick thinking. 100% skill-based competition with NO FEES!",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0066FF",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "categories": ["games", "sports", "entertainment"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Play Trivia",
+      "short_name": "Play",
+      "description": "Start a new trivia challenge",
+      "url": "/games",
+      "icons": [{ "src": "/play-icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "My Profile",
+      "short_name": "Profile",
+      "description": "View your stats and history",
+      "url": "/profile",
+      "icons": [{ "src": "/profile-icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Live Games",
+      "short_name": "Games",
+      "description": "View all active games",
+      "url": "/games",
+      "icons": [{ "src": "/games-icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/game-board.png",
+      "type": "image/png",
+      "sizes": "1280x720",
+      "label": "Game board showing available squares"
+    },
+    {
+      "src": "/screenshots/trivia-question.png",
+      "type": "image/png",
+      "sizes": "1280x720",
+      "label": "Answering a trivia question"
+    },
+    {
+      "src": "/screenshots/tier-selection.png",
+      "type": "image/png",
+      "sizes": "1280x720",
+      "label": "Selecting your tier with guaranteed prizes"
+    }
+  ],
+  "related_applications": [],
+  "scope": "/",
+  "serviceworker": {
+    "src": "/service-worker.js",
+    "scope": "/"
+  }
+}
