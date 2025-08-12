@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { 
   collection, 
   query, 
@@ -25,7 +25,7 @@ export function useGame() {
 }
 
 export function GameProvider({ children }) {
-  const { user, userData } = useAuth();
+  const { user } = useAuth();
   
   // Game state
   const [activeGames, setActiveGames] = useState([]);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   User,
@@ -6,22 +6,12 @@ import {
   Phone,
   AtSign,
   Trophy,
-  DollarSign,
-  Grid3X3,
   Timer,
-  Calendar,
   Shield,
   Bell,
-  CreditCard,
-  Settings,
-  Save,
   Edit2,
   Check,
   X,
-  AlertCircle,
-  ChevronRight,
-  Award,
-  TrendingUp,
   Gift
 } from 'lucide-react';
 import { useAuth } from '../contexts/authcontext';
@@ -65,7 +55,7 @@ export default function Profile() {
   };
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, checked } = e.target;
     
     if (name.startsWith('notifications.')) {
       const notificationType = name.split('.')[1];

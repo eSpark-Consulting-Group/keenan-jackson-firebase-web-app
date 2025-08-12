@@ -1,11 +1,9 @@
-import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/authcontext';
 import toast from 'react-hot-toast';
 
 export default function AdminRoute({ children }) {
   const { user, userData, loading } = useAuth();
-  console.log(userData, "userData", user)
 
   // Show loading spinner while checking auth state
   if (loading) {

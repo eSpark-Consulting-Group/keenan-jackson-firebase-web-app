@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Lock, Zap, Trophy, Timer, Eye, EyeOff } from 'lucide-react';
-import { GAME_CONFIG } from '../../firebase/config';
+import { Users, Zap, Trophy, EyeOff } from 'lucide-react';
 
 const GRID_CONFIG = {
   ROWS: 5,

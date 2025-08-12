@@ -1,19 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Grid3X3,
   Calendar,
   Clock,
-  Users,
-  Trophy,
   ChevronRight,
-  Filter,
   Search,
-  DollarSign,
   AlertCircle,
-  Zap,
-  TrendingUp,
   Shield,
   Plus,
   Lock

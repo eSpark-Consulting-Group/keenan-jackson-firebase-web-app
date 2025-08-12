@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -7,16 +6,12 @@ import {
   CreditCard,
   HelpCircle,
   Mail,
-  MessageSquare,
   ChevronRight,
   AlertCircle,
   Shield
 } from 'lucide-react';
-import { useAuth } from '../contexts/authcontext';
 
 export default function PaymentCancel() {
-  const { user } = useAuth();
-
   const reasons = [
     {
       icon: CreditCard,

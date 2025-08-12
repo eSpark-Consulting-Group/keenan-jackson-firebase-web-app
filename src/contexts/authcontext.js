@@ -1,13 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail,
   updateProfile,
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-  updatePassword,
   onAuthStateChanged,
 } from "firebase/auth";
 import {
@@ -52,10 +49,8 @@ export function AuthProvider({ children }) {
           // Get additional user data from Firestore
           const userDocRef = doc(db, "users", firebaseUser.uid);
           const userDoc = await getDoc(userDocRef);
-console.log(userDoc, "userDoc")
           if (userDoc.exists()) {
             const data = userDoc.data();
-            console.log(userDoc, "userDoc", data)
             setUserData({
               id: firebaseUser.uid,
               ...data,
@@ -120,7 +115,7 @@ console.log(userDoc, "userDoc")
           telegram: !!additionalData.telegramUsername,
           sms: false,
         },
-        isAdmin: true,
+        isAdmin: false,
         isBanned: false,
         createdAt: serverTimestamp(),
         lastActive: serverTimestamp(),

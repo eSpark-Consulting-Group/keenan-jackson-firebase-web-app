@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  DollarSign,
   Clock,
   CheckCircle,
   XCircle,
@@ -11,11 +10,7 @@ import {
   Filter,
   Search,
   RefreshCw,
-  CreditCard,
   Zap,
-  Calendar,
-  FileText,
-  User
 } from 'lucide-react';
 import { db, collections, formatCurrency, INSTANT_PAYOUT_FEE } from '../../firebase/config';
 import { collection, query, where, orderBy, limit, getDocs, doc, updateDoc } from 'firebase/firestore';

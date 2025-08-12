@@ -1,15 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  BarChart,
   TrendingUp,
   DollarSign,
   Users,
-  Calendar,
   Download,
   RefreshCw,
-  Filter,
-  PieChart,
   Activity,
   Trophy,
   Brain,
