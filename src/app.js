@@ -1,45 +1,51 @@
-import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import React, { useEffect, useState } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
 // Firebase imports
-import { auth, db } from './firebase/config';
+import { auth, db } from "./firebase/config";
 
 // Context Providers
-import { AuthProvider } from './contexts/authcontext';
-import { GameProvider } from './contexts/gamecontext';
-import { NotificationProvider } from './contexts/notificationcontext';
+import { AuthProvider } from "./contexts/authcontext";
+import { GameProvider } from "./contexts/gamecontext";
+import { NotificationProvider } from "./contexts/notificationcontext";
 
 // Layout Components
-import Layout from './components/layout/layout';
-import ProtectedRoute from './components/Auth/protected-route';
-import AdminRoute from './components/Auth/admin-route';
+import Layout from "./components/layout/layout";
+import ProtectedRoute from "./components/Auth/protected-route";
+import AdminRoute from "./components/Auth/admin-route";
 
 // Page Components
-import Login from './pages/square-trivia-login-page';
-import Register from './pages/square-trivia-register-page';
-import Dashboard from './pages/square-trivia-dashboard (1)';
-import Games from './pages/square-trivia-games-page';
-import GameBoard from './pages/square-trivia-game-board';
-import Profile from './pages/square-trivia-profile-page';
-import HowToPlay from './pages/howtoplay-page';
-import Legal from './pages/legal-page';
-import FreeEntry from './pages/freeentry-page';
-import PaymentSuccess from './pages/payment-success-page';
-import PaymentCancel from './pages/payment-cancel-page';
+import Login from "./pages/square-trivia-login-page";
+import Register from "./pages/square-trivia-register-page";
+import Dashboard from "./pages/square-trivia-dashboard (1)";
+import Games from "./pages/square-trivia-games-page";
+import GameBoard from "./pages/square-trivia-game-board";
+import Profile from "./pages/square-trivia-profile-page";
+import HowToPlay from "./pages/howtoplay-page";
+import Legal from "./pages/legal-page";
+import FreeEntry from "./pages/freeentry-page";
+import PaymentSuccess from "./pages/payment-success-page";
+import PaymentCancel from "./pages/payment-cancel-page";
 
 // Admin Pages
-import AdminDashboard from './pages/admin/admin-dashboard';
-import AdminGames from './pages/admin/admin-games';
-import AdminUsers from './pages/admin/admin-users';
-import AdminPayouts from './pages/admin/admin-payouts';
-import AdminTrivia from './pages/admin/admin-trivia';
-import AdminReports from './pages/admin/admin-reports';
+import AdminDashboard from "./pages/admin/admin-dashboard";
+import AdminGames from "./pages/admin/admin-games";
+import AdminUsers from "./pages/admin/admin-users";
+import AdminPayouts from "./pages/admin/admin-payouts";
+import AdminTrivia from "./pages/admin/admin-trivia";
+import AdminReports from "./pages/admin/admin-reports";
 
 // Styles
-import './styles/index.css';
+import "./styles/index.css";
+import LandingPage from "./pages/LandingPage";
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -51,15 +57,15 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
-        
+
         // Fetch additional user data from Firestore
         try {
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
           if (userDoc.exists()) {
             setUserData({ id: userDoc.id, ...userDoc.data() });
           }
         } catch (error) {
-          console.error('Error fetching user data:', error);
+          console.error("Error fetching user data:", error);
         }
       } else {
         setUser(null);
@@ -90,21 +96,21 @@ function App() {
                 toastOptions={{
                   duration: 4000,
                   style: {
-                    background: '#363636',
-                    color: '#fff',
+                    background: "#363636",
+                    color: "#fff",
                   },
                   success: {
                     duration: 3000,
                     iconTheme: {
-                      primary: '#10B981',
-                      secondary: '#fff',
+                      primary: "#10B981",
+                      secondary: "#fff",
                     },
                   },
                   error: {
                     duration: 4000,
                     iconTheme: {
-                      primary: '#EF4444',
-                      secondary: '#fff',
+                      primary: "#EF4444",
+                      secondary: "#fff",
                     },
                   },
                 }}
@@ -113,18 +119,63 @@ function App() {
               <Routes>
                 {/* Public Routes */}
                 {/* <Route path="/" element={<Layout><Landing /></Layout>} /> */}
-                <Route path="/login" element={<Layout><Login /></Layout>} />
-                <Route path="/register" element={<Layout><Register /></Layout>} />
-                <Route path="/how-to-play" element={<Layout><HowToPlay /></Layout>} />
-                <Route path="/legal/:page" element={<Layout><Legal /></Layout>} />
-                <Route path="/free-entry" element={<Layout><FreeEntry /></Layout>} />
+                <Route
+                  path="/"
+                  element={
+                    <Layout>
+                      <LandingPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/login"
+                  element={
+                    <Layout>
+                      <Login />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/register"
+                  element={
+                    <Layout>
+                      <Register />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/how-to-play"
+                  element={
+                    <Layout>
+                      <HowToPlay />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/legal/:page"
+                  element={
+                    <Layout>
+                      <Legal />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/free-entry"
+                  element={
+                    <Layout>
+                      <FreeEntry />
+                    </Layout>
+                  }
+                />
 
                 {/* Protected Routes */}
                 <Route
                   path="/dashboard"
                   element={
                     <ProtectedRoute>
-                      <Layout><Dashboard /></Layout>
+                      <Layout>
+                        <Dashboard />
+                      </Layout>
                     </ProtectedRoute>
                   }
                 />
@@ -132,7 +183,9 @@ function App() {
                   path="/games"
                   element={
                     <ProtectedRoute>
-                      <Layout><Games /></Layout>
+                      <Layout>
+                        <Games />
+                      </Layout>
                     </ProtectedRoute>
                   }
                 />
@@ -140,7 +193,9 @@ function App() {
                   path="/game/:boardId"
                   element={
                     <ProtectedRoute>
-                      <Layout><GameBoard /></Layout>
+                      <Layout>
+                        <GameBoard />
+                      </Layout>
                     </ProtectedRoute>
                   }
                 />
@@ -148,7 +203,9 @@ function App() {
                   path="/profile"
                   element={
                     <ProtectedRoute>
-                      <Layout><Profile /></Layout>
+                      <Layout>
+                        <Profile />
+                      </Layout>
                     </ProtectedRoute>
                   }
                 />
@@ -156,7 +213,9 @@ function App() {
                   path="/payment/success"
                   element={
                     <ProtectedRoute>
-                      <Layout><PaymentSuccess /></Layout>
+                      <Layout>
+                        <PaymentSuccess />
+                      </Layout>
                     </ProtectedRoute>
                   }
                 />
@@ -164,7 +223,9 @@ function App() {
                   path="/payment/cancel"
                   element={
                     <ProtectedRoute>
-                      <Layout><PaymentCancel /></Layout>
+                      <Layout>
+                        <PaymentCancel />
+                      </Layout>
                     </ProtectedRoute>
                   }
                 />
@@ -174,7 +235,9 @@ function App() {
                   path="/admin"
                   element={
                     <AdminRoute>
-                      <Layout><AdminDashboard /></Layout>
+                      <Layout>
+                        <AdminDashboard />
+                      </Layout>
                     </AdminRoute>
                   }
                 />
@@ -182,7 +245,9 @@ function App() {
                   path="/admin/games"
                   element={
                     <AdminRoute>
-                      <Layout><AdminGames /></Layout>
+                      <Layout>
+                        <AdminGames />
+                      </Layout>
                     </AdminRoute>
                   }
                 />
@@ -190,7 +255,9 @@ function App() {
                   path="/admin/users"
                   element={
                     <AdminRoute>
-                      <Layout><AdminUsers /></Layout>
+                      <Layout>
+                        <AdminUsers />
+                      </Layout>
                     </AdminRoute>
                   }
                 />
@@ -198,7 +265,9 @@ function App() {
                   path="/admin/payouts"
                   element={
                     <AdminRoute>
-                      <Layout><AdminPayouts /></Layout>
+                      <Layout>
+                        <AdminPayouts />
+                      </Layout>
                     </AdminRoute>
                   }
                 />
@@ -206,7 +275,9 @@ function App() {
                   path="/admin/trivia"
                   element={
                     <AdminRoute>
-                      <Layout><AdminTrivia /></Layout>
+                      <Layout>
+                        <AdminTrivia />
+                      </Layout>
                     </AdminRoute>
                   }
                 />
@@ -214,7 +285,9 @@ function App() {
                   path="/admin/reports"
                   element={
                     <AdminRoute>
-                      <Layout><AdminReports /></Layout>
+                      <Layout>
+                        <AdminReports />
+                      </Layout>
                     </AdminRoute>
                   }
                 />
