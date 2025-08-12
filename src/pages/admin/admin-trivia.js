@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Brain,
@@ -18,7 +18,7 @@ import {
   Clock,
   Award,
 } from "lucide-react";
-import { db, collections, TIERS } from "../../firebase/config";
+import { db, collections } from "../../firebase/config";
 import {
   collection,
   query,

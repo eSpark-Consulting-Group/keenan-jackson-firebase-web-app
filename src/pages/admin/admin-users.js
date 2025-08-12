@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Users,
@@ -8,12 +8,9 @@ import {
   CheckCircle,
   XCircle,
   Mail,
-  Phone,
-  Calendar,
   DollarSign,
   Trophy,
   Brain,
-  AlertTriangle,
   Eye,
   Download,
   RefreshCw,

@@ -18,7 +18,6 @@ import ProtectedRoute from './components/Auth/protected-route';
 import AdminRoute from './components/Auth/admin-route';
 
 // Page Components
-import Landing from './pages/landing-page';
 import Login from './pages/square-trivia-login-page';
 import Register from './pages/square-trivia-register-page';
 import Dashboard from './pages/square-trivia-dashboard (1)';

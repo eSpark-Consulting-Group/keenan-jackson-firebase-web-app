@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Check, TrendingUp, Trophy, Zap, Star, Crown, AlertCircle } from 'lucide-react';
@@ -22,7 +22,7 @@ const TIERS = {
     icon: Check,
     prizePerQuarter: 200,
     totalPrize: 800,
-    payoutPercentage: 77,
+    payoutPercentage: 64,
     features: [
       'Entry for all 4 quarters',
       '$200 prize per quarter',
@@ -41,7 +41,7 @@ const TIERS = {
     icon: TrendingUp,
     prizePerQuarter: 400,
     totalPrize: 1600,
-    payoutPercentage: 77,
+    payoutPercentage: 64,
     features: [
       'Entry for all 4 quarters',
       '$400 prize per quarter',
@@ -60,7 +60,7 @@ const TIERS = {
     icon: Trophy,
     prizePerQuarter: 800,
     totalPrize: 3200,
-    payoutPercentage: 77,
+    payoutPercentage: 64,
     features: [
       'Entry for all 4 quarters',
       '$800 prize per quarter',
@@ -79,7 +79,7 @@ const TIERS = {
     icon: Zap,
     prizePerQuarter: 2000,
     totalPrize: 8000,
-    payoutPercentage: 80,
+    payoutPercentage: 72,
     features: [
       'Entry for all 4 quarters',
       '$2,000 prize per quarter',
@@ -99,7 +99,7 @@ const TIERS = {
     icon: Star,
     prizePerQuarter: 4000,
     totalPrize: 16000,
-    payoutPercentage: 80,
+    payoutPercentage: 72,
     features: [
       'Entry for all 4 quarters',
       '$4,000 prize per quarter',
@@ -119,7 +119,7 @@ const TIERS = {
     icon: Crown,
     prizePerQuarter: 8000,
     totalPrize: 32000,
-    payoutPercentage: 80,
+    payoutPercentage: 72,
     features: [
       'Entry for all 4 quarters',
       '$8,000 prize per quarter',

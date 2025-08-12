@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -6,7 +6,6 @@ import {
   Lock, 
   Eye, 
   EyeOff, 
-  User, 
   Phone, 
   AtSign,
   Gift,

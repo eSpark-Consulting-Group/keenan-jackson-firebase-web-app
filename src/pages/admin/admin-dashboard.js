@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -9,12 +9,9 @@ import {
   Activity,
   AlertCircle,
   CheckCircle,
-  Clock,
   ArrowUpRight,
   ArrowDownRight,
   RefreshCw,
-  Calendar,
-  Trophy,
   Brain
 } from 'lucide-react';
 import { db, collections, formatCurrency } from '../../firebase/config';

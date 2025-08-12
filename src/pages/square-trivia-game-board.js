@@ -1,27 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Grid3X3,
   Trophy,
   Timer,
-  Users,
   Brain,
-  Zap,
-  Lock,
-  Eye,
   EyeOff,
-  ChevronRight,
   AlertCircle,
   Clock,
-  Target,
-  Award,
   Info,
   CheckCircle
 } from 'lucide-react';
 import { useAuth } from '../contexts/authcontext';
 import { db, collections, TIERS, formatCurrency, GAME_CONFIG, callFunction } from '../firebase/config';
-import { doc, getDoc, onSnapshot, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import TriviaModal from '../components/game/triviamodal';
 import SquareGrid from '../components/game/squaregrid';
 import GameScore from '../components/game/gamescore';

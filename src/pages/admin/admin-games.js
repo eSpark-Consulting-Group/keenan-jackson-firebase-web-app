@@ -1,13 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Grid3X3,
   Plus,
   Edit,
   Trash2,
-  Calendar,
-  Users,
-  DollarSign,
   CheckCircle,
   XCircle,
   Clock,
@@ -15,7 +11,6 @@ import {
   Search,
   Filter,
   Trophy,
-  AlertCircle
 } from 'lucide-react';
 import { db, collections, TIERS, formatCurrency, callFunction } from '../../firebase/config';
 import { collection, query, where, orderBy, limit, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
