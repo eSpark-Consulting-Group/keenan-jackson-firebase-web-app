@@ -272,6 +272,7 @@ export function AuthProvider({ children }) {
     try {
       const result = await callFunction("addTelegramToAccount", {
         telegramUsername,
+        userId: user?.uid,
       });
 
       if (result.success) {

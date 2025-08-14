@@ -1,8 +1,5 @@
 {
   "projects": {
-    "default": "square-trivia",
-    "staging": "squaretrivia"
-  },
-  "targets": {},
-  "etags": {}
+    "default": "square-8495a"
+  }
 }

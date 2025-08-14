@@ -101,6 +101,7 @@ exports.trackUserEvent = functions.https.onCall(async (data, context) => {
 
 exports.addTelegramToAccount = functions.https.onCall(async (data, context) => {
   // data comes from frontend
+  console.log(data, "dataCcQCCCAQ   ")
   const { userId, telegramUsername } = data;
 
   console.log("addTelegramToAccount called", { userId, telegramUsername });
