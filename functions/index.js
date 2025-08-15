@@ -105,6 +105,7 @@ const triviaSystem = require("./src/trivia-system-fixed");
 const paymentSystem = require("./src/payment-system-modified");
 const automatedGameMonitoring = require("./src/automated-game-monitoring-fixed");
 const enhancedWinnerNotifications = require("./src/enhanced-winner-notifications-fixed");
+const backendGameFunctions = require("./src/backend-game-functions");
 
 // Export all other functions
 Object.assign(exports, {
@@ -116,4 +117,5 @@ Object.assign(exports, {
   ...adminPanel,
   ...automatedGameMonitoring,
   ...enhancedWinnerNotifications,
+  ...backendGameFunctions
 });
