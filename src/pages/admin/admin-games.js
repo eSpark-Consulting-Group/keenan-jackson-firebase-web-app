@@ -61,7 +61,7 @@ export default function AdminGames() {
 
       let q = query(
         collection(db, collections.games),
-        orderBy("startTime", "desc"),
+        orderBy("gameDate", "desc"),
         limit(50)
       );
 
@@ -69,7 +69,7 @@ export default function AdminGames() {
         q = query(
           collection(db, collections.games),
           where("status", "==", filterStatus),
-          orderBy("startTime", "desc"),
+          orderBy("gameDate", "desc"),
           limit(50)
         );
       }
@@ -211,8 +211,8 @@ export default function AdminGames() {
   const filteredGames = games.filter((game) => {
     const matchesSearch =
       searchTerm === "" ||
-      game.teams?.home?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      game.teams?.away?.toLowerCase().includes(searchTerm.toLowerCase());
+      game?.homeTeam?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      game?.awayTeam?.toLowerCase().includes(searchTerm.toLowerCase());
 
     return matchesSearch;
   });
@@ -337,7 +337,7 @@ export default function AdminGames() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {game.teams?.away} @ {game.teams?.home}
+                            {game?.awayTeam} @ {game?.homeTeam}
                           </div>
                           <div className="text-sm text-gray-500">
                             {game.sport}
@@ -346,29 +346,25 @@ export default function AdminGames() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {game.startTime?.toDate?.().toLocaleDateString()}
+                          {game.gameDate?.toDate?.().toLocaleDateString()}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {game.startTime?.toDate?.().toLocaleTimeString()}
+                          {game.gameDate?.toDate?.().toLocaleTimeString()}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(game.status)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {game.currentScore ? (
-                          <div className="text-sm">
-                            <span className="font-medium">
-                              {game.currentScore.away}
-                            </span>
-                            <span className="mx-1">-</span>
-                            <span className="font-medium">
-                              {game.currentScore.home}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-gray-500">-</span>
-                        )}
+                        <div className="text-sm">
+                          <span className="font-medium">
+                            {game.awayScore}
+                          </span>
+                          <span className="mx-1">-</span>
+                          <span className="font-medium">
+                            {game.homeScore}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-wrap gap-1">

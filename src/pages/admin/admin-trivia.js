@@ -275,7 +275,7 @@ export default function AdminTrivia() {
 
   const importQuestions = () => {
     // In real implementation, would handle file upload
-    toast("This is an info message", {
+    toast("This feature is coming soon", {
       icon: "ℹ️",
     });
   };
