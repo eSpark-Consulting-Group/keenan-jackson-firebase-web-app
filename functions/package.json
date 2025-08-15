@@ -6,10 +6,11 @@
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "lint": "eslint ."
   },
   "engines": {
-    "node": "22"
+    "node": "18"
   },
   "main": "index.js",
   "type": "commonjs",
@@ -28,7 +29,10 @@
     "twilio": "^5.8.0"
   },
   "devDependencies": {
-    "firebase-functions-test": "^3.1.0"
+    "@eslint/js": "^9.33.0",
+    "eslint": "^9.33.0",
+    "firebase-functions-test": "^3.1.0",
+    "globals": "^16.3.0"
   },
   "private": true
 }
