@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   CheckCircle,
   ArrowRight,
@@ -10,11 +10,12 @@ import {
   Trophy,
   Clock,
   Sparkles,
-  ChevronRight
-} from 'lucide-react';
-import { useAuth } from '../contexts/authcontext';
-import { TIERS } from '../firebase/config';
-import confetti from 'canvas-confetti';
+  ChevronRight,
+} from "lucide-react";
+import { useAuth } from "../contexts/authcontext";
+import { TIERS, callFunction } from "../firebase/config";
+import confetti from "canvas-confetti";
+import toast from "react-hot-toast";
 
 export default function PaymentSuccess() {
   const { user, userData } = useAuth();
@@ -22,11 +23,10 @@ export default function PaymentSuccess() {
   const [loading, setLoading] = useState(true);
   const [paymentDetails, setPaymentDetails] = useState(null);
 
-  const sessionId = searchParams.get('session_id');
-  const tierId = searchParams.get('tier');
+  const sessionId = searchParams.get("session_id");
 
-  useEffect(() => {
-    // Trigger confetti animation
+useEffect(() => {
+  const runConfetti = () => {
     const duration = 3 * 1000;
     const animationEnd = Date.now() + duration;
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
@@ -35,62 +35,73 @@ export default function PaymentSuccess() {
       return Math.random() * (max - min) + min;
     }
 
-    const interval = setInterval(function() {
+    const interval = setInterval(function () {
       const timeLeft = animationEnd - Date.now();
-
-      if (timeLeft <= 0) {
-        return clearInterval(interval);
-      }
+      if (timeLeft <= 0) return clearInterval(interval);
 
       const particleCount = 50 * (timeLeft / duration);
-      
-      confetti(Object.assign({}, defaults, {
-        particleCount,
-        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
-      }));
-      confetti(Object.assign({}, defaults, {
-        particleCount,
-        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
-      }));
-    }, 250);
 
-    // Simulate loading payment details
-    setTimeout(() => {
-      if (tierId) {
-        const tier = TIERS[tierId.toUpperCase()];
+      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+    }, 250);
+  };
+
+  const verifyPayment = async () => {
+    if (!sessionId) {
+      toast.error("Session ID missing in URL");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await callFunction("verifyCheckoutSession", { sessionId, uid: user?.uid });
+
+      if (res.success) {
+        const tier = TIERS[res.tierId?.toUpperCase()] || null;
         setPaymentDetails({
           tier: tier,
           amount: tier?.amount || 0,
           accessGranted: true
         });
+        toast.success(`Payment successful! Tier: ${res.tierId}`);
+        runConfetti();
+      } else {
+        toast.error(res.message || "Payment not completed");
       }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error verifying payment");
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
+  };
 
-    return () => clearInterval(interval);
-  }, [sessionId, tierId]);
+  verifyPayment();
+}, [sessionId]);
+
 
   const nextSteps = [
     {
       icon: MessageSquare,
       title: "Join Telegram Group",
       description: "Check your email for the exclusive Telegram invite link",
-      action: "Check Email"
+      action: "Check Email",
     },
     {
       icon: Trophy,
       title: "Browse Games",
       description: "View upcoming games and start claiming squares",
       action: "View Games",
-      link: "/games"
+      link: "/games",
     },
     {
       icon: Clock,
       title: "Answer Trivia",
-      description: "Practice your speed - average winners answer in 2-5 seconds!",
+      description:
+        "Practice your speed - average winners answer in 2-5 seconds!",
       action: "Start Playing",
-      link: "/games"
-    }
+      link: "/games",
+    },
   ];
 
   if (loading) {
@@ -111,23 +122,24 @@ export default function PaymentSuccess() {
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          transition={{ 
+          transition={{
             type: "spring",
             stiffness: 260,
-            damping: 20
+            damping: 20,
           }}
           className="text-center mb-8"
         >
           <div className="inline-flex items-center justify-center w-24 h-24 bg-green-100 rounded-full mb-6">
             <CheckCircle className="h-12 w-12 text-green-600" />
           </div>
-          
+
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Payment Successful!
           </h1>
-          
+
           <p className="text-xl text-gray-600">
-            Welcome to Square Trivia, {user?.displayName || userData?.username || 'Champion'}!
+            Welcome to Square Trivia,{" "}
+            {user?.displayName || userData?.username || "Champion"}!
           </p>
         </motion.div>
 
@@ -146,7 +158,7 @@ export default function PaymentSuccess() {
                   {paymentDetails.tier.name} Access Granted
                 </span>
               </div>
-              
+
               <div className="text-3xl font-bold text-gray-900 mb-2">
                 ${paymentDetails.tier.prizePerQuarter}
               </div>
@@ -184,7 +196,7 @@ export default function PaymentSuccess() {
           <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
             What Happens Next?
           </h2>
-          
+
           <div className="space-y-4">
             {nextSteps.map((step, index) => (
               <motion.div
@@ -200,15 +212,13 @@ export default function PaymentSuccess() {
                       <step.icon className="h-6 w-6 text-blue-600" />
                     </div>
                   </div>
-                  
+
                   <div className="ml-4 flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
                       {step.title}
                     </h3>
-                    <p className="text-gray-600 mb-3">
-                      {step.description}
-                    </p>
-                    
+                    <p className="text-gray-600 mb-3">{step.description}</p>
+
                     {step.link ? (
                       <Link
                         to={step.link}
@@ -243,7 +253,8 @@ export default function PaymentSuccess() {
                 Check Your Email
               </h3>
               <p className="text-gray-700">
-                We've sent a confirmation email to <strong>{user?.email}</strong> with:
+                We've sent a confirmation email to{" "}
+                <strong>{user?.email}</strong> with:
               </p>
               <ul className="mt-2 space-y-1 text-gray-700">
                 <li>• Payment receipt</li>
@@ -269,7 +280,7 @@ export default function PaymentSuccess() {
             Start Playing Now
             <ArrowRight className="ml-2 h-5 w-5" />
           </Link>
-          
+
           <Link
             to="/dashboard"
             className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-blue-600 bg-white border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
