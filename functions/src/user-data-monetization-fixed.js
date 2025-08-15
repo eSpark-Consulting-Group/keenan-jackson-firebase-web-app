@@ -184,6 +184,24 @@ exports.addTelegramToAccount = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("internal", error.message);
   }
 });
+exports.setAdminClaim = functions.https.onCall(async (data, context) => {
+  const { uid } = data;
+
+  if (!uid) {
+    throw new functions.https.HttpsError("invalid-argument", "User UID is required");
+  }
+
+  try {
+    // Temporarily allow anyone to call this for the first admin
+    // ⚠️ Remove this code after the first admin is created
+    await admin.auth().setCustomUserClaims(uid, { admin: true });
+    return { success: true, message: `Admin claim set for ${uid}` };
+  } catch (error) {
+    console.error("Error setting admin claim:", error);
+    throw new functions.https.HttpsError("internal", error.message);
+  }
+});
+
 const TIER_CONFIG = {
   tier_25: {
     amount: 25,
