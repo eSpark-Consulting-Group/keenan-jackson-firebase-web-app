@@ -19,8 +19,9 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
-import { auth, db, callFunction } from "../firebase/config";
+import { auth, db, callFunction, functions } from "../firebase/config";
 import toast from "react-hot-toast";
+import { httpsCallable } from "firebase/functions";
 
 const AuthContext = createContext({});
 
@@ -81,6 +82,16 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
+  const setAdmin = async (uid) => {
+    try {
+      const setAdminClaim = httpsCallable(functions, "setAdminClaim");
+      const result = await setAdminClaim({ uid }); // send uid as payload
+      console.log("Function response:", result.data);
+    } catch (error) {
+      console.error("Error calling setAdminClaim:", error);
+    }
+  };
+
   // Register new user
   const register = async (email, password, additionalData = {}) => {
     try {
@@ -90,6 +101,7 @@ export function AuthProvider({ children }) {
         email,
         password
       );
+      console.log(email, password, additionalData);
       const firebaseUser = userCredential.user;
 
       // Generate referral code
@@ -129,6 +141,10 @@ export function AuthProvider({ children }) {
       }
 
       toast.success("Account created successfully!");
+
+      // if (userData?.isAdmin) {
+      //   setAdmin(firebaseUser?.uid);
+      // }
 
       return {
         success: true,

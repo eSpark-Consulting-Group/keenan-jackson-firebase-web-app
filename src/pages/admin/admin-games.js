@@ -118,13 +118,15 @@ export default function AdminGames() {
 
       const result = await callFunction("createGame", {
         sport: gameForm.sport,
-        teams: {
-          home: gameForm.homeTeam,
-          away: gameForm.awayTeam,
-        },
-        startTime: new Date(gameForm.startTime).toISOString(),
-        apiGameId: gameForm.apiGameId,
-        tiers: gameForm.selectedTiers,
+        // teams: {
+        //   home: gameForm.homeTeam,
+        //   away: gameForm.awayTeam,
+        // },
+        homeTeam: gameForm.homeTeam,
+        awayTeam: gameForm.awayTeam,
+        gameDate: new Date(gameForm.startTime).toISOString(),
+        externalGameId: gameForm.apiGameId,
+        enabledTiers: gameForm.selectedTiers,
         gameType: gameForm.gameType,
       });
 
