@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   Plus,
   Edit,
@@ -11,27 +11,44 @@ import {
   Search,
   Filter,
   Trophy,
-} from 'lucide-react';
-import { db, collections, TIERS, formatCurrency, callFunction } from '../../firebase/config';
-import { collection, query, where, orderBy, limit, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import toast from 'react-hot-toast';
+} from "lucide-react";
+import {
+  db,
+  collections,
+  TIERS,
+  formatCurrency,
+  callFunction,
+} from "../../firebase/config";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc,
+} from "firebase/firestore";
+import toast from "react-hot-toast";
 
 export default function AdminGames() {
   const [loading, setLoading] = useState(true);
   const [games, setGames] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [selectedGame, setSelectedGame] = useState(null);
 
   // Form state for creating new game
   const [gameForm, setGameForm] = useState({
-    sport: 'NFL',
-    homeTeam: '',
-    awayTeam: '',
-    startTime: '',
-    apiGameId: '',
-    selectedTiers: []
+    sport: "NFL",
+    homeTeam: "",
+    awayTeam: "",
+    startTime: "",
+    apiGameId: "",
+    selectedTiers: [],
+    gameType: "regular",
   });
 
   useEffect(() => {
@@ -41,93 +58,94 @@ export default function AdminGames() {
   const loadGames = async () => {
     try {
       setLoading(true);
-      
+
       let q = query(
         collection(db, collections.games),
-        orderBy('startTime', 'desc'),
+        orderBy("startTime", "desc"),
         limit(50)
       );
 
-      if (filterStatus !== 'all') {
+      if (filterStatus !== "all") {
         q = query(
           collection(db, collections.games),
-          where('status', '==', filterStatus),
-          orderBy('startTime', 'desc'),
+          where("status", "==", filterStatus),
+          orderBy("startTime", "desc"),
           limit(50)
         );
       }
 
       const snapshot = await getDocs(q);
       const gamesData = [];
-      
+
       for (const doc of snapshot.docs) {
         const gameData = { id: doc.id, ...doc.data() };
-        
+
         // Get board counts for each tier
         const boardCounts = {};
         for (const tierId of Object.keys(TIERS)) {
           const boardQuery = query(
             collection(db, collections.boards),
-            where('gameId', '==', doc.id),
-            where('tierId', '==', tierId.toLowerCase())
+            where("gameId", "==", doc.id),
+            where("tierId", "==", tierId.toLowerCase())
           );
           const boardSnapshot = await getDocs(boardQuery);
           boardCounts[tierId.toLowerCase()] = boardSnapshot.size;
         }
-        
+
         gameData.boardCounts = boardCounts;
         gamesData.push(gameData);
       }
-      
+
       setGames(gamesData);
       setLoading(false);
     } catch (error) {
-      console.error('Error loading games:', error);
-      toast.error('Failed to load games');
+      console.error("Error loading games:", error);
+      toast.error("Failed to load games");
       setLoading(false);
     }
   };
 
   const createGame = async (e) => {
     e.preventDefault();
-    
+
     if (gameForm.selectedTiers.length === 0) {
-      toast.error('Please select at least one tier');
+      toast.error("Please select at least one tier");
       return;
     }
 
     try {
       setLoading(true);
-      
-      const result = await callFunction('createGame', {
+
+      const result = await callFunction("createGame", {
         sport: gameForm.sport,
         teams: {
           home: gameForm.homeTeam,
-          away: gameForm.awayTeam
+          away: gameForm.awayTeam,
         },
         startTime: new Date(gameForm.startTime).toISOString(),
         apiGameId: gameForm.apiGameId,
-        tiers: gameForm.selectedTiers
+        tiers: gameForm.selectedTiers,
+        gameType: gameForm.gameType,
       });
 
       if (result.success) {
-        toast.success('Game created successfully!');
+        toast.success("Game created successfully!");
         setShowCreateModal(false);
         setGameForm({
-          sport: 'NFL',
-          homeTeam: '',
-          awayTeam: '',
-          startTime: '',
-          apiGameId: '',
-          selectedTiers: []
+          sport: "NFL",
+          homeTeam: "",
+          awayTeam: "",
+          startTime: "",
+          apiGameId: "",
+          selectedTiers: [],
         });
         loadGames();
       } else {
-        toast.error(result.error || 'Failed to create game');
+        toast.error(result.error || "Failed to create game");
       }
     } catch (error) {
-      console.error('Error creating game:', error);
-      toast.error('Failed to create game');
+      console.error("Error creating game:", error);
+      toast.error("Failed to create game");
     } finally {
       setLoading(false);
     }
@@ -137,76 +155,83 @@ export default function AdminGames() {
     try {
       await updateDoc(doc(db, collections.games, gameId), {
         status: newStatus,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       });
-      
+
       toast.success(`Game status updated to ${newStatus}`);
       loadGames();
     } catch (error) {
-      console.error('Error updating game status:', error);
-      toast.error('Failed to update game status');
+      console.error("Error updating game status:", error);
+      toast.error("Failed to update game status");
     }
   };
 
   const updateScore = async (gameId) => {
-    const homeScore = prompt('Enter home team score:');
-    const awayScore = prompt('Enter away team score:');
-    
+    const homeScore = prompt("Enter home team score:");
+    const awayScore = prompt("Enter away team score:");
+
     if (homeScore === null || awayScore === null) return;
-    
+
     try {
       await updateDoc(doc(db, collections.games, gameId), {
         currentScore: {
           home: parseInt(homeScore),
-          away: parseInt(awayScore)
+          away: parseInt(awayScore),
         },
-        lastScoreUpdate: new Date()
+        lastScoreUpdate: new Date(),
       });
-      
-      toast.success('Score updated successfully');
+
+      toast.success("Score updated successfully");
       loadGames();
     } catch (error) {
-      console.error('Error updating score:', error);
-      toast.error('Failed to update score');
+      console.error("Error updating score:", error);
+      toast.error("Failed to update score");
     }
   };
 
   const deleteGame = async (gameId) => {
-    if (!window.confirm('Are you sure you want to delete this game? This action cannot be undone.')) {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this game? This action cannot be undone."
+      )
+    ) {
       return;
     }
 
     try {
       await deleteDoc(doc(db, collections.games, gameId));
-      toast.success('Game deleted successfully');
+      toast.success("Game deleted successfully");
       loadGames();
     } catch (error) {
-      console.error('Error deleting game:', error);
-      toast.error('Failed to delete game');
+      console.error("Error deleting game:", error);
+      toast.error("Failed to delete game");
     }
   };
 
-  const filteredGames = games.filter(game => {
-    const matchesSearch = searchTerm === '' || 
+  const filteredGames = games.filter((game) => {
+    const matchesSearch =
+      searchTerm === "" ||
       game.teams?.home?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       game.teams?.away?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     return matchesSearch;
   });
 
   const getStatusBadge = (status) => {
     const badges = {
-      scheduled: { color: 'bg-blue-100 text-blue-800', icon: Clock },
-      active: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
-      completed: { color: 'bg-gray-100 text-gray-800', icon: Trophy },
-      cancelled: { color: 'bg-red-100 text-red-800', icon: XCircle }
+      scheduled: { color: "bg-blue-100 text-blue-800", icon: Clock },
+      active: { color: "bg-green-100 text-green-800", icon: CheckCircle },
+      completed: { color: "bg-gray-100 text-gray-800", icon: Trophy },
+      cancelled: { color: "bg-red-100 text-red-800", icon: XCircle },
     };
-    
+
     const badge = badges[status] || badges.scheduled;
     const Icon = badge.icon;
-    
+
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
+      <span
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}
+      >
         <Icon className="h-3 w-3 mr-1" />
         {status}
       </span>
@@ -227,8 +252,12 @@ export default function AdminGames() {
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Games Management</h1>
-            <p className="text-gray-600 mt-2">Create and manage Square Trivia games</p>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Games Management
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Create and manage Square Trivia games
+            </p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
@@ -251,7 +280,7 @@ export default function AdminGames() {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          
+
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-gray-400" />
             <select
@@ -265,7 +294,7 @@ export default function AdminGames() {
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>
-            
+
             <button
               onClick={loadGames}
               className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
@@ -310,7 +339,9 @@ export default function AdminGames() {
                           <div className="text-sm font-medium text-gray-900">
                             {game.teams?.away} @ {game.teams?.home}
                           </div>
-                          <div className="text-sm text-gray-500">{game.sport}</div>
+                          <div className="text-sm text-gray-500">
+                            {game.sport}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -327,9 +358,13 @@ export default function AdminGames() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {game.currentScore ? (
                           <div className="text-sm">
-                            <span className="font-medium">{game.currentScore.away}</span>
+                            <span className="font-medium">
+                              {game.currentScore.away}
+                            </span>
                             <span className="mx-1">-</span>
-                            <span className="font-medium">{game.currentScore.home}</span>
+                            <span className="font-medium">
+                              {game.currentScore.home}
+                            </span>
                           </div>
                         ) : (
                           <span className="text-sm text-gray-500">-</span>
@@ -337,23 +372,25 @@ export default function AdminGames() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-wrap gap-1">
-                          {Object.entries(game.boardCounts || {}).map(([tierId, count]) => {
-                            if (count === 0) return null;
-                            const tier = TIERS[tierId.toUpperCase()];
-                            return (
-                              <span
-                                key={tierId}
-                                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white ${tier?.color || 'bg-gray-600'}`}
-                              >
-                                {count}
-                              </span>
-                            );
-                          })}
+                          {Object.entries(game.boardCounts || {}).map(
+                            ([tierId, count]) => {
+                              if (count === 0) return null;
+                              const tier = TIERS[tierId.toUpperCase()];
+                              return (
+                                <span
+                                  key={tierId}
+                                  className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white ${tier?.color || "bg-gray-600"}`}
+                                >
+                                  {count}
+                                </span>
+                              );
+                            }
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">
-                          {game.status === 'active' && (
+                          {game.status === "active" && (
                             <button
                               onClick={() => updateScore(game.id)}
                               className="text-blue-600 hover:text-blue-900"
@@ -362,27 +399,31 @@ export default function AdminGames() {
                               <Edit className="h-4 w-4" />
                             </button>
                           )}
-                          
-                          {game.status === 'scheduled' && (
+
+                          {game.status === "scheduled" && (
                             <button
-                              onClick={() => updateGameStatus(game.id, 'active')}
+                              onClick={() =>
+                                updateGameStatus(game.id, "active")
+                              }
                               className="text-green-600 hover:text-green-900"
                               title="Start Game"
                             >
                               <CheckCircle className="h-4 w-4" />
                             </button>
                           )}
-                          
-                          {game.status === 'active' && (
+
+                          {game.status === "active" && (
                             <button
-                              onClick={() => updateGameStatus(game.id, 'completed')}
+                              onClick={() =>
+                                updateGameStatus(game.id, "completed")
+                              }
                               className="text-gray-600 hover:text-gray-900"
                               title="Complete Game"
                             >
                               <Trophy className="h-4 w-4" />
                             </button>
                           )}
-                          
+
                           <button
                             onClick={() => deleteGame(game.id)}
                             className="text-red-600 hover:text-red-900"
@@ -396,7 +437,10 @@ export default function AdminGames() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                    <td
+                      colSpan="6"
+                      className="px-6 py-12 text-center text-gray-500"
+                    >
                       No games found
                     </td>
                   </tr>
@@ -416,7 +460,7 @@ export default function AdminGames() {
             >
               <div className="p-6">
                 <h2 className="text-2xl font-bold mb-6">Create New Game</h2>
-                
+
                 <form onSubmit={createGame}>
                   <div className="space-y-4">
                     <div>
@@ -425,7 +469,9 @@ export default function AdminGames() {
                       </label>
                       <select
                         value={gameForm.sport}
-                        onChange={(e) => setGameForm({ ...gameForm, sport: e.target.value })}
+                        onChange={(e) =>
+                          setGameForm({ ...gameForm, sport: e.target.value })
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                         required
                       >
@@ -444,12 +490,17 @@ export default function AdminGames() {
                         <input
                           type="text"
                           value={gameForm.awayTeam}
-                          onChange={(e) => setGameForm({ ...gameForm, awayTeam: e.target.value })}
+                          onChange={(e) =>
+                            setGameForm({
+                              ...gameForm,
+                              awayTeam: e.target.value,
+                            })
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                           required
                         />
                       </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Home Team
@@ -457,7 +508,12 @@ export default function AdminGames() {
                         <input
                           type="text"
                           value={gameForm.homeTeam}
-                          onChange={(e) => setGameForm({ ...gameForm, homeTeam: e.target.value })}
+                          onChange={(e) =>
+                            setGameForm({
+                              ...gameForm,
+                              homeTeam: e.target.value,
+                            })
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                           required
                         />
@@ -466,12 +522,34 @@ export default function AdminGames() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Game Type
+                      </label>
+                      <select
+                        value={gameForm.gameType}
+                        onChange={(e) =>
+                          setGameForm({ ...gameForm, gameType: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="regular">Regular</option>
+                        <option value="playoff">Playoff</option>
+                        <option value="championship">Championship</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         Start Time
                       </label>
                       <input
                         type="datetime-local"
                         value={gameForm.startTime}
-                        onChange={(e) => setGameForm({ ...gameForm, startTime: e.target.value })}
+                        onChange={(e) =>
+                          setGameForm({
+                            ...gameForm,
+                            startTime: e.target.value,
+                          })
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                         required
                       />
@@ -484,7 +562,12 @@ export default function AdminGames() {
                       <input
                         type="text"
                         value={gameForm.apiGameId}
-                        onChange={(e) => setGameForm({ ...gameForm, apiGameId: e.target.value })}
+                        onChange={(e) =>
+                          setGameForm({
+                            ...gameForm,
+                            apiGameId: e.target.value,
+                          })
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                         placeholder="For automatic score updates"
                       />
@@ -505,19 +588,28 @@ export default function AdminGames() {
                                 if (e.target.checked) {
                                   setGameForm({
                                     ...gameForm,
-                                    selectedTiers: [...gameForm.selectedTiers, tier.id]
+                                    selectedTiers: [
+                                      ...gameForm.selectedTiers,
+                                      tier.id,
+                                    ],
                                   });
                                 } else {
                                   setGameForm({
                                     ...gameForm,
-                                    selectedTiers: gameForm.selectedTiers.filter(t => t !== tier.id)
+                                    selectedTiers:
+                                      gameForm.selectedTiers.filter(
+                                        (t) => t !== tier.id
+                                      ),
                                   });
                                 }
                               }}
                               className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                             />
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium text-white ${tier.color}`}>
-                              {tier.name} - {formatCurrency(tier.prizePerQuarter)}/quarter
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium text-white ${tier.color}`}
+                            >
+                              {tier.name} -{" "}
+                              {formatCurrency(tier.prizePerQuarter)}/quarter
                             </span>
                           </label>
                         ))}
@@ -538,7 +630,7 @@ export default function AdminGames() {
                       disabled={loading}
                       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
                     >
-                      {loading ? 'Creating...' : 'Create Game'}
+                      {loading ? "Creating..." : "Create Game"}
                     </button>
                   </div>
                 </form>
