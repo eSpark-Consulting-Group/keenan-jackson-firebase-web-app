@@ -210,7 +210,7 @@ function App() {
                   }
                 />
                 <Route
-                  path="/payment/success"
+                  path="/payment-success"
                   element={
                     <ProtectedRoute>
                       <Layout>
@@ -220,7 +220,7 @@ function App() {
                   }
                 />
                 <Route
-                  path="/payment/cancel"
+                  path="/payment-cancel"
                   element={
                     <ProtectedRoute>
                       <Layout>

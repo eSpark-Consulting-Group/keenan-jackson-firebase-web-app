@@ -419,7 +419,7 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
   }
 
   try {
-    // Create Stripe checkout session
+    const DOMAIN = process.env.DOMAIN || "http://localhost:3000";
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [{
@@ -434,8 +434,8 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
         quantity: 1
       }],
       mode: 'payment',
-      success_url: `${process.env.DOMAIN}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.DOMAIN}/payment-cancel`,
+      success_url: `${DOMAIN}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${DOMAIN}/payment-cancel`,
       metadata: {
         userId,
         tierId,
@@ -445,11 +445,48 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
 
     return {
       sessionId: session.id,
-      url: session.url
+      url: session.url || null
     };
   } catch (error) {
     console.error('Checkout session error:', error);
     throw new functions.https.HttpsError('internal', error.message);
+  }
+});
+
+exports.verifyCheckoutSession = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Must be logged in");
+  }
+
+  const { sessionId } = data;
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (session.payment_status !== "paid") {
+      return { success: false, message: "Payment not completed" };
+    }
+
+    const uid = context.auth.uid;
+    const tierId = session.metadata?.tierId;
+    const userRef = db.collection("users").doc(uid);
+    await db.runTransaction(async (t) => {
+      const snap = await t.get(userRef);
+      const data = snap.exists ? (snap.data() || {}) : {};
+      const existing = Array.isArray(data.currentTiers) ? data.currentTiers : [];
+      const next = existing.includes(tierId) ? existing : [...existing, tierId];
+
+      t.set(userRef, { currentTiers: next }, { merge: true });
+    });
+
+    return {
+      success: true,
+      tierId,
+      gameId: session.metadata?.gameId
+    };
+  } catch (error) {
+    console.error("Verification error:", error);
+    throw new functions.https.HttpsError("internal", error.message);
   }
 });
 
@@ -713,6 +750,7 @@ module.exports = {
   claimSquare: exports.claimSquare,
   determineWinners: exports.determineWinners,
   createCheckoutSession: exports.createCheckoutSession,
+  verifyCheckoutSession: exports.verifyCheckoutSession,
   handleStripeWebhook: exports.handleStripeWebhook,
   processPayout: exports.processPayout,
   validateAnswer: exports.validateAnswer

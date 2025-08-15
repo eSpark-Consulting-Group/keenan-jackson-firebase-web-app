@@ -1,11 +1,19 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { loadStripe } from '@stripe/stripe-js';
-import { Check, TrendingUp, Trophy, Zap, Star, Crown, AlertCircle } from 'lucide-react';
-import { useAuth } from '../../contexts/authcontext';
-import { useNotification } from '../../contexts/notificationcontext';
-import { callFunction } from '../../firebase/config';
-import toast from 'react-hot-toast';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Check,
+  TrendingUp,
+  Trophy,
+  Zap,
+  Star,
+  Crown,
+  AlertCircle,
+} from "lucide-react";
+import { useAuth } from "../../contexts/authcontext";
+import { useNotification } from "../../contexts/notificationcontext";
+import { callFunction } from "../../firebase/config";
+import toast from "react-hot-toast";
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
@@ -13,136 +21,139 @@ const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 // Tier configurations
 const TIERS = {
   tier_25: {
-    id: 'tier_25',
+    id: "tier_25",
     amount: 25,
-    name: '$25 Tier',
-    color: 'from-green-500 to-emerald-600',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-500',
+    name: "$25 Tier",
+    color: "from-green-500 to-emerald-600",
+    bgColor: "bg-green-50",
+    borderColor: "border-green-500",
     icon: Check,
     prizePerQuarter: 200,
     totalPrize: 800,
     payoutPercentage: 64,
     features: [
-      'Entry for all 4 quarters',
-      '$200 prize per quarter',
-      '50 squares available',
-      'Skill-based competition'
+      "Entry for all 4 quarters",
+      "$200 prize per quarter",
+      "50 squares available",
+      "Skill-based competition",
     ],
-    availability: ['regular', 'playoff', 'championship']
+    availability: ["regular", "playoff", "championship"],
   },
   tier_50: {
-    id: 'tier_50',
+    id: "tier_50",
     amount: 50,
-    name: '$50 Tier',
-    color: 'from-blue-500 to-indigo-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-500',
+    name: "$50 Tier",
+    color: "from-blue-500 to-indigo-600",
+    bgColor: "bg-blue-50",
+    borderColor: "border-blue-500",
     icon: TrendingUp,
     prizePerQuarter: 400,
     totalPrize: 1600,
     payoutPercentage: 64,
     features: [
-      'Entry for all 4 quarters',
-      '$400 prize per quarter',
-      '50 squares available',
-      'Higher stakes competition'
+      "Entry for all 4 quarters",
+      "$400 prize per quarter",
+      "50 squares available",
+      "Higher stakes competition",
     ],
-    availability: ['regular', 'playoff', 'championship']
+    availability: ["regular", "playoff", "championship"],
   },
   tier_100: {
-    id: 'tier_100',
+    id: "tier_100",
     amount: 100,
-    name: '$100 Tier',
-    color: 'from-purple-500 to-pink-600',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-500',
+    name: "$100 Tier",
+    color: "from-purple-500 to-pink-600",
+    bgColor: "bg-purple-50",
+    borderColor: "border-purple-500",
     icon: Trophy,
     prizePerQuarter: 800,
     totalPrize: 3200,
     payoutPercentage: 64,
     features: [
-      'Entry for all 4 quarters',
-      '$800 prize per quarter',
-      '50 squares available',
-      'Premium competition'
+      "Entry for all 4 quarters",
+      "$800 prize per quarter",
+      "50 squares available",
+      "Premium competition",
     ],
-    availability: ['regular', 'playoff', 'championship']
+    availability: ["regular", "playoff", "championship"],
   },
   tier_250: {
-    id: 'tier_250',
+    id: "tier_250",
     amount: 250,
-    name: '$250 Tier',
-    color: 'from-orange-500 to-red-600',
-    bgColor: 'bg-orange-50',
-    borderColor: 'border-orange-500',
+    name: "$250 Tier",
+    color: "from-orange-500 to-red-600",
+    bgColor: "bg-orange-50",
+    borderColor: "border-orange-500",
     icon: Zap,
     prizePerQuarter: 2000,
     totalPrize: 8000,
     payoutPercentage: 72,
     features: [
-      'Entry for all 4 quarters',
-      '$2,000 prize per quarter',
-      '50 squares available',
-      'Elite competition',
-      'Playoff games only'
+      "Entry for all 4 quarters",
+      "$2,000 prize per quarter",
+      "50 squares available",
+      "Elite competition",
+      "Playoff games only",
     ],
-    availability: ['playoff', 'championship']
+    availability: ["playoff", "championship"],
   },
   tier_500: {
-    id: 'tier_500',
+    id: "tier_500",
     amount: 500,
-    name: '$500 Tier',
-    color: 'from-indigo-500 to-purple-700',
-    bgColor: 'bg-indigo-50',
-    borderColor: 'border-indigo-500',
+    name: "$500 Tier",
+    color: "from-indigo-500 to-purple-700",
+    bgColor: "bg-indigo-50",
+    borderColor: "border-indigo-500",
     icon: Star,
     prizePerQuarter: 4000,
     totalPrize: 16000,
     payoutPercentage: 72,
     features: [
-      'Entry for all 4 quarters',
-      '$4,000 prize per quarter',
-      '50 squares available',
-      'High roller competition',
-      'Playoff games only'
+      "Entry for all 4 quarters",
+      "$4,000 prize per quarter",
+      "50 squares available",
+      "High roller competition",
+      "Playoff games only",
     ],
-    availability: ['playoff', 'championship']
+    availability: ["playoff", "championship"],
   },
   tier_1000: {
-    id: 'tier_1000',
+    id: "tier_1000",
     amount: 1000,
-    name: '$1000 Tier',
-    color: 'from-yellow-500 to-yellow-700',
-    bgColor: 'bg-yellow-50',
-    borderColor: 'border-yellow-500',
+    name: "$1000 Tier",
+    color: "from-yellow-500 to-yellow-700",
+    bgColor: "bg-yellow-50",
+    borderColor: "border-yellow-500",
     icon: Crown,
     prizePerQuarter: 8000,
     totalPrize: 32000,
     payoutPercentage: 72,
     features: [
-      'Entry for all 4 quarters',
-      '$8,000 prize per quarter',
-      '50 squares available',
-      'Championship exclusive',
-      'Ultimate competition'
+      "Entry for all 4 quarters",
+      "$8,000 prize per quarter",
+      "50 squares available",
+      "Championship exclusive",
+      "Ultimate competition",
     ],
-    availability: ['championship']
-  }
+    availability: ["championship"],
+  },
 };
 
-export default function TierSelection({ gameId, gameType = 'championship', onTierSelect }) {
+export default function TierSelection({
+  gameId,
+  gameType = "championship",
+  onTierSelect,
+}) {
   const [selectedTier, setSelectedTier] = useState(null);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [boardData, setBoardData] = useState({});
   const { user, userData } = useAuth();
-  console.log(user,"user", userData,"userData")
   const { showNotification } = useNotification();
   const navigate = useNavigate();
 
   // Get available tiers based on game type
-  const availableTiers = Object.values(TIERS).filter(tier => 
+  const availableTiers = Object.values(TIERS).filter((tier) =>
     tier.availability.includes(gameType)
   );
 
@@ -156,10 +167,10 @@ export default function TierSelection({ gameId, gameType = 'championship', onTie
   const fetchBoardData = async () => {
     try {
       setLoading(true);
-      const response = await callFunction('getBoardData', { gameId });
+      const response = await callFunction("getBoardData", { gameId });
       setBoardData(response.data || {});
     } catch (error) {
-      console.error('Error fetching board data:', error);
+      console.error("Error fetching board data:", error);
     } finally {
       setLoading(false);
     }
@@ -167,8 +178,8 @@ export default function TierSelection({ gameId, gameType = 'championship', onTie
 
   const handleTierSelection = (tier) => {
     if (!user) {
-      toast.error('Please login to continue');
-      navigate('/login');
+      toast.error("Please login to continue");
+      navigate("/login");
       return;
     }
 
@@ -177,38 +188,46 @@ export default function TierSelection({ gameId, gameType = 'championship', onTie
 
   const processPayment = async () => {
     if (!selectedTier) return;
+    if (!user) {
+      toast.error("Please login to continue");
+      navigate("/login");
+      return;
+    }
 
     setProcessing(true);
-    const loadingToast = toast.loading('Preparing secure checkout...');
+    const loadingToast = toast.loading("Preparing secure checkout...");
 
     try {
       // Create Stripe checkout session
-      const response = await callFunction('createCheckoutSession', {
+      const { sessionId, url } = await callFunction("createCheckoutSession", {
         tierId: selectedTier.id,
         tierAmount: selectedTier.amount,
         gameId: gameId,
         userId: user.uid,
         userEmail: user.email,
         successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-        cancelUrl: `${window.location.origin}/payment-cancel`
+        cancelUrl: `${window.location.origin}/payment-cancel`,
       });
 
-      if (response.data.sessionId) {
-        // Redirect to Stripe checkout
-        const stripe = await stripePromise;
-        const { error } = await stripe.redirectToCheckout({
-          sessionId: response.data.sessionId
-        });
+      toast.dismiss(loadingToast);
+
+      if (url) {
+        window.location.href = url;
+      } else if (sessionId) {
+        const stripe = await loadStripe(
+          process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY
+        );
+        const { error } = await stripe.redirectToCheckout({ sessionId });
 
         if (error) {
-          throw new Error(error.message);
+          toast.error(error.message);
         }
       } else {
-        throw new Error('Failed to create checkout session');
+        toast.error("Could not start checkout session");
       }
     } catch (error) {
-      console.error('Payment error:', error);
-      toast.error(error.message || 'Payment failed. Please try again.');
+      console.error("Payment error:", error);
+      toast.error(error.message || "Payment failed. Please try again.");
       // showNotification({
       //   type: 'error',
       //   message: 'Payment processing failed'
@@ -237,13 +256,17 @@ export default function TierSelection({ gameId, gameType = 'championship', onTie
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Select Your Entry Tier</h2>
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          Select Your Entry Tier
+        </h2>
         <p className="text-lg text-gray-600">
           Choose your competition level - prizes are guaranteed!
         </p>
         <div className="mt-4 flex items-center justify-center text-sm text-gray-500">
           <AlertCircle className="h-4 w-4 mr-1" />
-          <span>NO FEES on entries or winnings • Instant payouts available</span>
+          <span>
+            NO FEES on entries or winnings • Instant payouts available
+          </span>
         </div>
       </div>
 
@@ -259,13 +282,13 @@ export default function TierSelection({ gameId, gameType = 'championship', onTie
             <div
               key={tier.id}
               className={`relative rounded-lg border-2 transition-all cursor-pointer
-                ${isSelected ? `${tier.borderColor} ${tier.bgColor}` : 'border-gray-200 hover:border-gray-300'}
-                ${isSoldOut ? 'opacity-60 cursor-not-allowed' : ''}
+                ${isSelected ? `${tier.borderColor} ${tier.bgColor}` : "border-gray-200 hover:border-gray-300"}
+                ${isSoldOut ? "opacity-60 cursor-not-allowed" : ""}
               `}
               onClick={() => !isSoldOut && handleTierSelection(tier)}
             >
               {/* Popular badge for $50 tier */}
-              {tier.id === 'tier_50' && (
+              {tier.id === "tier_50" && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                   <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
                     MOST POPULAR
@@ -286,10 +309,14 @@ export default function TierSelection({ gameId, gameType = 'championship', onTie
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center">
-                    <div className={`p-2 rounded-lg bg-gradient-to-br ${tier.color}`}>
+                    <div
+                      className={`p-2 rounded-lg bg-gradient-to-br ${tier.color}`}
+                    >
                       <Icon className="h-6 w-6 text-white" />
                     </div>
-                    <h3 className="ml-3 text-xl font-bold text-gray-900">{tier.name}</h3>
+                    <h3 className="ml-3 text-xl font-bold text-gray-900">
+                      {tier.name}
+                    </h3>
                   </div>
                   {isSelected && (
                     <div className="bg-blue-600 rounded-full p-1">
@@ -300,14 +327,18 @@ export default function TierSelection({ gameId, gameType = 'championship', onTie
 
                 {/* Entry amount */}
                 <div className="mb-6">
-                  <div className="text-3xl font-bold text-gray-900">${tier.amount}</div>
+                  <div className="text-3xl font-bold text-gray-900">
+                    ${tier.amount}
+                  </div>
                   <div className="text-sm text-gray-500">One-time entry</div>
                 </div>
 
                 {/* Prize info */}
                 <div className="bg-gray-50 rounded-lg p-4 mb-4">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-gray-600">Prize per quarter:</span>
+                    <span className="text-sm text-gray-600">
+                      Prize per quarter:
+                    </span>
                     <span className="text-lg font-semibold text-gray-900">
                       ${tier.prizePerQuarter.toLocaleString()}
                     </span>
@@ -333,10 +364,14 @@ export default function TierSelection({ gameId, gameType = 'championship', onTie
                 {/* Squares available */}
                 <div className="border-t pt-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Squares available:</span>
-                    <span className={`text-sm font-semibold ${
-                      squaresAvailable < 10 ? 'text-red-600' : 'text-gray-900'
-                    }`}>
+                    <span className="text-sm text-gray-600">
+                      Squares available:
+                    </span>
+                    <span
+                      className={`text-sm font-semibold ${
+                        squaresAvailable < 10 ? "text-red-600" : "text-gray-900"
+                      }`}
+                    >
                       {squaresAvailable}/50
                     </span>
                   </div>
@@ -375,7 +410,7 @@ export default function TierSelection({ gameId, gameType = 'championship', onTie
                     Processing...
                   </>
                 ) : (
-                  'Proceed to Payment'
+                  "Proceed to Payment"
                 )}
               </button>
             </div>
@@ -385,7 +420,9 @@ export default function TierSelection({ gameId, gameType = 'championship', onTie
 
       {/* Info section */}
       <div className="mt-12 bg-blue-50 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">How It Works</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          How It Works
+        </h3>
         <ul className="space-y-2 text-sm text-gray-600">
           <li className="flex items-start">
             <span className="font-semibold mr-2">1.</span>
@@ -405,9 +442,10 @@ export default function TierSelection({ gameId, gameType = 'championship', onTie
           </li>
         </ul>
         <p className="mt-4 text-xs text-gray-500">
-          * {TIERS.tier_25.payoutPercentage}% of entries go to prizes for $25-$100 tiers, 
-          {TIERS.tier_250.payoutPercentage}% for higher tiers. 
-          Instant payouts available with 96% payout or wait 2-3 days for 100%.
+          * {TIERS.tier_25.payoutPercentage}% of entries go to prizes for
+          $25-$100 tiers,
+          {TIERS.tier_250.payoutPercentage}% for higher tiers. Instant payouts
+          available with 96% payout or wait 2-3 days for 100%.
         </p>
       </div>
     </div>
