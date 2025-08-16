@@ -11,6 +11,7 @@ import {
   Search,
   Filter,
   Trophy,
+  StepBack,
 } from "lucide-react";
 import {
   db,
@@ -18,6 +19,7 @@ import {
   TIERS,
   formatCurrency,
   callFunction,
+  functions,
 } from "../../firebase/config";
 import {
   collection,
@@ -31,6 +33,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
+import { httpsCallable } from "firebase/functions";
 
 export default function AdminGames() {
   const [loading, setLoading] = useState(true);
@@ -39,16 +42,25 @@ export default function AdminGames() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedGame, setSelectedGame] = useState(null);
+  const [showFetchModal, setShowFetchModal] = useState(false);
+  const [searchedGames, setSearchedGames] = useState([]);
+  const [gamesLoading, setGamesLoading] = useState(false);
 
   // Form state for creating new game
   const [gameForm, setGameForm] = useState({
-    sport: "NFL",
+    sport: "",
     homeTeam: "",
     awayTeam: "",
     startTime: "",
     apiGameId: "",
     selectedTiers: [],
-    gameType: "regular",
+    gameType: "",
+  });
+
+  const [sportsForm, setSportsForm] = useState({
+    sport: "",
+    week: "",
+    teamName: "",
   });
 
   useEffect(() => {
@@ -240,6 +252,63 @@ export default function AdminGames() {
     );
   };
 
+  useEffect(() => {
+    if (selectedGame && Object.keys(selectedGame)?.length > 0) {
+      setGameForm({
+        ...gameForm,
+        sport: selectedGame?.sport,
+        homeTeam: selectedGame?.homeTeam,
+        awayTeam: selectedGame?.awayTeam,
+        startTime: selectedGame?.startTime,
+        apiGameId: selectedGame?.apiGameId,
+        gameType: selectedGame?.gameType,
+      });
+    }
+  }, [selectedGame]);
+
+  useEffect(() => {
+    if (!sportsForm?.sport) return;
+    const searchGames = async () => {
+      setGamesLoading(true);
+      try {
+        const searchApiSportsGames = httpsCallable(
+          functions,
+          "searchApiSportsGames"
+        );
+
+        const getMinWeek = (sport) => {
+          if (sport === "NFL") return 1;
+          if (sport === "CFB") return 0;
+          return 0;
+        };
+
+        const weekToSend = sportsForm?.week
+          ? sportsForm?.week
+          : getMinWeek(sportsForm?.sport);
+
+        const result = await searchApiSportsGames({
+          sport: sportsForm.sport,
+          week: weekToSend,
+          teamName: sportsForm?.teamName,
+        });
+        const data = result.data?.games?.map((game) => ({
+          sport: sportsForm?.sport,
+          homeTeam: game?.homeTeam,
+          awayTeam: game?.awayTeam,
+          startTime: game?.startTime,
+          apiGameId: game?.apiSportsId,
+          gameType: "regular",
+        }));
+        setSearchedGames(data);
+      } catch (error) {
+        console.error("Error calling searchApiSportsGames:", error);
+      } finally {
+        setGamesLoading(false);
+      }
+    };
+    searchGames();
+  }, [sportsForm.searchTeam, sportsForm.sport, sportsForm.week]);
+
   if (loading && games.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -262,7 +331,8 @@ export default function AdminGames() {
             </p>
           </div>
           <button
-            onClick={() => setShowCreateModal(true)}
+            // onClick={() => setShowCreateModal(true)}
+            onClick={() => setShowFetchModal(true)}
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -359,13 +429,9 @@ export default function AdminGames() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm">
-                          <span className="font-medium">
-                            {game.awayScore}
-                          </span>
+                          <span className="font-medium">{game.awayScore}</span>
                           <span className="mx-1">-</span>
-                          <span className="font-medium">
-                            {game.homeScore}
-                          </span>
+                          <span className="font-medium">{game.homeScore}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -458,6 +524,28 @@ export default function AdminGames() {
             >
               <div className="p-6">
                 <h2 className="text-2xl font-bold mb-6">Create New Game</h2>
+                {selectedGame && Object.keys(selectedGame)?.length > 0 && (
+                  <div
+                    className="flex gap-x-2 items-center mb-2 w-fit cursor-pointer"
+                    onClick={() => {
+                      setGameForm({
+                        ...gameForm,
+                        sport: "",
+                        homeTeam: "",
+                        awayTeam: "",
+                        startTime: "",
+                        apiGameId: "",
+                        selectedTiers: [],
+                        gameType: "",
+                      });
+                      setShowCreateModal(false);
+                      setShowFetchModal(true);
+                    }}
+                  >
+                    <StepBack />
+                    <p className="text-sm font-medium">Go Back</p>
+                  </div>
+                )}
 
                 <form onSubmit={createGame}>
                   <div className="space-y-4">
@@ -471,12 +559,15 @@ export default function AdminGames() {
                           setGameForm({ ...gameForm, sport: e.target.value })
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                        required
+                        disabled
                       >
+                        <option value="" disabled>
+                          Please select sport
+                        </option>
                         <option value="NFL">NFL</option>
                         <option value="NBA">NBA</option>
-                        <option value="NCAA_FOOTBALL">NCAA Football</option>
-                        <option value="NCAA_BASKETBALL">NCAA Basketball</option>
+                        <option value="CFB">NCAA Football</option>
+                        <option value="NCAA_BB">NCAA Basketball</option>
                       </select>
                     </div>
 
@@ -495,7 +586,7 @@ export default function AdminGames() {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          required
+                          readOnly
                         />
                       </div>
 
@@ -513,7 +604,7 @@ export default function AdminGames() {
                             })
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                          required
+                          readOnly
                         />
                       </div>
                     </div>
@@ -528,7 +619,7 @@ export default function AdminGames() {
                           setGameForm({ ...gameForm, gameType: e.target.value })
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                        required
+                        disabled
                       >
                         <option value="regular">Regular</option>
                         <option value="playoff">Playoff</option>
@@ -549,7 +640,7 @@ export default function AdminGames() {
                           })
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                        required
+                        readOnly
                       />
                     </div>
 
@@ -566,6 +657,7 @@ export default function AdminGames() {
                             apiGameId: e.target.value,
                           })
                         }
+                        readOnly
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                         placeholder="For automatic score updates"
                       />
@@ -618,7 +710,15 @@ export default function AdminGames() {
                   <div className="mt-6 flex gap-3 justify-end">
                     <button
                       type="button"
-                      onClick={() => setShowCreateModal(false)}
+                      onClick={() => {
+                        setShowCreateModal(false);
+                        setShowFetchModal(false);
+                        setSportsForm({
+                          sport: "",
+                          startTime: "",
+                          teamName: "",
+                        });
+                      }}
                       className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       Cancel
@@ -629,6 +729,190 @@ export default function AdminGames() {
                       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
                     >
                       {loading ? "Creating..." : "Create Game"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+        {showFetchModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            >
+              <div className="p-6">
+                <h2 className="text-2xl font-bold mb-6">Search Games</h2>
+
+                <form onSubmit={() => {}}>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Sport
+                      </label>
+                      <select
+                        value={sportsForm.sport}
+                        onChange={(e) =>
+                          setSportsForm({
+                            ...sportsForm,
+                            sport: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="" disabled>
+                          Please select sport
+                        </option>
+                        <option value="NFL">NFL</option>
+                        <option value="NBA">NBA</option>
+                        <option value="CFB">NCAA Football</option>
+                        <option value="NCAA_BB">NCAA Basketball</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Search Team
+                        </label>
+                        <input
+                          type="text"
+                          value={sportsForm.teamName}
+                          onChange={(e) =>
+                            setSportsForm({
+                              ...sportsForm,
+                              teamName: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Week Number
+                      </label>
+                      <input
+                        type="number"
+                        value={sportsForm.week || ""}
+                        disabled={
+                          sportsForm?.sport !== "NFL" &&
+                          sportsForm?.sport !== "CFB"
+                        }
+                        onChange={(e) => {
+                          let value = parseInt(e.target.value, 10);
+
+                          if (sportsForm?.sport === "NFL") {
+                            if (value < 1) value = 1;
+                            if (value > 17) value = 17;
+                          } else if (sportsForm?.sport === "CFB") {
+                            if (value < 0) value = 0;
+                            if (value > 15) value = 15;
+                          }
+
+                          setSportsForm({
+                            ...sportsForm,
+                            week: value,
+                          });
+                        }}
+                        min={
+                          sportsForm?.sport === "NFL"
+                            ? 1
+                            : sportsForm?.sport === "CFB"
+                              ? 0
+                              : undefined
+                        }
+                        max={
+                          sportsForm?.sport === "NFL"
+                            ? 17
+                            : sportsForm?.sport === "CFB"
+                              ? 15
+                              : undefined
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-y-2 mt-5 flex-col">
+                    <h3 className="text-xl font-bold mb-6">Games Results</h3>
+                    <div className="max-h-[300px] overflow-auto p-2 space-y-2">
+                      {sportsForm?.sport === "" ? (
+                        <h3 className="text-xl font-medium text-center text-gray-600">
+                          Select sports
+                        </h3>
+                      ) : gamesLoading ? (
+                        // Loader
+                        <div className="w-full">
+                          <div className="h-2 bg-gray-200 rounded overflow-hidden">
+                            <div className="h-full bg-blue-500 animate-pulse w-1/2"></div>
+                          </div>
+                          <p className="text-center text-gray-500 text-sm mt-2">
+                            Loading games...
+                          </p>
+                        </div>
+                      ) : !searchedGames || searchedGames.length === 0 ? (
+                        <h3 className="text-xl font-medium text-center text-gray-600">
+                          No games available
+                        </h3>
+                      ) : (
+                        <>
+                          <h3 className="text-xl font-medium text-gray-600">
+                            Select Any Game
+                          </h3>
+                          {searchedGames.map((game, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between bg-white shadow-md rounded-xl px-4 py-2 cursor-pointer hover:bg-gray-50 transition"
+                              onClick={() => {
+                                setSelectedGame(game);
+                                setShowFetchModal(false);
+                                setShowCreateModal(true);
+                              }}
+                            >
+                              {/* Teams */}
+                              <div className="flex items-center space-x-2">
+                                <span className="font-semibold text-gray-800">
+                                  {game.homeTeam}
+                                </span>
+                                <span className="text-sm text-gray-500">
+                                  VS
+                                </span>
+                                <span className="font-semibold text-gray-800">
+                                  {game.awayTeam}
+                                </span>
+                              </div>
+
+                              {/* Time */}
+                              <span className="text-sm text-gray-600">
+                                {game.startTime}
+                              </span>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex gap-3 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowFetchModal(false);
+                        setSportsForm({
+                          sport: "",
+                          teamName: "",
+                          startTime: "",
+                        });
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
                     </button>
                   </div>
                 </form>

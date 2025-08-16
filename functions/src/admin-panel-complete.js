@@ -52,10 +52,12 @@ const BATCH_PAYOUT_DAYS = ["tuesday", "friday"];
 
 // API Sports configuration - Add your API keys during deployment
 const API_SPORTS_CONFIG = {
-  NFL: { host: "v1.american-football.api-sports.io", leagueId: 1 },
-  NBA: { host: "v1.basketball.api-sports.io", leagueId: 12 },
-  NCAA_FB: { host: "v1.american-football.api-sports.io", leagueId: 2 },
-  NCAA_BB: { host: "v1.basketball.api-sports.io", leagueId: 116 },
+  NFL: {
+    endpoint: "/v3/nfl/scores/json/ScoresByWeek",
+  },
+  CFB: {
+    endpoint: "/v3/cfb/scores/json/GamesByWeek",
+  },
 };
 
 // =====================================
@@ -78,10 +80,82 @@ function requireAdmin(context) {
 /**
  * Search for games in API-Sports
  */
+// exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
+//   const adminId = requireAdmin(context);
+
+//   const { sport, date, teamName } = data;
+
+//   if (!sport || !API_SPORTS_CONFIG[sport]) {
+//     throw new functions.https.HttpsError("invalid-argument", "Invalid sport");
+//   }
+
+//   try {
+//     const config = API_SPORTS_CONFIG[sport];
+//     const params = {
+//       league: config.leagueId,
+//       season: new Date().getFullYear(),
+//     };
+
+//     if (date) {
+//       params.date = date; // Format: YYYY-MM-DD
+//     }
+
+//     const response = await axios.get(`https://${config.host}/games`, {
+//       params,
+//       headers: {
+//         "x-rapidapi-key":
+//           // functions.config().apisports.key ||
+//           process.env.APISPORTS_KEY,
+//         "x-rapidapi-host": config.host,
+//       },
+//     });
+
+//     let games = response.data.response || [];
+
+//     // Filter by team name if provided
+//     if (teamName) {
+//       const searchTerm = teamName.toLowerCase();
+//       games = games.filter(
+//         (game) =>
+//           game.teams.home.name.toLowerCase().includes(searchTerm) ||
+//           game.teams.away.name.toLowerCase().includes(searchTerm)
+//       );
+//     }
+
+//     // Format for admin display
+//     const formattedGames = games.map((game) => ({
+//       apiSportsId: game.game.id.toString(),
+//       homeTeam: game.teams.home.name,
+//       awayTeam: game.teams.away.name,
+//       startTime: new Date(game.game.date),
+//       status: game.game.status.short,
+//       venue: game.game.venue?.name || "TBD",
+//       week: game.game.week,
+//       scores: game.scores,
+//     }));
+
+//     console.log(`Admin ${adminId} searched for ${sport} games`);
+
+//     return {
+//       success: true,
+//       games: formattedGames,
+//       total: formattedGames.length,
+//     };
+//   } catch (error) {
+//     console.error("API-Sports search error:", error);
+//     throw new functions.https.HttpsError("internal", "Failed to search games");
+//   }
+// });
+
+function getWeekNumber(date) {
+  const firstDay = new Date(date.getFullYear(), 0, 1);
+  const pastDays = Math.floor((date - firstDay) / (24 * 60 * 60 * 1000));
+  return Math.ceil((pastDays + firstDay.getDay() + 1) / 7);
+}
+
 exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
   const adminId = requireAdmin(context);
-
-  const { sport, date, teamName } = data;
+  const { sport, teamName, week } = data;
 
   if (!sport || !API_SPORTS_CONFIG[sport]) {
     throw new functions.https.HttpsError("invalid-argument", "Invalid sport");
@@ -89,58 +163,55 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
 
   try {
     const config = API_SPORTS_CONFIG[sport];
-    const params = {
-      league: config.leagueId,
-      season: new Date().getFullYear(),
-    };
+    const year = new Date(new Date()).getFullYear();
+    // const weekNum = week || getWeekNumber(new Date(date || new Date()));
 
-    if (date) {
-      params.date = date; // Format: YYYY-MM-DD
-    }
+    const url = `https://api.sportsdata.io${config.endpoint}/${year}/${week}`;
 
-    const response = await axios.get(`https://${config.host}/games`, {
-      params,
-      headers: {
-        "x-rapidapi-key":
-          // functions.config().apisports.key || 
-          process.env.APISPORTS_KEY,
-        "x-rapidapi-host": config.host,
-      },
+    const response = await axios.get(url, {
+      params: { key: process.env.REACT_APP_APISPORTS_KEY },
     });
 
-    let games = response.data.response || [];
+    let games = response.data || [];
 
-    // Filter by team name if provided
     if (teamName) {
       const searchTerm = teamName.toLowerCase();
       games = games.filter(
         (game) =>
-          game.teams.home.name.toLowerCase().includes(searchTerm) ||
-          game.teams.away.name.toLowerCase().includes(searchTerm)
+          game.HomeTeam?.toLowerCase().includes(searchTerm) ||
+          game.AwayTeam?.toLowerCase().includes(searchTerm)
       );
     }
 
-    // Format for admin display
     const formattedGames = games.map((game) => ({
-      apiSportsId: game.game.id.toString(),
-      homeTeam: game.teams.home.name,
-      awayTeam: game.teams.away.name,
-      startTime: new Date(game.game.date),
-      status: game.game.status.short,
-      venue: game.game.venue?.name || "TBD",
-      week: game.game.week,
-      scores: game.scores,
+      apiSportsId:
+        sport === "NFL" ? game.GameKey?.toString() : game.GameID?.toString(),
+      homeTeam: game.HomeTeam,
+      awayTeam: game.AwayTeam,
+      startTime: sport === "NFL" ? game?.Date : game?.DateTime,
+      status: game.Status,
+      venue:
+        sport === "NFL"
+          ? game.StadiumDetails?.Name
+          : game.Stadium?.Name || "TBD",
+      week: game.Week,
+      scores: {
+        home: sport === "NFL" ? game.HomeScore : game.HomeTeamScore,
+        away: sport === "NFL" ? game.AwayScore : game.AwayTeamScore,
+      },
     }));
 
-    console.log(`Admin ${adminId} searched for ${sport} games`);
-
+    console.log(`Admin ${adminId} searched ${sport} games`);
     return {
       success: true,
       games: formattedGames,
       total: formattedGames.length,
     };
   } catch (error) {
-    console.error("API-Sports search error:", error);
+    console.error(
+      "SportsData.io search error:",
+      error?.response?.data || error
+    );
     throw new functions.https.HttpsError("internal", "Failed to search games");
   }
 });
