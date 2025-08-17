@@ -4,6 +4,14 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const {
+  TIERS
+ } = require ("./constants-configuration-fixed");
+ const {
+  handleSuccessfulPayment,
+  handleFailedPayment,
+  handleRefund,
+} = require("./payment-system-modified");
 
 // Initialize admin if not already done
 if (!admin.apps.length) {
@@ -466,6 +474,18 @@ exports.createCheckoutSession = functions.https.onCall(
       throw new functions.https.HttpsError("invalid-argument", "Invalid tier");
     }
 
+   const payoutPercentage = Object.values(TIERS).find(t => t.id === tierId)?.payoutPercentage
+
+    const donationRef = admin.firestore().collection("donations").doc();
+    const donationId = donationRef.id;
+
+    await donationRef.set({
+      userId,
+      tier: tierId,
+      status: "pending",
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
     try {
       const DOMAIN = process.env.DOMAIN || "http://localhost:3000";
       const session = await stripe.checkout.sessions.create({
@@ -488,6 +508,8 @@ exports.createCheckoutSession = functions.https.onCall(
         cancel_url: `${DOMAIN}/payment-cancel`,
         metadata: {
           userId,
+          donationId,
+          payoutPercentage,
           tierId,
           gameId: gameId || "general",
         },
@@ -516,32 +538,66 @@ exports.verifyCheckoutSession = functions.https.onCall(
     const { sessionId } = data;
 
     try {
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      const session = await stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ["payment_intent", "payment_intent.latest_charge"],
+      });
 
       if (session.payment_status !== "paid") {
         return { success: false, message: "Payment not completed" };
       }
 
-      const uid = context.auth.uid;
-      const tierId = session.metadata?.tierId;
-      const userRef = db.collection("users").doc(uid);
-      await db.runTransaction(async (t) => {
-        const snap = await t.get(userRef);
-        const data = snap.exists ? snap.data() || {} : {};
-        const existing = Array.isArray(data.currentTiers)
-          ? data.currentTiers
-          : [];
-        const next = existing.includes(tierId)
-          ? existing
-          : [...existing, tierId];
+      const paymentIntent = session.payment_intent;
+      const charge = paymentIntent?.latest_charge;
 
-        t.set(userRef, { currentTiers: next }, { merge: true });
+      const eventRef = db
+        .collection("stripeEvents")
+        .doc(`manual-${session.id}`);
+      const eventDoc = await eventRef.get();
+      if (eventDoc.exists) {
+        console.log(
+          `⚠️ Duplicate verification detected for session ${session.id}`
+        );
+        return {
+          success: true,
+          tier: session.metadata?.tierId,
+          donationId: session.metadata?.donationId,
+          alreadyProcessed: true,
+        };
+      }
+
+      await eventRef.set({
+        type: "checkout.session.completed",
+        processed: false,
+        receivedAt: admin.firestore.FieldValue.serverTimestamp(),
+        data: {
+          sessionId: session.id,
+          paymentIntentId: paymentIntent?.id,
+          chargeId: charge?.id,
+        },
       });
 
+      // 3. Run your handlers
+      if (paymentIntent?.status === "succeeded") {
+        await handleSuccessfulPayment(session);
+      } else if (paymentIntent?.status === "requires_payment_method") {
+        await handleFailedPayment(session);
+      }
+
+      if (charge && charge.refunded) {
+        await handleRefund(charge);
+      }
+
+      // 4. Mark as processed
+      await eventRef.update({
+        processed: true,
+        processedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      // 5. Return result
       return {
         success: true,
-        tierId,
-        gameId: session.metadata?.gameId,
+        tier: session.metadata?.tierId,
+        donationId: session.metadata?.donationId,
       };
     } catch (error) {
       console.error("Verification error:", error);

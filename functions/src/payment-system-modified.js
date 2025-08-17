@@ -252,7 +252,7 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
 
 async function handleSuccessfulPayment(paymentIntent) {
   const { metadata } = paymentIntent;
-  const { userId, donationId, tier, telegramUsername, payoutPercentage } = metadata;
+  const { userId, donationId, tierId, telegramUsername, payoutPercentage } = metadata;
 
   console.log(`Processing successful payment for donation ${donationId} with ${payoutPercentage}% payout`);
 
@@ -264,7 +264,7 @@ async function handleSuccessfulPayment(paymentIntent) {
     batch.update(donationRef, {
       status: DONATION_STATUS.COMPLETED,
       completedAt: admin.firestore.FieldValue.serverTimestamp(),
-      stripeChargeId: paymentIntent.latest_charge,
+      stripeChargeId: paymentIntent.payment_intent.latest_charge,
       payoutPercentage: parseFloat(payoutPercentage) // Ensure it's stored as number
     });
 
@@ -274,17 +274,16 @@ async function handleSuccessfulPayment(paymentIntent) {
     const userData = userDoc.data() || {};
 
     batch.set(userRef, {
-      totalDonations: (userData.totalDonations || 0) + TIER_CONFIG[tier].amount,
-      currentTiers: admin.firestore.FieldValue.arrayUnion(tier),
+      totalDonations: (userData.totalDonations || 0) + TIER_CONFIG[tierId].amount,
+      currentTiers: admin.firestore.FieldValue.arrayUnion(tierId),
       lastDonation: admin.firestore.FieldValue.serverTimestamp(),
-      hasTelegram: !!metadata.telegramUsername
     }, { merge: true });
 
     // Create tier access record
     const accessRef = admin.firestore().collection('tierAccess').doc();
     batch.set(accessRef, {
       userId,
-      tier,
+      tier: tierId,
       donationId,
       telegramUsername: metadata.telegramUsername || null,
       grantedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -297,19 +296,19 @@ async function handleSuccessfulPayment(paymentIntent) {
 
     // Grant Telegram access only if user has Telegram
     if (metadata.telegramUsername) {
-      await grantTelegramAccess(userId, metadata.telegramUsername, tier);
+      await grantTelegramAccess(userId, metadata.telegramUsername, tierId);
     } else {
       // Log web-only access
-      console.log(`User ${userId} has web-only access for tier ${tier}`);
+      console.log(`User ${userId} has web-only access for tier ${tierId}`);
     }
 
     // Send confirmation email
-    await sendPaymentConfirmation(userId, donationId, tier);
+    // await sendPaymentConfirmation(userId, donationId, tierId);
 
     // Update analytics
     await updateAnalytics('donation_completed', {
-      tier,
-      amount: TIER_CONFIG[tier].amount,
+      tier: tierId,
+      amount: TIER_CONFIG[tierId].amount,
       userId
     });
 
@@ -335,7 +334,7 @@ async function handleFailedPayment(paymentIntent) {
 
 async function handleRefund(charge) {
   const { metadata } = charge;
-  const { donationId, userId, tier } = metadata;
+  const { donationId, userId, tierId } = metadata;
 
   const batch = admin.firestore().batch();
 
@@ -380,13 +379,13 @@ async function handleRefund(charge) {
   // Remove tier from user
   const userRef = admin.firestore().collection('users').doc(userId);
   batch.update(userRef, {
-    currentTiers: admin.firestore.FieldValue.arrayRemove(tier)
+    currentTiers: admin.firestore.FieldValue.arrayRemove(tierId)
   });
 
   await batch.commit();
 
   // Revoke Telegram access
-  await revokeTelegramAccess(userId, tier);
+  await revokeTelegramAccess(userId, tierId);
 
   // Send refund notification with instant fee info if applicable
   await sendRefundNotification(userId, donationId, charge.amount_refunded / 100, totalInstantFees);
@@ -1140,3 +1139,9 @@ exports.cleanupExpiredAccess = functions.pubsub
     
     console.log(`Cleaned up ${expiredQuery.size} expired tier accesses`);
   });
+
+  module.exports = {
+  handleSuccessfulPayment,
+  handleFailedPayment,
+  handleRefund,
+};

@@ -77,8 +77,8 @@ export default function GameBoard() {
           // Set current scores
           if (gameData.scores) {
             setScores({
-              home: gameData.scores.home || 0,
-              away: gameData.scores.away || 0
+              home: gameData.homeScore || 0,
+              away: gameData.awayScore || 0
             });
             
             // Calculate winning squares based on current scores
@@ -310,7 +310,7 @@ export default function GameBoard() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {game.teams.away} @ {game.teams.home}
+                {game.awayTeam} @ {game.homeTeam}
               </h1>
               <div className="flex items-center space-x-4 text-sm text-gray-600">
                 <span className={`px-3 py-1 rounded-full font-medium text-white ${tier.color}`}>
@@ -322,15 +322,15 @@ export default function GameBoard() {
                 </span>
                 <span className="flex items-center">
                   <Clock className="h-4 w-4 mr-1" />
-                  {new Date(game.startTime?.toDate?.() || game.startTime).toLocaleString()}
+                  {new Date(game.gameDate?.toDate?.() || game.gameDate).toLocaleString()}
                 </span>
               </div>
             </div>
             
             {isGameActive && (
               <GameScore
-                homeTeam={game.teams.home}
-                awayTeam={game.teams.away}
+                homeTeam={game.homeTeam}
+                awayTeam={game.awayTeam}
                 homeScore={scores.home}
                 awayScore={scores.away}
                 quarter={game.currentQuarter || 1}

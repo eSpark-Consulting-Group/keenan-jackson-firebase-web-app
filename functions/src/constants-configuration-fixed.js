@@ -15,7 +15,7 @@
     telegramGroupKey: "tier_25_group_id",
     maxSquaresPerUser: 3,
     availableIn: ["regular", "playoff", "championship"],
-    payoutPercentage: 0.77, // 77% to winners
+    payoutPercentage: 0.64, // 64% to winners
   },
   TIER_50: {
     id: "tier_50",
@@ -26,7 +26,7 @@
     telegramGroupKey: "tier_50_group_id",
     maxSquaresPerUser: 3,
     availableIn: ["regular", "playoff", "championship"],
-    payoutPercentage: 0.77, // 77% to winners
+    payoutPercentage: 0.64, // 64% to winners
   },
   TIER_100: {
     id: "tier_100",
@@ -37,7 +37,7 @@
     telegramGroupKey: "tier_100_group_id",
     maxSquaresPerUser: 3,
     availableIn: ["regular", "playoff", "championship"],
-    payoutPercentage: 0.77, // 77% to winners
+    payoutPercentage: 0.64, // 64% to winners
   },
   TIER_250: {
     id: "tier_250",
@@ -49,7 +49,7 @@
     maxSquaresPerUser: 3,
     availableIn: ["playoff", "championship"],
     badge: "Playoff Exclusive",
-    payoutPercentage: 0.8, // 80% to winners
+    payoutPercentage: 0.72, // 72% to winners
   },
   TIER_500: {
     id: "tier_500",
@@ -61,7 +61,7 @@
     maxSquaresPerUser: 3,
     availableIn: ["playoff", "championship"],
     badge: "Playoff Exclusive",
-    payoutPercentage: 0.8, // 80% to winners
+    payoutPercentage: 0.72, // 72% to winners
   },
   TIER_1000: {
     id: "tier_1000",
@@ -73,7 +73,7 @@
     maxSquaresPerUser: 3,
     availableIn: ["championship"],
     badge: "Championship Only",
-    payoutPercentage: 0.8, // 80% to winners
+    payoutPercentage: 0.72, // 72% to winners
   },
 };
 
