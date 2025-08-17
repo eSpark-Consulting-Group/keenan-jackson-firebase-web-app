@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Brain,
@@ -32,6 +32,7 @@ import {
   addDoc,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
+import { bulkUploadQuestions } from "../../components/game/uploadFile";
 
 export default function AdminTrivia() {
   const [loading, setLoading] = useState(true);
@@ -73,6 +74,19 @@ export default function AdminTrivia() {
     points: 100,
     explanation: "",
   });
+
+  const fileInputRef = useRef(null);
+
+  const handleClick = () => {
+    fileInputRef.current.click(); // trigger file picker
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      await bulkUploadQuestions(file);
+    }
+  };
 
   useEffect(() => {
     loadQuestions();
@@ -368,12 +382,19 @@ export default function AdminTrivia() {
           </div>
           <div className="flex gap-3">
             <button
-              onClick={importQuestions}
+              onClick={handleClick}
               className="flex items-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
             >
               <Upload className="h-4 w-4 mr-2" />
               Import
             </button>
+            <input
+              type="file"
+              accept=".csv"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+            />
             <button
               onClick={exportQuestions}
               className="flex items-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"

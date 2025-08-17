@@ -165,9 +165,7 @@ export default function Games() {
 
   const getTimeUntilGame = (gameDate) => {
     const now = new Date();
-    const gameTime = gameDate?.toDate
-      ? gameDate.toDate()
-      : new Date(gameDate);
+    const gameTime = gameDate?.toDate ? gameDate.toDate() : new Date(gameDate);
     const diff = gameTime - now;
 
     if (diff < 0) return "In progress";
