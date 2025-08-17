@@ -537,6 +537,7 @@ export default function GameBoard() {
               onComplete={handleTriviaComplete}
               tierId={board.tierId}
               sport={game.sport}
+              boardId={board?.id}
               squarePosition={selectedSquare}
             />
           )}

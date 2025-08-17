@@ -18,7 +18,8 @@ const TRIVIA_TIME_LIMIT = 30; // seconds
 export default function TriviaModal({ 
   isOpen, 
   onClose, 
-  onComplete, 
+  onComplete,
+  boardId,
   tierId, 
   sport,
   squarePosition 
@@ -56,9 +57,9 @@ export default function TriviaModal({
       setSelectedAnswer(null);
       
       // Call cloud function to start trivia session
-      const response = await callFunction('startTriviaSession', {
-        tierId,
-        sport: sport || 'NFL' // Default to NFL if not specified
+      const response = await callFunction('getTriviaQuestion', {
+        tier: tierId,
+        boardId // Default to NFL if not specified
       });
 
       if (response.success) {

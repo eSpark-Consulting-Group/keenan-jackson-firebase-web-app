@@ -56,7 +56,7 @@ export default function Games() {
       const gamesQuery = query(
         collection(db, collections.games),
         where("status", "in", ["upcoming", "active"]),
-        orderBy("startTime", "asc")
+        orderBy("gameDate", "asc")
       );
 
       const gamesSnapshot = await getDocs(gamesQuery);
@@ -98,7 +98,7 @@ export default function Games() {
 
       // Group games by date
       const grouped = gamesData.reduce((acc, game) => {
-        const date = new Date(game.startTime?.toDate?.() || game.startTime);
+        const date = new Date(game.gameDate?.toDate?.() || game.gameDate);
         const dateKey = date.toLocaleDateString("en-US", {
           weekday: "long",
           month: "long",
@@ -154,8 +154,8 @@ export default function Games() {
       filtered = filtered.filter((game) => {
         const searchLower = searchTerm.toLowerCase();
         return (
-          game.teams.home.toLowerCase().includes(searchLower) ||
-          game.teams.away.toLowerCase().includes(searchLower)
+          game.homeTeam.toLowerCase().includes(searchLower) ||
+          game.awayTeam.toLowerCase().includes(searchLower)
         );
       });
     }
@@ -163,11 +163,11 @@ export default function Games() {
     return filtered;
   };
 
-  const getTimeUntilGame = (startTime) => {
+  const getTimeUntilGame = (gameDate) => {
     const now = new Date();
-    const gameTime = startTime?.toDate
-      ? startTime.toDate()
-      : new Date(startTime);
+    const gameTime = gameDate?.toDate
+      ? gameDate.toDate()
+      : new Date(gameDate);
     const diff = gameTime - now;
 
     if (diff < 0) return "In progress";
@@ -382,17 +382,17 @@ export default function Games() {
                                 </span>
                                 <span className="text-sm text-gray-500 flex items-center">
                                   <Clock className="h-4 w-4 mr-1" />
-                                  {getTimeUntilGame(game.startTime)}
+                                  {getTimeUntilGame(game.gameDate)}
                                 </span>
                               </div>
 
                               <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                                {game.teams.away} @ {game.teams.home}
+                                {game.awayTeam} @ {game.homeTeam}
                               </h3>
 
                               <p className="text-sm text-gray-600">
                                 {new Date(
-                                  game.startTime?.toDate?.() || game.startTime
+                                  game.gameDate?.toDate?.() || game.gameDate
                                 ).toLocaleString()}
                               </p>
                             </div>
