@@ -336,6 +336,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
       });
 
       return {
+        success: true,
         correct: true,
         tokenId: tokenRef.id,
         
@@ -353,6 +354,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
       });
 
       return {
+        success: true,
         correct: false,
         correctAnswer: question.answers[question.correctAnswerIndex],
         message: 'Incorrect answer. Try another question!'
