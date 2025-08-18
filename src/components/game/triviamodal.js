@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  X, 
-  Brain, 
-  Timer, 
-  CheckCircle, 
-  XCircle, 
+import {
+  X,
+  Brain,
+  Timer,
+  CheckCircle,
+  XCircle,
   Zap,
   Trophy
 } from 'lucide-react';
@@ -15,15 +15,16 @@ import Confetti from 'react-confetti';
 
 const TRIVIA_TIME_LIMIT = 30; // seconds
 
-export default function TriviaModal({ 
-  isOpen, 
-  onClose, 
+export default function TriviaModal({
+  isOpen,
+  onClose,
   onComplete,
   boardId,
-  tierId, 
+  tierId,
   sport,
-  squarePosition 
+  squarePosition
 }) {
+  const submittedRef = useRef(false);
   const [question, setQuestion] = useState(null);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState(TRIVIA_TIME_LIMIT);
@@ -33,7 +34,7 @@ export default function TriviaModal({
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState(null);
   const [showCelebration, setShowCelebration] = useState(false);
-  
+
   const timerRef = useRef(null);
   const intervalRef = useRef(null);
 
@@ -41,7 +42,7 @@ export default function TriviaModal({
     if (isOpen) {
       startTriviaSession();
     }
-    
+
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -50,12 +51,13 @@ export default function TriviaModal({
   }, [isOpen]);
 
   const startTriviaSession = async () => {
+    submittedRef.current = false;
     try {
       setLoading(true);
       setSubmitted(false);
       setResult(null);
       setSelectedAnswer(null);
-      
+
       // Call cloud function to start trivia session
       const response = await callFunction('getTriviaQuestion', {
         tier: tierId,
@@ -67,7 +69,7 @@ export default function TriviaModal({
         setSessionId(response.sessionId);
         setStartTime(Date.now());
         setTimeRemaining(TRIVIA_TIME_LIMIT);
-        
+
         // Start countdown timer
         intervalRef.current = setInterval(() => {
           setTimeRemaining(prev => {
@@ -98,21 +100,22 @@ export default function TriviaModal({
   };
 
   const submitAnswer = async (answerIndex) => {
-    if (submitted) return;
-    
-    setSubmitted(true);
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
+
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    setSubmitted(true);
 
     const endTime = Date.now();
     const answerTime = ((endTime - startTime) / 1000).toFixed(1);
 
     try {
-      // Call cloud function to submit answer
       const response = await callFunction('submitTriviaAnswer', {
         sessionId,
-        answerIndex: answerIndex ?? -1, // -1 for timeout/no answer
+        answerIndex: answerIndex ?? -1,
         answerTime: parseFloat(answerTime)
       });
 
@@ -255,7 +258,7 @@ export default function TriviaModal({
                     const isSelected = selectedAnswer === index;
                     const isCorrect = result && index === result.correctAnswer;
                     const isWrong = result && isSelected && !isCorrect;
-                    
+
                     return (
                       <motion.button
                         key={index}
@@ -265,27 +268,27 @@ export default function TriviaModal({
                         disabled={submitted}
                         className={`
                           w-full text-left p-4 rounded-lg border-2 transition-all
-                          ${!submitted && isSelected 
-                            ? 'border-blue-500 bg-blue-50' 
+                          ${!submitted && isSelected
+                            ? 'border-blue-500 bg-blue-50'
                             : 'border-gray-200 hover:border-gray-300'
                           }
-                          ${isCorrect 
-                            ? 'border-green-500 bg-green-50' 
+                          ${isCorrect
+                            ? 'border-green-500 bg-green-50'
                             : ''
                           }
-                          ${isWrong 
-                            ? 'border-red-500 bg-red-50' 
+                          ${isWrong
+                            ? 'border-red-500 bg-red-50'
                             : ''
                           }
-                          ${submitted && !isCorrect && !isWrong 
-                            ? 'opacity-50' 
+                          ${submitted && !isCorrect && !isWrong
+                            ? 'opacity-50'
                             : ''
                           }
                         `}
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-medium">
-                            {String.fromCharCode(65 + index)}. {answer}
+                            {String.fromCharCode(65 + index)}. {answer.text}
                           </span>
                           {result && (
                             <>
@@ -310,8 +313,8 @@ export default function TriviaModal({
                     animate={{ opacity: 1, y: 0 }}
                     className={`
                       p-4 rounded-lg mb-6 text-center
-                      ${result.correct 
-                        ? 'bg-green-100 text-green-800' 
+                      ${result.correct
+                        ? 'bg-green-100 text-green-800'
                         : 'bg-red-100 text-red-800'
                       }
                     `}
@@ -332,7 +335,7 @@ export default function TriviaModal({
                         <XCircle className="h-12 w-12 mx-auto mb-2 text-red-600" />
                         <p className="text-lg font-bold mb-1">Incorrect</p>
                         <p className="text-sm">
-                          The correct answer was: {question?.answers[result.correctAnswer]}
+                          The correct answer was: {question?.answers[result.correctAnswer]?.text}
                         </p>
                       </>
                     )}

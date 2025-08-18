@@ -234,7 +234,7 @@ export default function GameBoard() {
       const result = await callFunction('claimSquare', {
         boardId: board.id,
         position: selectedSquare,
-        tokenId: token.id
+        tokenId: token
       });
 
       if (result.success) {
