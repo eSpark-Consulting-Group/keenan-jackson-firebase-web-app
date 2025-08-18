@@ -1,9 +1,18 @@
-import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, User, LogOut, Trophy, Grid3x3, HelpCircle, Shield } from 'lucide-react';
-import { useAuth } from '../../contexts/authcontext';
-import { auth } from '../../firebase/config';
-import toast from 'react-hot-toast';
+import { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import {
+  Menu,
+  X,
+  User,
+  LogOut,
+  Trophy,
+  Grid3x3,
+  HelpCircle,
+  Shield,
+} from "lucide-react";
+import { useAuth } from "../../contexts/authcontext";
+import { auth } from "../../firebase/config";
+import toast from "react-hot-toast";
 
 export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -15,17 +24,17 @@ export default function Navigation() {
   const handleLogout = async () => {
     try {
       await auth.signOut();
-      toast.success('Logged out successfully');
-      navigate('/');
+      toast.success("Logged out successfully");
+      navigate("/");
     } catch (error) {
-      toast.error('Error logging out');
+      toast.error("Error logging out");
     }
   };
 
   const navigationItems = [
-    { name: 'Games', href: '/games', icon: Grid3x3 },
-    { name: 'How to Play', href: '/how-to-play', icon: HelpCircle },
-    { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
+    { name: "Games", href: "/games", icon: Grid3x3 },
+    { name: "How to Play", href: "/how-to-play", icon: HelpCircle },
+    { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -57,8 +66,8 @@ export default function Navigation() {
                     to={item.href}
                     className={`inline-flex items-center px-1 pt-1 text-sm font-medium border-b-2 transition-colors ${
                       isActive(item.href)
-                        ? 'border-blue-600 text-gray-900'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? "border-blue-600 text-gray-900"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                     }`}
                   >
                     <Icon className="h-4 w-4 mr-1" />
@@ -83,7 +92,7 @@ export default function Navigation() {
                       <Shield className="h-5 w-5" />
                     </Link>
                   )}
-                  
+
                   <div className="relative">
                     <button
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -91,7 +100,7 @@ export default function Navigation() {
                     >
                       <User className="h-5 w-5" />
                       <span className="ml-2 text-sm font-medium">
-                        {userData?.displayName || user.email?.split('@')[0]}
+                        {userData?.displayName || user.email?.split("@")[0]}
                       </span>
                     </button>
 
@@ -151,7 +160,7 @@ export default function Navigation() {
                   </Link>
                   <Link
                     to="/register"
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
                   >
                     Sign Up
                   </Link>
@@ -187,8 +196,8 @@ export default function Navigation() {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center px-3 py-2 rounded-lg text-base font-medium transition-colors ${
                     isActive(item.href)
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? "bg-blue-50 text-blue-600"
+                      : "text-gray-700 hover:bg-gray-100"
                   }`}
                 >
                   <Icon className="h-5 w-5 mr-3" />
@@ -250,7 +259,7 @@ export default function Navigation() {
                 <Link
                   to="/register"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center px-3 py-2 rounded-lg text-base font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  className="flex items-center px-3 py-2 rounded-lg text-base font-medium text-white bg-blue-600 hover:bg-blue-700 hover:text-white"
                 >
                   Sign Up
                 </Link>

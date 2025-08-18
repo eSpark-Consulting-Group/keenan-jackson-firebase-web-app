@@ -36,7 +36,7 @@ import toast from "react-hot-toast";
 import { httpsCallable } from "firebase/functions";
 
 export default function AdminGames() {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [games, setGames] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -45,6 +45,7 @@ export default function AdminGames() {
   const [showFetchModal, setShowFetchModal] = useState(false);
   const [searchedGames, setSearchedGames] = useState([]);
   const [gamesLoading, setGamesLoading] = useState(false);
+  const [createGameLoading, setCreateGameLoading] = useState(false);
 
   // Form state for creating new game
   const [gameForm, setGameForm] = useState({
@@ -71,6 +72,7 @@ export default function AdminGames() {
     try {
       setLoading(true);
 
+      // 1. Fetch games
       let q = query(
         collection(db, collections.games),
         orderBy("gameDate", "desc"),
@@ -87,32 +89,39 @@ export default function AdminGames() {
       }
 
       const snapshot = await getDocs(q);
-      const gamesData = [];
+      const gamesData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-      for (const doc of snapshot.docs) {
-        const gameData = { id: doc.id, ...doc.data() };
+      // 2. Fetch ALL boards at once for these games
+      const gameIds = gamesData.map((g) => g.id);
+      if (gameIds.length > 0) {
+        const boardsQ = query(
+          collection(db, collections.boards),
+          where("gameId", "in", gameIds) // get all in one go
+        );
+        const boardsSnap = await getDocs(boardsQ);
 
-        // Get board counts for each tier
-        const boardCounts = {};
-        for (const tierId of Object.keys(TIERS)) {
-          const boardQuery = query(
-            collection(db, collections.boards),
-            where("gameId", "==", doc.id),
-            where("tierId", "==", tierId.toLowerCase())
-          );
-          const boardSnapshot = await getDocs(boardQuery);
-          boardCounts[tierId.toLowerCase()] = boardSnapshot.size;
-        }
+        // 3. Group boards by game + tier
+        const boardCountsMap = {};
+        boardsSnap.forEach((bdoc) => {
+          const { gameId, tierId } = bdoc.data();
+          if (!boardCountsMap[gameId]) boardCountsMap[gameId] = {};
+          boardCountsMap[gameId][tierId] =
+            (boardCountsMap[gameId][tierId] || 0) + 1;
+        });
 
-        gameData.boardCounts = boardCounts;
-        gamesData.push(gameData);
+        // 4. Attach board counts
+        gamesData.forEach((game) => {
+          game.boardCounts = boardCountsMap[game.id] || {};
+        });
       }
-
       setGames(gamesData);
-      setLoading(false);
     } catch (error) {
       console.error("Error loading games:", error);
       toast.error("Failed to load games");
+    } finally {
       setLoading(false);
     }
   };
@@ -126,16 +135,16 @@ export default function AdminGames() {
     }
 
     try {
-      setLoading(true);
+      setCreateGameLoading(true);
 
       const result = await callFunction("createGame", {
         sport: gameForm.sport,
-        // teams: {
-        //   home: gameForm.homeTeam,
-        //   away: gameForm.awayTeam,
-        // },
-        homeTeam: gameForm.homeTeam,
-        awayTeam: gameForm.awayTeam,
+        teams: {
+          home: gameForm.homeTeam,
+          away: gameForm.awayTeam,
+        },
+        // homeTeam: gameForm.homeTeam,
+        // awayTeam: gameForm.awayTeam,
         gameDate: new Date(gameForm.startTime).toISOString(),
         externalGameId: gameForm.apiGameId,
         enabledTiers: gameForm.selectedTiers,
@@ -153,7 +162,7 @@ export default function AdminGames() {
           apiGameId: "",
           selectedTiers: [],
         });
-        loadGames();
+        setTimeout(() => loadGames(), 500);
       } else {
         toast.error(result.error || "Failed to create game");
       }
@@ -161,7 +170,7 @@ export default function AdminGames() {
       console.error("Error creating game:", error);
       toast.error("Failed to create game");
     } finally {
-      setLoading(false);
+      setCreateGameLoading(false);
     }
   };
 
@@ -307,9 +316,9 @@ export default function AdminGames() {
       }
     };
     searchGames();
-  }, [sportsForm.searchTeam, sportsForm.sport, sportsForm.week]);
+  }, [sportsForm.teamName, sportsForm.sport, sportsForm.week]);
 
-  if (loading && games.length === 0) {
+  if ((loading && games.length === 0) || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -333,7 +342,7 @@ export default function AdminGames() {
           <button
             // onClick={() => setShowCreateModal(true)}
             onClick={() => setShowFetchModal(true)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors hover:text-white"
           >
             <Plus className="h-4 w-4 mr-2" />
             Create Game
@@ -409,13 +418,14 @@ export default function AdminGames() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {game?.awayTeam} @ {game?.homeTeam}
+                            {game?.teams?.away} @ {game?.teams?.home}
                           </div>
                           <div className="text-sm text-gray-500">
                             {game.sport}
                           </div>
                         </div>
                       </td>
+                      {console.log(game)}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
                           {game.gameDate?.toDate?.().toLocaleDateString()}
@@ -429,9 +439,13 @@ export default function AdminGames() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm">
-                          <span className="font-medium">{game.awayScore}</span>
+                          <span className="font-medium">
+                            {game?.scores?.away}
+                          </span>
                           <span className="mx-1">-</span>
-                          <span className="font-medium">{game.homeScore}</span>
+                          <span className="font-medium">
+                            {game?.scores?.home}
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -724,10 +738,10 @@ export default function AdminGames() {
                     </button>
                     <button
                       type="submit"
-                      disabled={loading}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                      disabled={createGameLoading}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 hover:text-white"
                     >
-                      {loading ? "Creating..." : "Create Game"}
+                      {createGameLoading ? "Creating..." : "Create Game"}
                     </button>
                   </div>
                 </form>

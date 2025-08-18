@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu,
   X,
@@ -16,10 +16,10 @@ import {
   ChevronDown,
   Settings,
   BarChart3,
-  Users
-} from 'lucide-react';
-import { useAuth } from '../../contexts/authcontext';
-import toast from 'react-hot-toast';
+  Users,
+} from "lucide-react";
+import { useAuth } from "../../contexts/authcontext";
+import toast from "react-hot-toast";
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
@@ -31,28 +31,33 @@ export default function Layout({ children }) {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/');
+      navigate("/");
     } catch (error) {
-      toast.error('Failed to logout');
+      toast.error("Failed to logout");
     }
   };
 
   const navigation = [
-    { name: 'Home', href: '/', icon: Home, public: true },
-    { name: 'Dashboard', href: '/dashboard', icon: Grid3X3, requireAuth: true },
-    { name: 'Games', href: '/games', icon: Brain, requireAuth: true },
-    { name: 'How to Play', href: '/how-to-play', icon: HelpCircle, public: true },
+    { name: "Home", href: "/", icon: Home, public: true },
+    { name: "Dashboard", href: "/dashboard", icon: Grid3X3, requireAuth: true },
+    { name: "Games", href: "/games", icon: Brain, requireAuth: true },
+    {
+      name: "How to Play",
+      href: "/how-to-play",
+      icon: HelpCircle,
+      public: true,
+    },
   ];
 
   const userNavigation = [
-    { name: 'Profile', href: '/profile', icon: User },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: "Profile", href: "/profile", icon: User },
+    { name: "Settings", href: "/settings", icon: Settings },
   ];
 
   const adminNavigation = [
-    { name: 'Admin Dashboard', href: '/admin', icon: BarChart3 },
-    { name: 'Manage Users', href: '/admin/users', icon: Users },
-    { name: 'Manage Games', href: '/admin/games', icon: Grid3X3 },
+    { name: "Admin Dashboard", href: "/admin", icon: BarChart3 },
+    { name: "Manage Users", href: "/admin/users", icon: Users },
+    { name: "Manage Games", href: "/admin/games", icon: Grid3X3 },
   ];
 
   const isActive = (href) => location.pathname === href;
@@ -67,7 +72,9 @@ export default function Layout({ children }) {
             <div className="flex items-center">
               <Link to="/" className="flex items-center">
                 <Brain className="h-8 w-8 text-blue-600 mr-2" />
-                <span className="text-xl font-bold text-gray-900">Square Trivia</span>
+                <span className="text-xl font-bold text-gray-900">
+                  Square Trivia
+                </span>
               </Link>
 
               {/* Desktop navigation */}
@@ -75,7 +82,7 @@ export default function Layout({ children }) {
                 {navigation.map((item) => {
                   if (item.requireAuth && !user) return null;
                   if (!item.public && !item.requireAuth) return null;
-                  
+
                   return (
                     <Link
                       key={item.name}
@@ -83,9 +90,10 @@ export default function Layout({ children }) {
                       className={`
                         inline-flex items-center px-1 pt-1 text-sm font-medium
                         border-b-2 transition-colors duration-200
-                        ${isActive(item.href)
-                          ? 'border-blue-600 text-gray-900'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ${
+                          isActive(item.href)
+                            ? "border-blue-600 text-gray-900"
+                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                         }
                       `}
                     >
@@ -109,7 +117,7 @@ export default function Layout({ children }) {
                           key={index}
                           className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
                         >
-                          ${tier.replace('tier_', '')}
+                          ${tier.replace("tier_", "")}
                         </span>
                       ))}
                     </div>
@@ -138,9 +146,13 @@ export default function Layout({ children }) {
                           <div className="py-1">
                             {/* User info */}
                             <div className="px-4 py-2 border-b">
-                              <p className="text-sm font-medium text-gray-900">{user.email}</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                {user.email}
+                              </p>
                               {userData?.hasTelegram && (
-                                <p className="text-xs text-gray-500">@{userData.telegramUsername}</p>
+                                <p className="text-xs text-gray-500">
+                                  @{userData.telegramUsername}
+                                </p>
                               )}
                             </div>
 
@@ -199,7 +211,7 @@ export default function Layout({ children }) {
                   </Link>
                   <Link
                     to="/register"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors hover:text-white"
                   >
                     Get Started
                   </Link>
@@ -226,7 +238,7 @@ export default function Layout({ children }) {
           {mobileMenuOpen && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
+              animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               className="md:hidden bg-white border-t"
             >
@@ -234,7 +246,7 @@ export default function Layout({ children }) {
                 {navigation.map((item) => {
                   if (item.requireAuth && !user) return null;
                   if (!item.public && !item.requireAuth) return null;
-                  
+
                   return (
                     <Link
                       key={item.name}
@@ -242,9 +254,10 @@ export default function Layout({ children }) {
                       onClick={() => setMobileMenuOpen(false)}
                       className={`
                         flex items-center px-3 py-2 rounded-md text-base font-medium
-                        ${isActive(item.href)
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                        ${
+                          isActive(item.href)
+                            ? "bg-blue-50 text-blue-700"
+                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                         }
                       `}
                     >
@@ -289,7 +302,7 @@ export default function Layout({ children }) {
                     <Link
                       to="/register"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center px-3 py-2 rounded-md text-base font-medium bg-blue-600 text-white hover:bg-blue-700"
+                      className="flex items-center px-3 py-2 rounded-md text-base font-medium bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
                     >
                       Get Started
                     </Link>
@@ -302,9 +315,7 @@ export default function Layout({ children }) {
       </nav>
 
       {/* Main content */}
-      <main className="pt-16">
-        {children}
-      </main>
+      <main className="pt-16">{children}</main>
 
       {/* Footer */}
       <footer className="bg-gray-800 text-white mt-20">
@@ -314,7 +325,8 @@ export default function Layout({ children }) {
             <div>
               <h3 className="text-lg font-semibold mb-4">Square Trivia</h3>
               <p className="text-gray-400 text-sm">
-                100% skill-based sports competition platform. Win money with your knowledge!
+                100% skill-based sports competition platform. Win money with
+                your knowledge!
               </p>
             </div>
 
@@ -323,12 +335,18 @@ export default function Layout({ children }) {
               <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link to="/how-to-play" className="text-gray-400 hover:text-white">
+                  <Link
+                    to="/how-to-play"
+                    className="text-gray-400 hover:text-white"
+                  >
                     How to Play
                   </Link>
                 </li>
                 <li>
-                  <Link to="/free-entry" className="text-gray-400 hover:text-white">
+                  <Link
+                    to="/free-entry"
+                    className="text-gray-400 hover:text-white"
+                  >
                     Free Entry (AMOE)
                   </Link>
                 </li>
@@ -345,17 +363,26 @@ export default function Layout({ children }) {
               <h3 className="text-lg font-semibold mb-4">Legal</h3>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link to="/legal/terms" className="text-gray-400 hover:text-white">
+                  <Link
+                    to="/legal/terms"
+                    className="text-gray-400 hover:text-white"
+                  >
                     Terms of Service
                   </Link>
                 </li>
                 <li>
-                  <Link to="/legal/privacy" className="text-gray-400 hover:text-white">
+                  <Link
+                    to="/legal/privacy"
+                    className="text-gray-400 hover:text-white"
+                  >
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link to="/legal/skill-certification" className="text-gray-400 hover:text-white">
+                  <Link
+                    to="/legal/skill-certification"
+                    className="text-gray-400 hover:text-white"
+                  >
                     Skill Certification
                   </Link>
                 </li>
@@ -385,7 +412,8 @@ export default function Layout({ children }) {
           <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
             <p>&copy; 2024 Square Trivia. All rights reserved.</p>
             <p className="mt-2">
-              Skill-based competition platform • Not gambling • No purchase necessary
+              Skill-based competition platform • Not gambling • No purchase
+              necessary
             </p>
           </div>
         </div>

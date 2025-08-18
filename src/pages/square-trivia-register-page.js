@@ -1,36 +1,36 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { 
-  Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  Phone, 
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Phone,
   AtSign,
   Gift,
   CheckCircle,
   AlertCircle,
-  Brain 
-} from 'lucide-react';
-import { useAuth } from '../contexts/authcontext';
-import toast from 'react-hot-toast';
+  Brain,
+} from "lucide-react";
+import { useAuth } from "../contexts/authcontext";
+import toast from "react-hot-toast";
 
 export default function Register() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { register, user } = useAuth();
-  
+
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    telegramUsername: '',
-    phone: '',
-    referralCode: searchParams.get('ref') || '',
-    acceptTerms: false
+    email: "",
+    password: "",
+    confirmPassword: "",
+    telegramUsername: "",
+    phone: "",
+    referralCode: searchParams.get("ref") || "",
+    acceptTerms: false,
   });
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -39,7 +39,7 @@ export default function Register() {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      navigate("/dashboard");
     }
   }, [user, navigate]);
 
@@ -48,38 +48,41 @@ export default function Register() {
 
     // Email validation
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = "Please enter a valid email";
     }
 
     // Password validation
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     // Confirm password
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = "Please confirm your password";
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = "Passwords do not match";
     }
 
     // Telegram username (optional but validate format if provided)
-    if (formData.telegramUsername && !formData.telegramUsername.match(/^@?[a-zA-Z0-9_]{5,32}$/)) {
-      newErrors.telegramUsername = 'Invalid Telegram username format';
+    if (
+      formData.telegramUsername &&
+      !formData.telegramUsername.match(/^@?[a-zA-Z0-9_]{5,32}$/)
+    ) {
+      newErrors.telegramUsername = "Invalid Telegram username format";
     }
 
     // Phone (optional but validate format if provided)
     if (formData.phone && !formData.phone.match(/^\+?[1-9]\d{1,14}$/)) {
-      newErrors.phone = 'Invalid phone number format';
+      newErrors.phone = "Invalid phone number format";
     }
 
     // Terms acceptance
     if (!formData.acceptTerms) {
-      newErrors.acceptTerms = 'You must accept the terms to continue';
+      newErrors.acceptTerms = "You must accept the terms to continue";
     }
 
     setErrors(newErrors);
@@ -88,20 +91,20 @@ export default function Register() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
-    
+
     // Clear error for this field when user types
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -115,38 +118,35 @@ export default function Register() {
         password: formData.password,
         telegramUsername: formData.telegramUsername || null,
         phone: formData.phone || null,
-        referredBy: formData.referralCode || null
+        referredBy: formData.referralCode || null,
       };
 
       // Register user
-      await register(
-        registrationData.email,
-        registrationData.password,
-        {
-          telegramUsername: registrationData.telegramUsername,
-          phone: registrationData.phone,
-          referredBy: registrationData.referredBy
-        }
-      );
-      
+      await register(registrationData.email, registrationData.password, {
+        telegramUsername: registrationData.telegramUsername,
+        phone: registrationData.phone,
+        referredBy: registrationData.referredBy,
+      });
+
       // Success - navigate to dashboard
-      toast.success('Account created successfully!');
-      navigate('/dashboard');
-      
+      toast.success("Account created successfully!");
+      navigate("/dashboard");
     } catch (err) {
-      console.error('Registration error:', err);
-      setErrors({ general: err.message || 'Failed to create account. Please try again.' });
+      console.error("Registration error:", err);
+      setErrors({
+        general: err.message || "Failed to create account. Please try again.",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const benefits = [
-    'Play in 6 different prize tiers',
-    'Win guaranteed prizes with NO FEES',
-    'Compete based on skill, not luck',
-    'Get consolation prizes when you lose',
-    'Join our active player community'
+    "Play in 6 different prize tiers",
+    "Win guaranteed prizes with NO FEES",
+    "Compete based on skill, not luck",
+    "Get consolation prizes when you lose",
+    "Join our active player community",
   ];
 
   return (
@@ -162,10 +162,15 @@ export default function Register() {
           <Link to="/" className="inline-flex items-center justify-center mb-4">
             <Brain className="h-12 w-12 text-blue-600" />
           </Link>
-          <h2 className="text-3xl font-bold text-gray-900">Create your account</h2>
+          <h2 className="text-3xl font-bold text-gray-900">
+            Create your account
+          </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="font-medium text-blue-600 hover:text-blue-500"
+            >
               Sign in
             </Link>
           </p>
@@ -184,7 +189,7 @@ export default function Register() {
               {errors.general && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
+                  animate={{ opacity: 1, height: "auto" }}
                   className="bg-red-50 border border-red-200 rounded-md p-4"
                 >
                   <div className="flex">
@@ -196,7 +201,10 @@ export default function Register() {
 
               {/* Email Field */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Email address *
                 </label>
                 <div className="mt-1 relative">
@@ -214,7 +222,7 @@ export default function Register() {
                     className={`
                       appearance-none block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 
                       focus:outline-none focus:ring-blue-500 focus:border-blue-500
-                      ${errors.email ? 'border-red-300' : 'border-gray-300'}
+                      ${errors.email ? "border-red-300" : "border-gray-300"}
                     `}
                     placeholder="you@example.com"
                   />
@@ -226,7 +234,10 @@ export default function Register() {
 
               {/* Password Field */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Password *
                 </label>
                 <div className="mt-1 relative">
@@ -236,7 +247,7 @@ export default function Register() {
                   <input
                     id="password"
                     name="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     autoComplete="new-password"
                     required
                     value={formData.password}
@@ -244,7 +255,7 @@ export default function Register() {
                     className={`
                       appearance-none block w-full pl-10 pr-10 py-2 border rounded-md shadow-sm placeholder-gray-400 
                       focus:outline-none focus:ring-blue-500 focus:border-blue-500
-                      ${errors.password ? 'border-red-300' : 'border-gray-300'}
+                      ${errors.password ? "border-red-300" : "border-gray-300"}
                     `}
                     placeholder="••••••••"
                   />
@@ -267,7 +278,10 @@ export default function Register() {
 
               {/* Confirm Password Field */}
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Confirm password *
                 </label>
                 <div className="mt-1 relative">
@@ -277,7 +291,7 @@ export default function Register() {
                   <input
                     id="confirmPassword"
                     name="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
+                    type={showConfirmPassword ? "text" : "password"}
                     autoComplete="new-password"
                     required
                     value={formData.confirmPassword}
@@ -285,7 +299,7 @@ export default function Register() {
                     className={`
                       appearance-none block w-full pl-10 pr-10 py-2 border rounded-md shadow-sm placeholder-gray-400 
                       focus:outline-none focus:ring-blue-500 focus:border-blue-500
-                      ${errors.confirmPassword ? 'border-red-300' : 'border-gray-300'}
+                      ${errors.confirmPassword ? "border-red-300" : "border-gray-300"}
                     `}
                     placeholder="••••••••"
                   />
@@ -302,15 +316,22 @@ export default function Register() {
                   </button>
                 </div>
                 {errors.confirmPassword && (
-                  <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.confirmPassword}
+                  </p>
                 )}
               </div>
 
               {/* Telegram Username (Optional) */}
               <div>
-                <label htmlFor="telegramUsername" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="telegramUsername"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Telegram username (optional)
-                  <span className="text-xs text-gray-500 ml-2">Get 2x daily plays!</span>
+                  <span className="text-xs text-gray-500 ml-2">
+                    Get 2x daily plays!
+                  </span>
                 </label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -325,19 +346,24 @@ export default function Register() {
                     className={`
                       appearance-none block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 
                       focus:outline-none focus:ring-blue-500 focus:border-blue-500
-                      ${errors.telegramUsername ? 'border-red-300' : 'border-gray-300'}
+                      ${errors.telegramUsername ? "border-red-300" : "border-gray-300"}
                     `}
                     placeholder="username"
                   />
                 </div>
                 {errors.telegramUsername && (
-                  <p className="mt-1 text-sm text-red-600">{errors.telegramUsername}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.telegramUsername}
+                  </p>
                 )}
               </div>
 
               {/* Phone (Optional) */}
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="phone"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Phone number (optional)
                 </label>
                 <div className="mt-1 relative">
@@ -353,7 +379,7 @@ export default function Register() {
                     className={`
                       appearance-none block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 
                       focus:outline-none focus:ring-blue-500 focus:border-blue-500
-                      ${errors.phone ? 'border-red-300' : 'border-gray-300'}
+                      ${errors.phone ? "border-red-300" : "border-gray-300"}
                     `}
                     placeholder="+1234567890"
                   />
@@ -365,7 +391,10 @@ export default function Register() {
 
               {/* Referral Code (Optional) */}
               <div>
-                <label htmlFor="referralCode" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="referralCode"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Referral code (optional)
                 </label>
                 <div className="mt-1 relative">
@@ -395,19 +424,32 @@ export default function Register() {
                     onChange={handleChange}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
                   />
-                  <label htmlFor="acceptTerms" className="ml-2 block text-sm text-gray-900">
-                    I agree to the{' '}
-                    <Link to="/legal/terms" target="_blank" className="text-blue-600 hover:text-blue-500">
+                  <label
+                    htmlFor="acceptTerms"
+                    className="ml-2 block text-sm text-gray-900"
+                  >
+                    I agree to the{" "}
+                    <Link
+                      to="/legal/terms"
+                      target="_blank"
+                      className="text-blue-600 hover:text-blue-500"
+                    >
                       Terms of Service
-                    </Link>
-                    {' '}and{' '}
-                    <Link to="/legal/privacy" target="_blank" className="text-blue-600 hover:text-blue-500">
+                    </Link>{" "}
+                    and{" "}
+                    <Link
+                      to="/legal/privacy"
+                      target="_blank"
+                      className="text-blue-600 hover:text-blue-500"
+                    >
                       Privacy Policy
                     </Link>
                   </label>
                 </div>
                 {errors.acceptTerms && (
-                  <p className="mt-1 text-sm text-red-600">{errors.acceptTerms}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.acceptTerms}
+                  </p>
                 )}
               </div>
 
@@ -417,23 +459,40 @@ export default function Register() {
                 disabled={loading}
                 className={`
                   w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white 
-                  ${loading 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                  ${
+                    loading
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 hover:text-white"
                   }
                   transition-colors duration-200
                 `}
               >
                 {loading ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     Creating account...
                   </>
                 ) : (
-                  'Create free account'
+                  "Create free account"
                 )}
               </button>
             </form>
@@ -449,7 +508,7 @@ export default function Register() {
             <h3 className="text-xl font-bold text-gray-900 mb-4">
               Join Square Trivia today and:
             </h3>
-            
+
             <ul className="space-y-3">
               {benefits.map((benefit, index) => (
                 <motion.li
@@ -470,15 +529,18 @@ export default function Register() {
                 💡 Pro tip: Add Telegram
               </h4>
               <p className="text-sm text-gray-600">
-                Players with Telegram get 10 daily trivia attempts instead of 5, 
+                Players with Telegram get 10 daily trivia attempts instead of 5,
                 plus instant notifications when they win!
               </p>
             </div>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                No purchase necessary •{' '}
-                <Link to="/free-entry" className="text-blue-600 hover:text-blue-500">
+                No purchase necessary •{" "}
+                <Link
+                  to="/free-entry"
+                  className="text-blue-600 hover:text-blue-500"
+                >
                   Free entry available
                 </Link>
               </p>
