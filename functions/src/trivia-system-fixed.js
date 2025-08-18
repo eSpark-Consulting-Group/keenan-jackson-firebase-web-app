@@ -128,7 +128,7 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
     }
 
     const board = boardDoc.data();
-    if (board.tier !== tier) {
+    if (board.tierId !== tier) {
       throw new functions.https.HttpsError('permission-denied', 'Board tier mismatch');
     }
 

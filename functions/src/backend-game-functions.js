@@ -99,6 +99,7 @@ async function createBoardForTier(gameId, tierId) {
     claimedSquares: 0,
     maxPlayersPerSquare: 2,
     status: "open",
+    isActive: true,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
