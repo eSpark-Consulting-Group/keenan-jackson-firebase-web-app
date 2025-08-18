@@ -18,7 +18,6 @@ const TRIVIA_TIME_LIMIT = 30; // seconds
 export default function TriviaModal({
   isOpen,
   onClose,
-export default function TriviaModal({
   isOpen,
   onClose,
   onComplete,
