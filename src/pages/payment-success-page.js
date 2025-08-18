@@ -63,10 +63,10 @@ useEffect(() => {
           amount: tier?.amount || 0,
           accessGranted: true
         });
-        toast.success(`Payment successful! Tier: ${res.tierId}`);
+        toast.success(`Payment successful! Tier: ${res?.tier}`);
         runConfetti();
       } else {
-        toast.error(res.message || "Payment not completed");
+        toast.error(res?.message || "Payment not completed");
       }
     } catch (err) {
       console.error(err);

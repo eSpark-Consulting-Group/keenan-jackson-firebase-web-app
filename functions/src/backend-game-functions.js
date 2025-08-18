@@ -483,6 +483,7 @@ exports.createCheckoutSession = functions.https.onCall(
     await donationRef.set({
       userId,
       tier: tierId,
+      tierId,
       status: "pending",
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
@@ -761,7 +762,7 @@ exports.validateAnswer = functions.https.onCall(async (data, context) => {
 
     // Get question
     const questionDoc = await db
-      .collection("triviaQuestions")
+      .collection("trivia")
       .doc(questionId)
       .get();
     if (!questionDoc.exists) {

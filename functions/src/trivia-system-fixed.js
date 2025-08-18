@@ -201,10 +201,10 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
         difficulty: question.difficulty
       },
       boardInfo: {
-        game: `${game.teams.away} @ ${game.teams.home}`,
-        tier: TIER_CONFIG[tier].name,
-        userSquares: userSquaresOnBoard.length,
-        maxSquares: TIER_CONFIG[tier].maxSquaresPerBoard
+        game: `${game?.teams?.away} @ ${game?.teams?.home}`,
+        tier: TIER_CONFIG[tier]?.name,
+        userSquares: userSquaresOnBoard?.length,
+        maxSquares: TIER_CONFIG[tier]?.maxSquaresPerBoard
       },
       triviaStatus: {
         attemptsUsed: attemptsToday + 1,
@@ -272,7 +272,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
 
     // Get the original question to check answer
     const questionDoc = await admin.firestore()
-      .collection('triviaQuestions')
+      .collection('trivia')
       .doc(session.questionId)
       .get();
 
@@ -325,7 +325,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
         canEarnConsolation: true,
         
         // Track question for reference
-        questionId: question.id
+        questionId: session?.questionId
       });
 
       // Update user stats
@@ -982,9 +982,9 @@ async function getRandomTriviaQuestion(sport, tier) {
   try {
     // Get questions for the sport
     let query = admin.firestore()
-      .collection('triviaQuestions')
+      .collection('trivia')
       .where('sport', '==', sport)
-      .where('active', '==', true);
+      .where('isActive', '==', true);
 
     // Higher tiers might get harder questions
     const tierDifficulty = {
@@ -1004,7 +1004,7 @@ async function getRandomTriviaQuestion(sport, tier) {
     if (snapshot.empty) {
       // Fallback to any question for the sport
       const fallbackSnapshot = await admin.firestore()
-        .collection('triviaQuestions')
+        .collection('trivia')
         .where('sport', '==', sport)
         .where('active', '==', true)
         .get();
@@ -1172,53 +1172,53 @@ async function grantConsolationSquare(userId, boardId, winnerId) {
 /**
  * Add trivia questions (admin only)
  */
-exports.addTriviaQuestions = functions.https.onCall(async (data, context) => {
-  if (!context.auth?.token?.admin) {
-    throw new functions.https.HttpsError('permission-denied', 'Admin access required');
-  }
+// exports.addTriviaQuestions = functions.https.onCall(async (data, context) => {
+//   if (!context.auth?.token?.admin) {
+//     throw new functions.https.HttpsError('permission-denied', 'Admin access required');
+//   }
 
-  const { questions } = data;
+//   const { questions } = data;
 
-  if (!Array.isArray(questions) || questions.length === 0) {
-    throw new functions.https.HttpsError('invalid-argument', 'Questions array required');
-  }
+//   if (!Array.isArray(questions) || questions.length === 0) {
+//     throw new functions.https.HttpsError('invalid-argument', 'Questions array required');
+//   }
 
-  try {
-    const batch = admin.firestore().batch();
-    let addedCount = 0;
+//   try {
+//     const batch = admin.firestore().batch();
+//     let addedCount = 0;
 
-    for (const question of questions) {
-      // Validate question format
-      if (!question.question || !Array.isArray(question.answers) || 
-          question.answers.length !== 4 || 
-          question.correctAnswerIndex === undefined ||
-          !question.sport || !question.difficulty) {
-        continue;
-      }
+//     for (const question of questions) {
+//       // Validate question format
+//       if (!question.question || !Array.isArray(question.answers) || 
+//           question.answers.length !== 4 || 
+//           question.correctAnswerIndex === undefined ||
+//           !question.sport || !question.difficulty) {
+//         continue;
+//       }
 
-      const questionRef = admin.firestore().collection('triviaQuestions').doc();
-      batch.set(questionRef, {
-        ...question,
-        active: true,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        createdBy: context.auth.uid
-      });
+//       const questionRef = admin.firestore().collection('triviaQuestions').doc();
+//       batch.set(questionRef, {
+//         ...question,
+//         active: true,
+//         createdAt: admin.firestore.FieldValue.serverTimestamp(),
+//         createdBy: context.auth.uid
+//       });
       
-      addedCount++;
-    }
+//       addedCount++;
+//     }
 
-    await batch.commit();
+//     await batch.commit();
 
-    return {
-      success: true,
-      addedCount,
-      message: `Added ${addedCount} questions`
-    };
-  } catch (error) {
-    console.error('Error adding trivia questions:', error);
-    throw new functions.https.HttpsError('internal', 'Failed to add questions');
-  }
-});
+//     return {
+//       success: true,
+//       addedCount,
+//       message: `Added ${addedCount} questions`
+//     };
+//   } catch (error) {
+//     console.error('Error adding trivia questions:', error);
+//     throw new functions.https.HttpsError('internal', 'Failed to add questions');
+//   }
+// });
 
 /**
  * Manual square assignment (admin only, for fixing issues)
