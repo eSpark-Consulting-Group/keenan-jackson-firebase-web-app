@@ -1,64 +1,71 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Brain, AlertCircle } from 'lucide-react';
-import { useAuth } from '../contexts/authcontext';
-import toast from 'react-hot-toast';
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  Brain,
+  AlertCircle,
+} from "lucide-react";
+import { useAuth } from "../contexts/authcontext";
+import toast from "react-hot-toast";
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, user, userData } = useAuth();
-  
+
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      console.log(user, "user", userData, "userData")
-      navigate('/dashboard');
+      console.log(user, "user", userData, "userData");
+      navigate("/dashboard");
     }
   }, [user, navigate]);
 
   // Get redirect URL from location state
-  const from = location.state?.from?.pathname || '/dashboard';
+  const from = location.state?.from?.pathname || "/dashboard";
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
     // Clear error when user types
-    if (error) setError('');
+    if (error) setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       // Basic validation
       if (!formData.email || !formData.password) {
-        throw new Error('Please fill in all fields');
+        throw new Error("Please fill in all fields");
       }
 
       // Attempt login
       await login(formData.email, formData.password);
-      
+
       // Success - navigate to intended page
       navigate(from, { replace: true });
-      
     } catch (err) {
-      console.error('Login error:', err);
-      setError(err.message || 'Failed to login. Please try again.');
+      console.error("Login error:", err);
+      setError(err.message || "Failed to login. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -66,10 +73,10 @@ export default function Login() {
 
   const handleForgotPassword = () => {
     if (!formData.email) {
-      toast.error('Please enter your email first');
+      toast.error("Please enter your email first");
       return;
     }
-    navigate('/forgot-password', { state: { email: formData.email } });
+    navigate("/forgot-password", { state: { email: formData.email } });
   };
 
   return (
@@ -87,8 +94,11 @@ export default function Login() {
           </Link>
           <h2 className="text-3xl font-bold text-gray-900">Welcome back!</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              className="font-medium text-blue-600 hover:text-blue-500"
+            >
               Sign up free
             </Link>
           </p>
@@ -106,7 +116,7 @@ export default function Login() {
             {error && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
+                animate={{ opacity: 1, height: "auto" }}
                 className="bg-red-50 border border-red-200 rounded-md p-4"
               >
                 <div className="flex">
@@ -118,7 +128,10 @@ export default function Login() {
 
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Email address
               </label>
               <div className="mt-1 relative">
@@ -141,7 +154,10 @@ export default function Login() {
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Password
               </label>
               <div className="mt-1 relative">
@@ -151,7 +167,7 @@ export default function Login() {
                 <input
                   id="password"
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
                   value={formData.password}
@@ -182,7 +198,10 @@ export default function Login() {
                   type="checkbox"
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                <label
+                  htmlFor="remember-me"
+                  className="ml-2 block text-sm text-gray-900"
+                >
                   Remember me
                 </label>
               </div>
@@ -202,18 +221,35 @@ export default function Login() {
               disabled={loading}
               className={`
                 w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white 
-                ${loading 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                ${
+                  loading
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 hover:text-white"
                 }
                 transition-colors duration-200
               `}
             >
               {loading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Logging in...
                 </>
@@ -233,7 +269,9 @@ export default function Login() {
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">New to Square Trivia?</span>
+                <span className="px-2 bg-white text-gray-500">
+                  New to Square Trivia?
+                </span>
               </div>
             </div>
           </div>
@@ -260,7 +298,8 @@ export default function Login() {
                   100% Skill-Based Competition
                 </h3>
                 <p className="mt-1 text-sm text-blue-700">
-                  Win money with your sports knowledge. NO FEES on playing or winning!
+                  Win money with your sports knowledge. NO FEES on playing or
+                  winning!
                 </p>
               </div>
             </div>
@@ -272,11 +311,11 @@ export default function Login() {
           <Link to="/free-entry" className="hover:text-gray-900">
             Free entry available
           </Link>
-          {' • '}
+          {" • "}
           <Link to="/legal/terms" className="hover:text-gray-900">
             Terms
           </Link>
-          {' • '}
+          {" • "}
           <Link to="/legal/privacy" className="hover:text-gray-900">
             Privacy
           </Link>

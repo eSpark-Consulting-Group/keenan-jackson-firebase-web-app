@@ -4,10 +4,8 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const { TIERS } = require("./constants-configuration-fixed");
 const {
-  TIERS
- } = require ("./constants-configuration-fixed");
- const {
   handleSuccessfulPayment,
   handleFailedPayment,
   handleRefund,
@@ -31,8 +29,7 @@ exports.createGame = functions.https.onCall(async (data, context) => {
   //   }
 
   const {
-    homeTeam,
-    awayTeam,
+    teams,
     gameDate,
     gameType, // 'regular', 'playoff', 'championship'
     sport, // 'nfl', 'ncaa-football'
@@ -50,16 +47,19 @@ exports.createGame = functions.https.onCall(async (data, context) => {
     }
     // Create game document
     const gameRef = await db.collection("games").add({
-      homeTeam,
-      awayTeam,
+      teams,
       gameDate: admin.firestore.Timestamp.fromDate(parsedDate),
       gameType,
       sport,
       externalGameId,
       status: "upcoming",
       currentQuarter: 0,
-      homeScore: 0,
-      awayScore: 0,
+      // homeScore: 0,
+      // awayScore: 0,
+      scores: {
+        home: 0,
+        away: 0,
+      },
       quarterScores: {
         q1: { home: 0, away: 0 },
         q2: { home: 0, away: 0 },
@@ -475,7 +475,9 @@ exports.createCheckoutSession = functions.https.onCall(
       throw new functions.https.HttpsError("invalid-argument", "Invalid tier");
     }
 
-   const payoutPercentage = Object.values(TIERS).find(t => t.id === tierId)?.payoutPercentage
+    const payoutPercentage = Object.values(TIERS).find(
+      (t) => t.id === tierId
+    )?.payoutPercentage;
 
     const donationRef = admin.firestore().collection("donations").doc();
     const donationId = donationRef.id;
@@ -485,7 +487,7 @@ exports.createCheckoutSession = functions.https.onCall(
       tier: tierId,
       tierId,
       status: "pending",
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     try {
@@ -761,10 +763,7 @@ exports.validateAnswer = functions.https.onCall(async (data, context) => {
     }
 
     // Get question
-    const questionDoc = await db
-      .collection("trivia")
-      .doc(questionId)
-      .get();
+    const questionDoc = await db.collection("trivia").doc(questionId).get();
     if (!questionDoc.exists) {
       throw new functions.https.HttpsError("not-found", "Question not found");
     }

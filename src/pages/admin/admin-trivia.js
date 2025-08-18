@@ -61,6 +61,7 @@ export default function AdminTrivia() {
     avgAnswerTime: 0,
     correctRate: 0,
   });
+  const [saveQuestLoading, setSaveQuestLoading] = useState(false);
 
   // Form state
   const [questionForm, setQuestionForm] = useState({
@@ -178,7 +179,7 @@ export default function AdminTrivia() {
     }
 
     try {
-      setLoading(true);
+      setSaveQuestLoading(true);
 
       const questionData = {
         question: questionForm.question.trim(),
@@ -219,7 +220,7 @@ export default function AdminTrivia() {
       console.error("Error saving question:", error);
       toast.error("Failed to save question");
     } finally {
-      setLoading(false);
+      setSaveQuestLoading(false);
     }
   };
 
@@ -359,7 +360,7 @@ export default function AdminTrivia() {
     return colors[difficulty] || colors.medium;
   };
 
-  if (loading && questions.length === 0) {
+  if ((loading && questions.length === 0) || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -408,7 +409,7 @@ export default function AdminTrivia() {
                 setEditingQuestion(null);
                 setShowAddModal(true);
               }}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors hover:text-white"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Question
@@ -924,10 +925,10 @@ export default function AdminTrivia() {
                     </button>
                     <button
                       type="submit"
-                      disabled={loading}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                      disabled={saveQuestLoading}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 hover:text-white"
                     >
-                      {loading
+                      {saveQuestLoading
                         ? "Saving..."
                         : editingQuestion
                           ? "Update Question"

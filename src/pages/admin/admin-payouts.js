@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   Clock,
   CheckCircle,
@@ -11,10 +11,24 @@ import {
   Search,
   RefreshCw,
   Zap,
-} from 'lucide-react';
-import { db, collections, formatCurrency, INSTANT_PAYOUT_FEE } from '../../firebase/config';
-import { collection, query, where, orderBy, limit, getDocs, doc, updateDoc } from 'firebase/firestore';
-import toast from 'react-hot-toast';
+} from "lucide-react";
+import {
+  db,
+  collections,
+  formatCurrency,
+  INSTANT_PAYOUT_FEE,
+} from "../../firebase/config";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  getDocs,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
+import toast from "react-hot-toast";
 
 export default function AdminPayouts() {
   const [loading, setLoading] = useState(true);
@@ -25,14 +39,14 @@ export default function AdminPayouts() {
     processingCount: 0,
     processingAmount: 0,
     completedToday: 0,
-    completedTodayAmount: 0
+    completedTodayAmount: 0,
   });
   const [filterOptions, setFilterOptions] = useState({
-    status: 'pending',
-    type: 'all',
-    dateRange: '7days'
+    status: "pending",
+    type: "all",
+    dateRange: "7days",
   });
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedPayouts, setSelectedPayouts] = useState([]);
 
   useEffect(() => {
@@ -42,73 +56,75 @@ export default function AdminPayouts() {
   const loadPayouts = async () => {
     try {
       setLoading(true);
-      
+
       // Build query based on filters
-      let constraints = [orderBy('createdAt', 'desc'), limit(100)];
-      
-      if (filterOptions.status !== 'all') {
-        constraints.unshift(where('status', '==', filterOptions.status));
+      let constraints = [orderBy("createdAt", "desc"), limit(100)];
+
+      if (filterOptions.status !== "all") {
+        constraints.unshift(where("status", "==", filterOptions.status));
       }
-      
-      if (filterOptions.type !== 'all') {
-        constraints.unshift(where('type', '==', filterOptions.type));
+
+      if (filterOptions.type !== "all") {
+        constraints.unshift(where("type", "==", filterOptions.type));
       }
-      
+
       // Date range filter
-      if (filterOptions.dateRange !== 'all') {
+      if (filterOptions.dateRange !== "all") {
         const now = new Date();
         let startDate;
-        
+
         switch (filterOptions.dateRange) {
-          case 'today':
+          case "today":
             startDate = new Date(now.setHours(0, 0, 0, 0));
             break;
-          case '7days':
+          case "7days":
             startDate = new Date(now.setDate(now.getDate() - 7));
             break;
-          case '30days':
+          case "30days":
             startDate = new Date(now.setDate(now.getDate() - 30));
             break;
           default:
             startDate = null;
         }
-        
+
         if (startDate) {
-          constraints.unshift(where('createdAt', '>=', startDate));
+          constraints.unshift(where("createdAt", ">=", startDate));
         }
       }
-      
+
       const q = query(collection(db, collections.payouts), ...constraints);
       const snapshot = await getDocs(q);
-      
+
       const payoutsData = [];
       for (const doc of snapshot.docs) {
         const payoutData = { id: doc.id, ...doc.data() };
-        
+
         // Get user info
         if (payoutData.userId) {
           try {
-            const userDoc = await getDocs(doc(db, collections.users, payoutData.userId));
+            const userDoc = await getDocs(
+              doc(db, collections.users, payoutData.userId)
+            );
             if (userDoc.exists()) {
               payoutData.user = userDoc.data();
             }
           } catch (error) {
-            console.error('Error fetching user:', error);
+            console.error("Error fetching user:", error);
           }
         }
-        
+
         payoutsData.push(payoutData);
       }
-      
+
       setPayouts(payoutsData);
-      
+
       // Calculate stats
       calculateStats(payoutsData);
-      
+
       setLoading(false);
     } catch (error) {
-      console.error('Error loading payouts:', error);
-      toast.error('Failed to load payouts');
+      console.error("Error loading payouts:", error);
+      toast.error("Failed to load payouts");
       setLoading(false);
     }
   };
@@ -116,30 +132,32 @@ export default function AdminPayouts() {
   const calculateStats = (payoutsData) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const stats = {
       pendingCount: 0,
       pendingAmount: 0,
       processingCount: 0,
       processingAmount: 0,
       completedToday: 0,
-      completedTodayAmount: 0
+      completedTodayAmount: 0,
     };
-    
-    payoutsData.forEach(payout => {
-      if (payout.status === 'pending') {
+
+    payoutsData.forEach((payout) => {
+      if (payout.status === "pending") {
         stats.pendingCount++;
         stats.pendingAmount += payout.amount || 0;
-      } else if (payout.status === 'processing') {
+      } else if (payout.status === "processing") {
         stats.processingCount++;
         stats.processingAmount += payout.amount || 0;
-      } else if (payout.status === 'completed' && 
-                 payout.completedAt?.toDate?.() >= today) {
+      } else if (
+        payout.status === "completed" &&
+        payout.completedAt?.toDate?.() >= today
+      ) {
         stats.completedToday++;
         stats.completedTodayAmount += payout.amount || 0;
       }
     });
-    
+
     setStats(stats);
   };
 
@@ -147,116 +165,129 @@ export default function AdminPayouts() {
     try {
       const updateData = {
         status: newStatus,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
-      
-      if (newStatus === 'completed') {
+
+      if (newStatus === "completed") {
         updateData.completedAt = new Date();
-      } else if (newStatus === 'processing') {
+      } else if (newStatus === "processing") {
         updateData.processingStartedAt = new Date();
       }
-      
+
       await updateDoc(doc(db, collections.payouts, payoutId), updateData);
-      
+
       toast.success(`Payout marked as ${newStatus}`);
       loadPayouts();
     } catch (error) {
-      console.error('Error updating payout:', error);
-      toast.error('Failed to update payout status');
+      console.error("Error updating payout:", error);
+      toast.error("Failed to update payout status");
     }
   };
 
   const bulkUpdateStatus = async (newStatus) => {
     if (selectedPayouts.length === 0) {
-      toast.error('No payouts selected');
+      toast.error("No payouts selected");
       return;
     }
-    
-    if (!window.confirm(`Mark ${selectedPayouts.length} payouts as ${newStatus}?`)) {
+
+    if (
+      !window.confirm(`Mark ${selectedPayouts.length} payouts as ${newStatus}?`)
+    ) {
       return;
     }
-    
+
     try {
-      const updates = selectedPayouts.map(payoutId => 
+      const updates = selectedPayouts.map((payoutId) =>
         updatePayoutStatus(payoutId, newStatus)
       );
-      
+
       await Promise.all(updates);
       setSelectedPayouts([]);
     } catch (error) {
-      console.error('Error bulk updating:', error);
-      toast.error('Failed to update some payouts');
+      console.error("Error bulk updating:", error);
+      toast.error("Failed to update some payouts");
     }
   };
 
   const exportForRelay = () => {
     const exportData = payouts
-      .filter(p => p.status === 'pending' || p.status === 'processing')
-      .map(payout => ({
+      .filter((p) => p.status === "pending" || p.status === "processing")
+      .map((payout) => ({
         email: payout.user?.email || payout.email,
         amount: payout.amount,
         reference: payout.id,
-        name: payout.user?.displayName || 'Square Trivia Winner'
+        name: payout.user?.displayName || "Square Trivia Winner",
       }));
-    
+
     const csv = [
-      ['email', 'amount', 'reference', 'name'],
-      ...exportData.map(row => [
+      ["email", "amount", "reference", "name"],
+      ...exportData.map((row) => [
         row.email,
         row.amount,
         row.reference,
-        row.name
-      ])
-    ].map(row => row.join(',')).join('\n');
-    
-    const blob = new Blob([csv], { type: 'text/csv' });
+        row.name,
+      ]),
+    ]
+      .map((row) => row.join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `relay-payouts-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `relay-payouts-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
-    
+
     toast.success(`Exported ${exportData.length} payouts for Relay`);
   };
 
-  const filteredPayouts = payouts.filter(payout => {
-    const matchesSearch = searchTerm === '' || 
+  const filteredPayouts = payouts.filter((payout) => {
+    const matchesSearch =
+      searchTerm === "" ||
       payout.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payout.user?.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payout.user?.displayName
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       payout.id.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     return matchesSearch;
   });
 
   const getPayoutTypeIcon = (type) => {
-    return type === 'instant' ? Zap : Clock;
+    return type === "instant" ? Zap : Clock;
   };
 
   const getPayoutTypeBadge = (type) => {
     const Icon = getPayoutTypeIcon(type);
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        type === 'instant' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
-      }`}>
+      <span
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          type === "instant"
+            ? "bg-yellow-100 text-yellow-800"
+            : "bg-blue-100 text-blue-800"
+        }`}
+      >
         <Icon className="h-3 w-3 mr-1" />
-        {type === 'instant' ? 'Instant' : 'Standard'}
+        {type === "instant" ? "Instant" : "Standard"}
       </span>
     );
   };
 
   const getStatusBadge = (status) => {
     const badges = {
-      pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-      processing: { color: 'bg-blue-100 text-blue-800', icon: Send },
-      completed: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
-      failed: { color: 'bg-red-100 text-red-800', icon: XCircle }
+      pending: { color: "bg-yellow-100 text-yellow-800", icon: Clock },
+      processing: { color: "bg-blue-100 text-blue-800", icon: Send },
+      completed: { color: "bg-green-100 text-green-800", icon: CheckCircle },
+      failed: { color: "bg-red-100 text-red-800", icon: XCircle },
     };
-    
+
     const badge = badges[status] || badges.pending;
     const Icon = badge.icon;
-    
+
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
+      <span
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}
+      >
         <Icon className="h-3 w-3 mr-1" />
         {status}
       </span>
@@ -277,7 +308,9 @@ export default function AdminPayouts() {
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Payout Management</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Payout Management
+            </h1>
             <p className="text-gray-600 mt-2">Process and track user payouts</p>
           </div>
           <div className="flex gap-3">
@@ -290,7 +323,7 @@ export default function AdminPayouts() {
             </button>
             <button
               onClick={loadPayouts}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors hover:text-white"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
@@ -309,7 +342,9 @@ export default function AdminPayouts() {
               <div>
                 <p className="text-sm text-gray-600">Pending</p>
                 <p className="text-xl font-bold">{stats.pendingCount}</p>
-                <p className="text-sm text-gray-500">{formatCurrency(stats.pendingAmount)}</p>
+                <p className="text-sm text-gray-500">
+                  {formatCurrency(stats.pendingAmount)}
+                </p>
               </div>
               <div className="p-3 bg-yellow-100 rounded-lg">
                 <Clock className="h-6 w-6 text-yellow-600" />
@@ -327,7 +362,9 @@ export default function AdminPayouts() {
               <div>
                 <p className="text-sm text-gray-600">Processing</p>
                 <p className="text-xl font-bold">{stats.processingCount}</p>
-                <p className="text-sm text-gray-500">{formatCurrency(stats.processingAmount)}</p>
+                <p className="text-sm text-gray-500">
+                  {formatCurrency(stats.processingAmount)}
+                </p>
               </div>
               <div className="p-3 bg-blue-100 rounded-lg">
                 <Send className="h-6 w-6 text-blue-600" />
@@ -345,7 +382,9 @@ export default function AdminPayouts() {
               <div>
                 <p className="text-sm text-gray-600">Completed Today</p>
                 <p className="text-xl font-bold">{stats.completedToday}</p>
-                <p className="text-sm text-gray-500">{formatCurrency(stats.completedTodayAmount)}</p>
+                <p className="text-sm text-gray-500">
+                  {formatCurrency(stats.completedTodayAmount)}
+                </p>
               </div>
               <div className="p-3 bg-green-100 rounded-lg">
                 <CheckCircle className="h-6 w-6 text-green-600" />
@@ -362,7 +401,9 @@ export default function AdminPayouts() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Instant Fee Rate</p>
-                <p className="text-xl font-bold">{(INSTANT_PAYOUT_FEE * 100).toFixed(0)}%</p>
+                <p className="text-xl font-bold">
+                  {(INSTANT_PAYOUT_FEE * 100).toFixed(0)}%
+                </p>
                 <p className="text-sm text-gray-500">Convenience fee</p>
               </div>
               <div className="p-3 bg-purple-100 rounded-lg">
@@ -384,12 +425,14 @@ export default function AdminPayouts() {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          
+
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-gray-400" />
             <select
               value={filterOptions.status}
-              onChange={(e) => setFilterOptions({ ...filterOptions, status: e.target.value })}
+              onChange={(e) =>
+                setFilterOptions({ ...filterOptions, status: e.target.value })
+              }
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">All Status</option>
@@ -398,20 +441,27 @@ export default function AdminPayouts() {
               <option value="completed">Completed</option>
               <option value="failed">Failed</option>
             </select>
-            
+
             <select
               value={filterOptions.type}
-              onChange={(e) => setFilterOptions({ ...filterOptions, type: e.target.value })}
+              onChange={(e) =>
+                setFilterOptions({ ...filterOptions, type: e.target.value })
+              }
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">All Types</option>
               <option value="instant">Instant</option>
               <option value="standard">Standard</option>
             </select>
-            
+
             <select
               value={filterOptions.dateRange}
-              onChange={(e) => setFilterOptions({ ...filterOptions, dateRange: e.target.value })}
+              onChange={(e) =>
+                setFilterOptions({
+                  ...filterOptions,
+                  dateRange: e.target.value,
+                })
+              }
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="today">Today</option>
@@ -427,17 +477,19 @@ export default function AdminPayouts() {
           <div className="mb-4 bg-blue-50 rounded-lg p-4 flex items-center justify-between">
             <div className="flex items-center">
               <AlertCircle className="h-5 w-5 text-blue-600 mr-2" />
-              <span className="text-blue-900">{selectedPayouts.length} payouts selected</span>
+              <span className="text-blue-900">
+                {selectedPayouts.length} payouts selected
+              </span>
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => bulkUpdateStatus('processing')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                onClick={() => bulkUpdateStatus("processing")}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm hover:text-white"
               >
                 Mark as Processing
               </button>
               <button
-                onClick={() => bulkUpdateStatus('completed')}
+                onClick={() => bulkUpdateStatus("completed")}
                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
               >
                 Mark as Completed
@@ -461,10 +513,13 @@ export default function AdminPayouts() {
                   <th className="px-6 py-3 text-left">
                     <input
                       type="checkbox"
-                      checked={selectedPayouts.length === filteredPayouts.length && filteredPayouts.length > 0}
+                      checked={
+                        selectedPayouts.length === filteredPayouts.length &&
+                        filteredPayouts.length > 0
+                      }
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setSelectedPayouts(filteredPayouts.map(p => p.id));
+                          setSelectedPayouts(filteredPayouts.map((p) => p.id));
                         } else {
                           setSelectedPayouts([]);
                         }
@@ -495,18 +550,26 @@ export default function AdminPayouts() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredPayouts.length > 0 ? (
                   filteredPayouts.map((payout) => (
-                    <tr key={payout.id} className={`hover:bg-gray-50 ${
-                      selectedPayouts.includes(payout.id) ? 'bg-blue-50' : ''
-                    }`}>
+                    <tr
+                      key={payout.id}
+                      className={`hover:bg-gray-50 ${
+                        selectedPayouts.includes(payout.id) ? "bg-blue-50" : ""
+                      }`}
+                    >
                       <td className="px-6 py-4">
                         <input
                           type="checkbox"
                           checked={selectedPayouts.includes(payout.id)}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setSelectedPayouts([...selectedPayouts, payout.id]);
+                              setSelectedPayouts([
+                                ...selectedPayouts,
+                                payout.id,
+                              ]);
                             } else {
-                              setSelectedPayouts(selectedPayouts.filter(id => id !== payout.id));
+                              setSelectedPayouts(
+                                selectedPayouts.filter((id) => id !== payout.id)
+                              );
                             }
                           }}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
@@ -515,9 +578,11 @@ export default function AdminPayouts() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {payout.user?.displayName || 'Unknown User'}
+                            {payout.user?.displayName || "Unknown User"}
                           </div>
-                          <div className="text-sm text-gray-500">{payout.user?.email || payout.email}</div>
+                          <div className="text-sm text-gray-500">
+                            {payout.user?.email || payout.email}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -525,9 +590,12 @@ export default function AdminPayouts() {
                           <div className="text-sm font-medium text-gray-900">
                             {formatCurrency(payout.amount)}
                           </div>
-                          {payout.type === 'instant' && (
+                          {payout.type === "instant" && (
                             <div className="text-xs text-gray-500">
-                              Fee: {formatCurrency(payout.amount * INSTANT_PAYOUT_FEE)}
+                              Fee:{" "}
+                              {formatCurrency(
+                                payout.amount * INSTANT_PAYOUT_FEE
+                              )}
                             </div>
                           )}
                         </div>
@@ -548,17 +616,21 @@ export default function AdminPayouts() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">
-                          {payout.status === 'pending' && (
+                          {payout.status === "pending" && (
                             <>
                               <button
-                                onClick={() => updatePayoutStatus(payout.id, 'processing')}
+                                onClick={() =>
+                                  updatePayoutStatus(payout.id, "processing")
+                                }
                                 className="text-blue-600 hover:text-blue-900"
                                 title="Start Processing"
                               >
                                 <Send className="h-4 w-4" />
                               </button>
                               <button
-                                onClick={() => updatePayoutStatus(payout.id, 'failed')}
+                                onClick={() =>
+                                  updatePayoutStatus(payout.id, "failed")
+                                }
                                 className="text-red-600 hover:text-red-900"
                                 title="Mark as Failed"
                               >
@@ -566,9 +638,11 @@ export default function AdminPayouts() {
                               </button>
                             </>
                           )}
-                          {payout.status === 'processing' && (
+                          {payout.status === "processing" && (
                             <button
-                              onClick={() => updatePayoutStatus(payout.id, 'completed')}
+                              onClick={() =>
+                                updatePayoutStatus(payout.id, "completed")
+                              }
                               className="text-green-600 hover:text-green-900"
                               title="Mark as Completed"
                             >
@@ -581,7 +655,10 @@ export default function AdminPayouts() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                    <td
+                      colSpan="7"
+                      className="px-6 py-12 text-center text-gray-500"
+                    >
                       No payouts found
                     </td>
                   </tr>
@@ -596,13 +673,19 @@ export default function AdminPayouts() {
           <div className="flex">
             <AlertCircle className="h-5 w-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-blue-900">
-              <p className="font-semibold mb-1">Payout Processing Instructions:</p>
+              <p className="font-semibold mb-1">
+                Payout Processing Instructions:
+              </p>
               <ol className="list-decimal list-inside space-y-1">
                 <li>Export pending payouts using "Export for Relay" button</li>
                 <li>Upload CSV to Relay batch payment system</li>
                 <li>Mark payouts as "Processing" once batch is submitted</li>
-                <li>Mark as "Completed" when Relay confirms successful payment</li>
-                <li>Process instant payouts daily, standard payouts Tuesday/Friday</li>
+                <li>
+                  Mark as "Completed" when Relay confirms successful payment
+                </li>
+                <li>
+                  Process instant payouts daily, standard payouts Tuesday/Friday
+                </li>
               </ol>
             </div>
           </div>

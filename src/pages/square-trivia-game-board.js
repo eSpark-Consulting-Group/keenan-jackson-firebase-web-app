@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Grid3X3,
   Trophy,
@@ -10,21 +10,28 @@ import {
   AlertCircle,
   Clock,
   Info,
-  CheckCircle
-} from 'lucide-react';
-import { useAuth } from '../contexts/authcontext';
-import { db, collections, TIERS, formatCurrency, GAME_CONFIG, callFunction } from '../firebase/config';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
-import TriviaModal from '../components/game/triviamodal';
-import SquareGrid from '../components/game/squaregrid';
-import GameScore from '../components/game/gamescore';
-import toast from 'react-hot-toast';
+  CheckCircle,
+} from "lucide-react";
+import { useAuth } from "../contexts/authcontext";
+import {
+  db,
+  collections,
+  TIERS,
+  formatCurrency,
+  GAME_CONFIG,
+  callFunction,
+} from "../firebase/config";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import TriviaModal from "../components/game/triviamodal";
+import SquareGrid from "../components/game/squaregrid";
+import GameScore from "../components/game/gamescore";
+import toast from "react-hot-toast";
 
 export default function GameBoard() {
   const { boardId } = useParams();
   const navigate = useNavigate();
   const { user, userData } = useAuth();
-  
+
   const [board, setBoard] = useState(null);
   const [game, setGame] = useState(null);
   const [userSquares, setUserSquares] = useState([]);
@@ -41,7 +48,7 @@ export default function GameBoard() {
 
     loadBoardData();
     const unsubscribe = setupRealtimeListeners();
-    
+
     return () => unsubscribe?.();
   }, [boardId, user]);
 
@@ -52,8 +59,8 @@ export default function GameBoard() {
       // Load board data
       const boardDoc = await getDoc(doc(db, collections.boards, boardId));
       if (!boardDoc.exists()) {
-        toast.error('Board not found');
-        navigate('/games');
+        toast.error("Board not found");
+        navigate("/games");
         return;
       }
 
@@ -62,25 +69,27 @@ export default function GameBoard() {
 
       // Check if user has access to this tier
       if (!userData?.currentTiers?.includes(boardData.tierId)) {
-        toast.error('You need access to this tier to view this board');
-        navigate('/games');
+        toast.error("You need access to this tier to view this board");
+        navigate("/games");
         return;
       }
 
       // Load game data
       if (boardData.gameId) {
-        const gameDoc = await getDoc(doc(db, collections.games, boardData.gameId));
+        const gameDoc = await getDoc(
+          doc(db, collections.games, boardData.gameId)
+        );
         if (gameDoc.exists()) {
           const gameData = { id: gameDoc.id, ...gameDoc.data() };
           setGame(gameData);
-          
+
           // Set current scores
           if (gameData.scores) {
             setScores({
-              home: gameData.homeScore || 0,
-              away: gameData.awayScore || 0
+              home: gameData?.scores?.home || 0,
+              away: gameData?.scores?.away || 0,
             });
-            
+
             // Calculate winning squares based on current scores
             updateWinningSquares(gameData.scores);
           }
@@ -91,21 +100,22 @@ export default function GameBoard() {
       const userSquaresData = [];
       if (boardData.squares) {
         Object.entries(boardData.squares).forEach(([position, squareData]) => {
-          const userClaim = squareData.claims?.find(claim => claim.userId === user.uid);
+          const userClaim = squareData.claims?.find(
+            (claim) => claim.userId === user.uid
+          );
           if (userClaim) {
             userSquaresData.push({
               position: parseInt(position),
               claimData: userClaim,
-              isWinning: false // Will be updated based on scores
+              isWinning: false, // Will be updated based on scores
             });
           }
         });
       }
       setUserSquares(userSquaresData);
-
     } catch (error) {
-      console.error('Error loading board data:', error);
-      toast.error('Failed to load game board');
+      console.error("Error loading board data:", error);
+      toast.error("Failed to load game board");
     } finally {
       setLoading(false);
     }
@@ -128,7 +138,7 @@ export default function GameBoard() {
         if (doc.exists()) {
           const gameData = { id: doc.id, ...doc.data() };
           setGame(gameData);
-          
+
           // Update scores and winning squares
           if (gameData.scores) {
             setScores(gameData.scores);
@@ -147,38 +157,43 @@ export default function GameBoard() {
   const updateWinningSquares = (currentScores) => {
     const homeLastDigit = (currentScores.home || 0) % 10;
     const awayLastDigit = (currentScores.away || 0) % 10;
-    
+
     // Calculate both possible winning positions
     const winningPositions = [];
-    
+
     // Position 1: away digit as row, home digit as column
     const pos1 = getPositionFromDigits(awayLastDigit, homeLastDigit);
     if (pos1 !== null) winningPositions.push(pos1);
-    
+
     // Position 2: home digit as row, away digit as column (if different)
     if (homeLastDigit !== awayLastDigit) {
       const pos2 = getPositionFromDigits(homeLastDigit, awayLastDigit);
       if (pos2 !== null) winningPositions.push(pos2);
     }
-    
+
     setWinningSquares(winningPositions);
   };
 
   const getPositionFromDigits = (rowDigit, colDigit) => {
     // Map digits to row indices (0-4)
     const rowMap = {
-      0: 0, 5: 0,
-      1: 1, 6: 1,
-      2: 2, 7: 2,
-      3: 3, 8: 3,
-      4: 4, 9: 4
+      0: 0,
+      5: 0,
+      1: 1,
+      6: 1,
+      2: 2,
+      7: 2,
+      3: 3,
+      8: 3,
+      4: 4,
+      9: 4,
     };
-    
+
     const row = rowMap[rowDigit];
     const col = colDigit;
-    
+
     if (row === undefined || col === undefined) return null;
-    
+
     return row * 10 + col;
   };
 
@@ -186,32 +201,34 @@ export default function GameBoard() {
     if (!board || !userData) return;
 
     const squareData = board.squares?.[position];
-    
+
     // Check if square is full
     if (squareData?.claims?.length >= 2) {
-      toast.error('This square is full');
+      toast.error("This square is full");
       return;
     }
 
     // Check if user already has this square
-    if (squareData?.claims?.some(claim => claim.userId === user.uid)) {
-      toast.error('You already have this square');
+    if (squareData?.claims?.some((claim) => claim.userId === user.uid)) {
+      toast.error("You already have this square");
       return;
     }
 
     // Check if user has reached max squares
-    const userSquareCount = Object.values(board.squares || {}).filter(
-      sq => sq.claims?.some(claim => claim.userId === user.uid)
+    const userSquareCount = Object.values(board.squares || {}).filter((sq) =>
+      sq.claims?.some((claim) => claim.userId === user.uid)
     ).length;
-    
+
     if (userSquareCount >= GAME_CONFIG.MAX_SQUARES_PER_USER) {
-      toast.error(`You can only have ${GAME_CONFIG.MAX_SQUARES_PER_USER} squares per board`);
+      toast.error(
+        `You can only have ${GAME_CONFIG.MAX_SQUARES_PER_USER} squares per board`
+      );
       return;
     }
 
     // Check if user has daily attempts left
     if (userData.dailyTriviaAttempts >= (userData.hasTelegram ? 10 : 5)) {
-      toast.error('No daily attempts left. Come back tomorrow!');
+      toast.error("No daily attempts left. Come back tomorrow!");
       return;
     }
 
@@ -228,26 +245,28 @@ export default function GameBoard() {
 
     // Store the token for square claim
     setTriviaToken(token);
-    
+
     try {
       // Call cloud function to claim square
-      const result = await callFunction('claimSquare', {
+      const result = await callFunction("claimSquare", {
         boardId: board.id,
         position: selectedSquare,
-        tokenId: token
+        tokenId: token.id,
       });
 
       if (result.success) {
-        toast.success(`Square ${selectedSquare} claimed! Answer time: ${answerTime}s`);
-        
+        toast.success(
+          `Square ${selectedSquare} claimed! Answer time: ${answerTime}s`
+        );
+
         // Reload board data to show updated square
         await loadBoardData();
       } else {
-        toast.error(result.error || 'Failed to claim square');
+        toast.error(result.error || "Failed to claim square");
       }
     } catch (error) {
-      console.error('Error claiming square:', error);
-      toast.error('Failed to claim square');
+      console.error("Error claiming square:", error);
+      toast.error("Failed to claim square");
     } finally {
       setSelectedSquare(null);
       setTriviaToken(null);
@@ -257,7 +276,7 @@ export default function GameBoard() {
   const handleRevealSquare = (position) => {
     // Toggle reveal state for winning squares
     if (winningSquares.includes(position)) {
-      setRevealedSquares(prev => {
+      setRevealedSquares((prev) => {
         const newSet = new Set(prev);
         if (newSet.has(position)) {
           newSet.delete(position);
@@ -282,11 +301,15 @@ export default function GameBoard() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Board Not Found</h2>
-          <p className="text-gray-600 mb-4">This game board doesn't exist or has been removed.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Board Not Found
+          </h2>
+          <p className="text-gray-600 mb-4">
+            This game board doesn't exist or has been removed.
+          </p>
           <button
-            onClick={() => navigate('/games')}
-            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            onClick={() => navigate("/games")}
+            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors hover:text-white"
           >
             Back to Games
           </button>
@@ -296,7 +319,7 @@ export default function GameBoard() {
   }
 
   const tier = TIERS[board.tierId.toUpperCase()];
-  const isGameActive = game.status === 'active' || game.status === 'upcoming';
+  const isGameActive = game.status === "active" || game.status === "upcoming";
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -313,7 +336,9 @@ export default function GameBoard() {
                 {game.awayTeam} @ {game.homeTeam}
               </h1>
               <div className="flex items-center space-x-4 text-sm text-gray-600">
-                <span className={`px-3 py-1 rounded-full font-medium text-white ${tier.color}`}>
+                <span
+                  className={`px-3 py-1 rounded-full font-medium text-white ${tier.color}`}
+                >
                   {tier.name}
                 </span>
                 <span className="flex items-center">
@@ -322,15 +347,17 @@ export default function GameBoard() {
                 </span>
                 <span className="flex items-center">
                   <Clock className="h-4 w-4 mr-1" />
-                  {new Date(game.gameDate?.toDate?.() || game.gameDate).toLocaleString()}
+                  {new Date(
+                    game.gameDate?.toDate?.() || game.gameDate
+                  ).toLocaleString()}
                 </span>
               </div>
             </div>
-            
+
             {isGameActive && (
               <GameScore
-                homeTeam={game.homeTeam}
-                awayTeam={game.awayTeam}
+                homeTeam={game?.teams?.home}
+                awayTeam={game?.teams?.away}
                 homeScore={scores.home}
                 awayScore={scores.away}
                 quarter={game.currentQuarter || 1}
@@ -345,8 +372,11 @@ export default function GameBoard() {
               <Info className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
               <div className="text-sm text-blue-800">
                 <p className="font-semibold mb-1">How to Win:</p>
-                <p>When the score's last digits match your square, the player with the fastest trivia answer time wins! 
-                Answer times are hidden until squares win to ensure fair competition.</p>
+                <p>
+                  When the score's last digits match your square, the player
+                  with the fastest trivia answer time wins! Answer times are
+                  hidden until squares win to ensure fair competition.
+                </p>
               </div>
             </div>
           </div>
@@ -368,7 +398,10 @@ export default function GameBoard() {
               winningSquares={winningSquares}
               revealedSquares={revealedSquares}
               onRevealSquare={handleRevealSquare}
-              allowSelection={isGameActive && userData.dailyTriviaAttempts < (userData.hasTelegram ? 10 : 5)}
+              allowSelection={
+                isGameActive &&
+                userData.dailyTriviaAttempts < (userData.hasTelegram ? 10 : 5)
+              }
             />
           </motion.div>
 
@@ -385,28 +418,33 @@ export default function GameBoard() {
                 <Grid3X3 className="h-5 w-5 mr-2 text-blue-600" />
                 Your Squares ({userSquares.length})
               </h3>
-              
+
               {userSquares.length > 0 ? (
                 <div className="space-y-3">
                   {userSquares.map((square) => {
                     const isWinning = winningSquares.includes(square.position);
                     const isRevealed = revealedSquares.has(square.position);
-                    
+
                     return (
                       <div
                         key={square.position}
                         className={`
                           p-3 rounded-lg border-2 transition-all cursor-pointer
-                          ${isWinning 
-                            ? 'border-yellow-400 bg-yellow-50' 
-                            : 'border-gray-200 bg-gray-50'
+                          ${
+                            isWinning
+                              ? "border-yellow-400 bg-yellow-50"
+                              : "border-gray-200 bg-gray-50"
                           }
                         `}
-                        onClick={() => isWinning && handleRevealSquare(square.position)}
+                        onClick={() =>
+                          isWinning && handleRevealSquare(square.position)
+                        }
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <span className="font-semibold">Square #{square.position}</span>
+                            <span className="font-semibold">
+                              Square #{square.position}
+                            </span>
                             {isWinning && (
                               <span className="ml-2 text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full">
                                 WINNING!
@@ -429,7 +467,7 @@ export default function GameBoard() {
                             )}
                           </div>
                         </div>
-                        
+
                         {isWinning && !isRevealed && (
                           <p className="text-xs text-gray-600 mt-2">
                             Click to reveal answer times
@@ -442,8 +480,11 @@ export default function GameBoard() {
               ) : (
                 <div className="text-center py-8">
                   <Grid3X3 className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 mb-4">You don't have any squares yet</p>
-                  {userData.dailyTriviaAttempts < (userData.hasTelegram ? 10 : 5) ? (
+                  <p className="text-gray-500 mb-4">
+                    You don't have any squares yet
+                  </p>
+                  {userData.dailyTriviaAttempts <
+                  (userData.hasTelegram ? 10 : 5) ? (
                     <p className="text-sm text-blue-600">
                       Click on an available square to play trivia and claim it!
                     </p>
@@ -462,24 +503,26 @@ export default function GameBoard() {
                 <Brain className="h-5 w-5 mr-2 text-purple-600" />
                 Daily Attempts
               </h3>
-              
+
               <div className="mb-4">
                 <div className="flex justify-between text-sm text-gray-600 mb-2">
                   <span>Remaining today</span>
                   <span>
-                    {(userData.hasTelegram ? 10 : 5) - userData.dailyTriviaAttempts} / {userData.hasTelegram ? 10 : 5}
+                    {(userData.hasTelegram ? 10 : 5) -
+                      userData.dailyTriviaAttempts}{" "}
+                    / {userData.hasTelegram ? 10 : 5}
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div 
+                  <div
                     className="bg-purple-600 h-3 rounded-full transition-all duration-300"
-                    style={{ 
-                      width: `${((userData.hasTelegram ? 10 : 5) - userData.dailyTriviaAttempts) / (userData.hasTelegram ? 10 : 5) * 100}%` 
+                    style={{
+                      width: `${(((userData.hasTelegram ? 10 : 5) - userData.dailyTriviaAttempts) / (userData.hasTelegram ? 10 : 5)) * 100}%`,
                     }}
                   />
                 </div>
               </div>
-              
+
               {!userData.hasTelegram && (
                 <div className="bg-purple-50 rounded-md p-3 text-sm">
                   <p className="text-purple-800 font-medium mb-1">
@@ -498,7 +541,7 @@ export default function GameBoard() {
                 <Info className="h-5 w-5 mr-2 text-gray-600" />
                 Quick Rules
               </h3>
-              
+
               <ul className="space-y-2 text-sm text-gray-600">
                 <li className="flex items-start">
                   <CheckCircle className="h-4 w-4 mr-2 text-green-500 mt-0.5 flex-shrink-0" />
@@ -510,7 +553,9 @@ export default function GameBoard() {
                 </li>
                 <li className="flex items-start">
                   <CheckCircle className="h-4 w-4 mr-2 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Fastest answer time wins when squares match scores</span>
+                  <span>
+                    Fastest answer time wins when squares match scores
+                  </span>
                 </li>
                 <li className="flex items-start">
                   <CheckCircle className="h-4 w-4 mr-2 text-green-500 mt-0.5 flex-shrink-0" />

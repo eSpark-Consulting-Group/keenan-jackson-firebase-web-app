@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   User,
   Mail,
@@ -12,29 +12,35 @@ import {
   Edit2,
   Check,
   X,
-  Gift
-} from 'lucide-react';
-import { useAuth } from '../contexts/authcontext';
-import { formatCurrency } from '../firebase/config';
-import toast from 'react-hot-toast';
+  Gift,
+} from "lucide-react";
+import { useAuth } from "../contexts/authcontext";
+import { formatCurrency } from "../firebase/config";
+import toast from "react-hot-toast";
 
 export default function Profile() {
-  const { user, userData, updateUserProfile, addTelegramToAccount, getUserStats } = useAuth();
+  const {
+    user,
+    userData,
+    updateUserProfile,
+    addTelegramToAccount,
+    getUserStats,
+  } = useAuth();
   const [editing, setEditing] = useState(false);
   const [stats, setStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [addingTelegram, setAddingTelegram] = useState(false);
-  
+
   const [formData, setFormData] = useState({
-    displayName: userData?.displayName || '',
-    phone: userData?.phone || '',
-    telegramUsername: userData?.telegramUsername || '',
+    displayName: userData?.displayName || "",
+    phone: userData?.phone || "",
+    telegramUsername: userData?.telegramUsername || "",
     notifications: {
       email: userData?.notifications?.email ?? true,
       telegram: userData?.notifications?.telegram ?? true,
-      sms: userData?.notifications?.sms ?? false
-    }
+      sms: userData?.notifications?.sms ?? false,
+    },
   });
 
   useEffect(() => {
@@ -47,8 +53,8 @@ export default function Profile() {
       const userStats = await getUserStats();
       setStats(userStats);
     } catch (error) {
-      console.error('Error loading stats:', error);
-      toast.error('Failed to load statistics');
+      console.error("Error loading stats:", error);
+      toast.error("Failed to load statistics");
     } finally {
       setLoadingStats(false);
     }
@@ -56,39 +62,39 @@ export default function Profile() {
 
   const handleChange = (e) => {
     const { name, value, checked } = e.target;
-    
-    if (name.startsWith('notifications.')) {
-      const notificationType = name.split('.')[1];
-      setFormData(prev => ({
+
+    if (name.startsWith("notifications.")) {
+      const notificationType = name.split(".")[1];
+      setFormData((prev) => ({
         ...prev,
         notifications: {
           ...prev.notifications,
-          [notificationType]: checked
-        }
+          [notificationType]: checked,
+        },
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: value
+        [name]: value,
       }));
     }
   };
 
   const handleSave = async () => {
     setSavingProfile(true);
-    
+
     try {
       await updateUserProfile({
         displayName: formData.displayName,
         phone: formData.phone,
-        notifications: formData.notifications
+        notifications: formData.notifications,
       });
-      
-      toast.success('Profile updated successfully!');
+
+      toast.success("Profile updated successfully!");
       setEditing(false);
     } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
     } finally {
       setSavingProfile(false);
     }
@@ -96,18 +102,20 @@ export default function Profile() {
 
   const handleAddTelegram = async () => {
     if (!formData.telegramUsername) {
-      toast.error('Please enter your Telegram username');
+      toast.error("Please enter your Telegram username");
       return;
     }
-    
+
     setAddingTelegram(true);
-    
+
     try {
       await addTelegramToAccount(formData.telegramUsername);
-      toast.success('Telegram added successfully! You now get 10 daily attempts!');
+      toast.success(
+        "Telegram added successfully! You now get 10 daily attempts!"
+      );
     } catch (error) {
-      console.error('Error adding Telegram:', error);
-      toast.error(error.message || 'Failed to add Telegram');
+      console.error("Error adding Telegram:", error);
+      toast.error(error.message || "Failed to add Telegram");
     } finally {
       setAddingTelegram(false);
     }
@@ -120,23 +128,29 @@ export default function Profile() {
 
   const getSkillRank = () => {
     const avgTime = stats?.averageAnswerTime || 0;
-    if (avgTime === 0) return 'Unranked';
-    if (avgTime < 2) return 'Lightning';
-    if (avgTime < 3) return 'Expert';
-    if (avgTime < 4) return 'Skilled';
-    if (avgTime < 5) return 'Intermediate';
-    return 'Beginner';
+    if (avgTime === 0) return "Unranked";
+    if (avgTime < 2) return "Lightning";
+    if (avgTime < 3) return "Expert";
+    if (avgTime < 4) return "Skilled";
+    if (avgTime < 5) return "Intermediate";
+    return "Beginner";
   };
 
   const getSkillColor = () => {
     const rank = getSkillRank();
     switch (rank) {
-      case 'Lightning': return 'text-purple-600';
-      case 'Expert': return 'text-blue-600';
-      case 'Skilled': return 'text-green-600';
-      case 'Intermediate': return 'text-yellow-600';
-      case 'Beginner': return 'text-gray-600';
-      default: return 'text-gray-400';
+      case "Lightning":
+        return "text-purple-600";
+      case "Expert":
+        return "text-blue-600";
+      case "Skilled":
+        return "text-green-600";
+      case "Intermediate":
+        return "text-yellow-600";
+      case "Beginner":
+        return "text-gray-600";
+      default:
+        return "text-gray-400";
     }
   };
 
@@ -150,7 +164,9 @@ export default function Profile() {
           className="mb-8"
         >
           <h1 className="text-3xl font-bold text-gray-900">Your Profile</h1>
-          <p className="text-gray-600 mt-2">Manage your account settings and view your statistics</p>
+          <p className="text-gray-600 mt-2">
+            Manage your account settings and view your statistics
+          </p>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -194,14 +210,14 @@ export default function Profile() {
                       onClick={() => {
                         setEditing(false);
                         setFormData({
-                          displayName: userData?.displayName || '',
-                          phone: userData?.phone || '',
-                          telegramUsername: userData?.telegramUsername || '',
+                          displayName: userData?.displayName || "",
+                          phone: userData?.phone || "",
+                          telegramUsername: userData?.telegramUsername || "",
                           notifications: userData?.notifications || {
                             email: true,
                             telegram: true,
-                            sms: false
-                          }
+                            sms: false,
+                          },
                         });
                       }}
                       className="flex items-center px-3 py-1 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
@@ -223,12 +239,14 @@ export default function Profile() {
                     <Mail className="h-5 w-5 text-gray-400 mr-2" />
                     <input
                       type="email"
-                      value={user?.email || ''}
+                      value={user?.email || ""}
                       disabled
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Email cannot be changed
+                  </p>
                 </div>
 
                 {/* Display Name */}
@@ -247,9 +265,10 @@ export default function Profile() {
                       placeholder="Your name"
                       className={`
                         flex-1 px-3 py-2 border rounded-md
-                        ${editing 
-                          ? 'border-gray-300 focus:ring-blue-500 focus:border-blue-500' 
-                          : 'border-gray-300 bg-gray-50'
+                        ${
+                          editing
+                            ? "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                            : "border-gray-300 bg-gray-50"
                         }
                       `}
                     />
@@ -272,9 +291,10 @@ export default function Profile() {
                       placeholder="+1234567890"
                       className={`
                         flex-1 px-3 py-2 border rounded-md
-                        ${editing 
-                          ? 'border-gray-300 focus:ring-blue-500 focus:border-blue-500' 
-                          : 'border-gray-300 bg-gray-50'
+                        ${
+                          editing
+                            ? "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                            : "border-gray-300 bg-gray-50"
                         }
                       `}
                     />
@@ -307,10 +327,12 @@ export default function Profile() {
                         />
                         <button
                           onClick={handleAddTelegram}
-                          disabled={addingTelegram || !formData.telegramUsername}
-                          className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                          disabled={
+                            addingTelegram || !formData.telegramUsername
+                          }
+                          className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 hover:text-white"
                         >
-                          {addingTelegram ? 'Adding...' : 'Add'}
+                          {addingTelegram ? "Adding..." : "Add"}
                         </button>
                       </>
                     )}
@@ -337,7 +359,9 @@ export default function Profile() {
                     <Mail className="h-5 w-5 text-gray-400 mr-3" />
                     <div>
                       <p className="font-medium">Email Notifications</p>
-                      <p className="text-sm text-gray-500">Receive game updates and win notifications</p>
+                      <p className="text-sm text-gray-500">
+                        Receive game updates and win notifications
+                      </p>
                     </div>
                   </div>
                   <input
@@ -356,7 +380,9 @@ export default function Profile() {
                       <AtSign className="h-5 w-5 text-gray-400 mr-3" />
                       <div>
                         <p className="font-medium">Telegram Notifications</p>
-                        <p className="text-sm text-gray-500">Instant notifications in Telegram</p>
+                        <p className="text-sm text-gray-500">
+                          Instant notifications in Telegram
+                        </p>
                       </div>
                     </div>
                     <input
@@ -395,17 +421,21 @@ export default function Profile() {
               </h2>
 
               <div className="bg-blue-50 rounded-lg p-4 mb-4">
-                <p className="text-sm text-blue-800 mb-2">Your Referral Code:</p>
+                <p className="text-sm text-blue-800 mb-2">
+                  Your Referral Code:
+                </p>
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-mono font-bold text-blue-600">
-                    {userData?.referralCode || 'LOADING'}
+                    {userData?.referralCode || "LOADING"}
                   </span>
                   <button
                     onClick={() => {
-                      navigator.clipboard.writeText(userData?.referralCode || '');
-                      toast.success('Referral code copied!');
+                      navigator.clipboard.writeText(
+                        userData?.referralCode || ""
+                      );
+                      toast.success("Referral code copied!");
                     }}
-                    className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                    className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm hover:text-white"
                   >
                     Copy
                   </button>
@@ -413,7 +443,8 @@ export default function Profile() {
               </div>
 
               <p className="text-sm text-gray-600">
-                Share your code with friends and you'll both receive benefits when they sign up!
+                Share your code with friends and you'll both receive benefits
+                when they sign up!
               </p>
             </div>
           </motion.div>
@@ -440,17 +471,23 @@ export default function Profile() {
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm text-gray-600">Total Squares</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats?.totalSquares || 0}</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {stats?.totalSquares || 0}
+                    </p>
                   </div>
 
                   <div>
                     <p className="text-sm text-gray-600">Wins</p>
-                    <p className="text-2xl font-bold text-green-600">{stats?.totalWins || 0}</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {stats?.totalWins || 0}
+                    </p>
                   </div>
 
                   <div>
                     <p className="text-sm text-gray-600">Win Rate</p>
-                    <p className="text-2xl font-bold text-blue-600">{getWinRate()}%</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {getWinRate()}%
+                    </p>
                   </div>
 
                   <div>
@@ -463,7 +500,7 @@ export default function Profile() {
                   <div className="border-t pt-4">
                     <p className="text-sm text-gray-600">Average Answer Time</p>
                     <p className="text-2xl font-bold">
-                      {stats?.averageAnswerTime?.toFixed(1) || '0.0'}s
+                      {stats?.averageAnswerTime?.toFixed(1) || "0.0"}s
                     </p>
                   </div>
 
@@ -486,16 +523,17 @@ export default function Profile() {
 
               <div className="text-center">
                 <p className="text-3xl font-bold text-purple-600">
-                  {userData?.dailyTriviaAttempts || 0} / {userData?.hasTelegram ? 10 : 5}
+                  {userData?.dailyTriviaAttempts || 0} /{" "}
+                  {userData?.hasTelegram ? 10 : 5}
                 </p>
                 <p className="text-sm text-gray-600 mt-2">Used today</p>
               </div>
 
               <div className="w-full bg-gray-200 rounded-full h-3 mt-4">
-                <div 
+                <div
                   className="bg-purple-600 h-3 rounded-full transition-all duration-300"
-                  style={{ 
-                    width: `${((userData?.dailyTriviaAttempts || 0) / (userData?.hasTelegram ? 10 : 5)) * 100}%` 
+                  style={{
+                    width: `${((userData?.dailyTriviaAttempts || 0) / (userData?.hasTelegram ? 10 : 5)) * 100}%`,
                   }}
                 />
               </div>
@@ -519,13 +557,16 @@ export default function Profile() {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Member Since</span>
                   <span className="font-medium">
-                    {userData?.createdAt?.toDate?.().toLocaleDateString() || 'N/A'}
+                    {userData?.createdAt?.toDate?.().toLocaleDateString() ||
+                      "N/A"}
                   </span>
                 </div>
 
                 <div className="flex justify-between">
                   <span className="text-gray-600">User ID</span>
-                  <span className="font-mono text-xs">{user?.uid?.slice(-8) || 'N/A'}</span>
+                  <span className="font-mono text-xs">
+                    {user?.uid?.slice(-8) || "N/A"}
+                  </span>
                 </div>
 
                 <div className="flex justify-between">
