@@ -112,7 +112,7 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
       ? TRIVIA_CONFIG.MAX_ATTEMPTS_WITH_TELEGRAM 
       : TRIVIA_CONFIG.MAX_ATTEMPTS_PER_DAY;
 
-    const attemptsToday = await checkDailyAttempts(userId);
+    const attemptsToday = await checkDailyAttempts(userId,dailyLimit);
     if (attemptsToday >= dailyLimit) {
       const message = hasTelegram 
         ? 'Daily trivia limit reached. Try again tomorrow.'
@@ -919,23 +919,33 @@ async function verifyUserTierAccess(userId, tier) {
 /**
  * Check daily trivia attempts
  */
-async function checkDailyAttempts(userId) {
+async function checkDailyAttempts(userId, dailyLimit) {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Count today's attempts from triviaAttempts collection
     const attemptsQuery = await admin.firestore()
       .collection('triviaAttempts')
       .where('userId', '==', userId)
       .where('timestamp', '>=', admin.firestore.Timestamp.fromDate(today))
       .get();
 
-    return attemptsQuery.size;
+    const attemptsToday = attemptsQuery.size;
+
+    // Update users collection with remaining attempts
+    const userRef = admin.firestore().collection('users').doc(userId);
+    await userRef.update({
+      dailyTriviaAttempts: Math.max(dailyLimit - attemptsToday, 0)
+    });
+
+    return attemptsToday;
   } catch (error) {
     console.error('Error checking daily attempts:', error);
     return 0;
   }
 }
+
 
 /**
  * Record trivia attempt
