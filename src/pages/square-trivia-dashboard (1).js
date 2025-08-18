@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   Grid3X3,
   Trophy,
@@ -9,11 +9,21 @@ import {
   ChevronRight,
   Zap,
   Clock,
-} from 'lucide-react';
-import { useAuth } from '../contexts/authcontext';
-import { db, collections, TIERS, formatCurrency } from '../firebase/config';
-import { collection, query, where, orderBy, limit, getDocs, onSnapshot } from 'firebase/firestore';
-import toast from 'react-hot-toast';
+} from "lucide-react";
+import { useAuth } from "../contexts/authcontext";
+import { db, collections, TIERS, formatCurrency } from "../firebase/config";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  getDocs,
+  onSnapshot,
+  getDoc,
+  doc,
+} from "firebase/firestore";
+import toast from "react-hot-toast";
 
 export default function Dashboard() {
   const { user, userData } = useAuth();
@@ -25,20 +35,20 @@ export default function Dashboard() {
     averageAnswerTime: 0,
     activeTiers: [],
     recentGames: [],
-    upcomingGames: []
+    upcomingGames: [],
   });
   const [activeBoards, setActiveBoards] = useState([]);
   const [recentWins, setRecentWins] = useState([]);
   const [dailyAttempts, setDailyAttempts] = useState({
     used: 0,
-    total: userData?.hasTelegram ? 10 : 5
+    total: userData?.hasTelegram ? 10 : 5,
   });
 
   useEffect(() => {
     if (!user) return;
 
     loadDashboardData();
-    
+
     // Set up real-time listeners
     const unsubscribeBoards = setupBoardListener();
     const unsubscribeWins = setupWinsListener();
@@ -55,18 +65,22 @@ export default function Dashboard() {
 
       // Load user statistics
       const [squares, wins] = await Promise.all([
-        getDocs(query(
-          collection(db, collections.squareClaims),
-          where('userId', '==', user.uid)
-        )),
-        getDocs(query(
-          collection(db, collections.winners),
-          where('userId', '==', user.uid)
-        ))
+        getDocs(
+          query(
+            collection(db, collections.squareClaims),
+            where("userId", "==", user.uid)
+          )
+        ),
+        getDocs(
+          query(
+            collection(db, collections.winners),
+            where("userId", "==", user.uid)
+          )
+        ),
       ]);
 
       let totalPrizeAmount = 0;
-      wins.forEach(doc => {
+      wins.forEach((doc) => {
         totalPrizeAmount += doc.data().prizeAmount || 0;
       });
 
@@ -74,31 +88,32 @@ export default function Dashboard() {
       if (userData?.currentTiers?.length > 0) {
         const boardsQuery = query(
           collection(db, collections.boards),
-          where('tierId', 'in', userData.currentTiers),
-          where('isActive', '==', true),
-          orderBy('createdAt', 'desc'),
+          where("tierId", "in", userData.currentTiers),
+          where("isActive", "==", true),
+          orderBy("createdAt", "desc"),
           limit(10)
         );
         const boardsSnapshot = await getDocs(boardsQuery);
-        
+
         const boards = [];
-        for (const doc of boardsSnapshot.docs) {
-          const boardData = doc.data();
-          
+        for (const boardDoc of boardsSnapshot.docs) {
+          const boardData = boardDoc.data();
+
           // Get game info
           if (boardData.gameId) {
-            const gameDoc = await getDocs(doc(db, collections.games, boardData.gameId));
+            const gameRef = doc(db, collections.games, boardData.gameId); // now this is the firestore "doc" function
+            const gameDoc = await getDoc(gameRef);
+
             if (gameDoc.exists()) {
               boardData.gameInfo = gameDoc.data();
             }
           }
-          
+
           boards.push({
-            id: doc.id,
-            ...boardData
+            id: boardDoc.id,
+            ...boardData,
           });
         }
-        
         setActiveBoards(boards);
       }
 
@@ -107,18 +122,17 @@ export default function Dashboard() {
         totalWins: wins.size,
         totalPrizeAmount,
         averageAnswerTime: userData?.averageAnswerTime || 0,
-        activeTiers: userData?.currentTiers || []
+        activeTiers: userData?.currentTiers || [],
       });
 
       // Update daily attempts
       setDailyAttempts({
         used: userData?.dailyTriviaAttempts || 0,
-        total: userData?.hasTelegram ? 10 : 5
+        total: userData?.hasTelegram ? 10 : 5,
       });
-
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
-      toast.error('Failed to load dashboard data');
+      console.error("Error loading dashboard data:", error);
+      toast.error("Failed to load dashboard data");
     } finally {
       setLoading(false);
     }
@@ -129,16 +143,16 @@ export default function Dashboard() {
 
     const boardsQuery = query(
       collection(db, collections.boards),
-      where('tierId', 'in', userData.currentTiers),
-      where('isActive', '==', true)
+      where("tierId", "in", userData.currentTiers),
+      where("isActive", "==", true)
     );
 
     return onSnapshot(boardsQuery, (snapshot) => {
       const boards = [];
-      snapshot.forEach(doc => {
+      snapshot.forEach((doc) => {
         boards.push({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         });
       });
       setActiveBoards(boards);
@@ -148,17 +162,17 @@ export default function Dashboard() {
   const setupWinsListener = () => {
     const winsQuery = query(
       collection(db, collections.winners),
-      where('userId', '==', user.uid),
-      orderBy('createdAt', 'desc'),
+      where("userId", "==", user.uid),
+      orderBy("createdAt", "desc"),
       limit(5)
     );
 
     return onSnapshot(winsQuery, (snapshot) => {
       const wins = [];
-      snapshot.forEach(doc => {
+      snapshot.forEach((doc) => {
         wins.push({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         });
       });
       setRecentWins(wins);
@@ -171,21 +185,19 @@ export default function Dashboard() {
   };
 
   const getTimeUntilGame = (startTime) => {
-    const now = new Date();
-    const gameTime = startTime?.toDate ? startTime.toDate() : new Date(startTime);
-    const diff = gameTime - now;
-    
-    if (diff < 0) return 'In progress';
-    
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (hours > 24) {
-      const days = Math.floor(hours / 24);
-      return `${days}d ${hours % 24}h`;
-    }
-    
-    return `${hours}h ${minutes}m`;
+    if (!startTime) return "";
+
+    // Convert Firestore timestamp or raw object
+    const gameTime = startTime?.toDate
+      ? startTime.toDate()
+      : new Date(startTime.seconds * 1000 + (startTime.nanoseconds || 0) / 1e6);
+
+    // Format as MM-DD-YYYY
+    const month = String(gameTime.getMonth() + 1).padStart(2, "0");
+    const day = String(gameTime.getDate()).padStart(2, "0");
+    const year = gameTime.getFullYear();
+
+    return `${month}-${day}-${year}`;
   };
 
   if (loading) {
@@ -206,7 +218,7 @@ export default function Dashboard() {
           className="mb-8"
         >
           <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {userData?.displayName || user?.email?.split('@')[0]}!
+            Welcome back, {userData?.displayName || user?.email?.split("@")[0]}!
           </h1>
           <p className="text-gray-600 mt-2">
             Your skill-based sports competition dashboard
@@ -233,24 +245,28 @@ export default function Dashboard() {
                 </span>
               )}
             </div>
-            
+
             <div className="mb-4">
               <div className="flex justify-between text-sm text-gray-600 mb-1">
                 <span>Used today</span>
-                <span>{dailyAttempts.used} / {dailyAttempts.total}</span>
+                <span>
+                  {dailyAttempts.used} / {dailyAttempts.total}
+                </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
-                <div 
+                <div
                   className="bg-blue-600 h-3 rounded-full transition-all duration-300"
-                  style={{ width: `${(dailyAttempts.used / dailyAttempts.total) * 100}%` }}
+                  style={{
+                    width: `${(dailyAttempts.used / dailyAttempts.total) * 100}%`,
+                  }}
                 />
               </div>
             </div>
-            
+
             {dailyAttempts.used < dailyAttempts.total ? (
               <Link
                 to="/games"
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center"
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md flex items-center justify-center hover:text-white hover:bg-blue-700 transition-colors"
               >
                 Play Trivia
                 <ChevronRight className="ml-2 h-4 w-4" />
@@ -274,13 +290,16 @@ export default function Dashboard() {
               <DollarSign className="h-8 w-8 text-green-600 mr-3" />
               <h3 className="text-lg font-semibold">Your Tiers</h3>
             </div>
-            
+
             {stats.activeTiers.length > 0 ? (
               <div className="space-y-2">
                 {stats.activeTiers.map((tierId) => {
                   const tier = TIERS[tierId.toUpperCase()];
                   return tier ? (
-                    <div key={tierId} className="flex items-center justify-between">
+                    <div
+                      key={tierId}
+                      className="flex items-center justify-between"
+                    >
                       <span className="font-medium">{tier.name}</span>
                       <span className="text-sm text-green-600">
                         Win {formatCurrency(tier.prizePerQuarter)}/qtr
@@ -313,7 +332,7 @@ export default function Dashboard() {
               <Trophy className="h-8 w-8 text-yellow-500 mr-3" />
               <h3 className="text-lg font-semibold">Your Stats</h3>
             </div>
-            
+
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-600">Total Squares</span>
@@ -321,7 +340,9 @@ export default function Dashboard() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Wins</span>
-                <span className="font-semibold text-green-600">{stats.totalWins}</span>
+                <span className="font-semibold text-green-600">
+                  {stats.totalWins}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Total Won</span>
@@ -347,7 +368,9 @@ export default function Dashboard() {
           className="mb-8"
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">Your Active Games</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Your Active Games
+            </h2>
             <Link
               to="/games"
               className="text-blue-600 hover:text-blue-700 font-medium flex items-center"
@@ -364,24 +387,28 @@ export default function Dashboard() {
                   key={board.id}
                   whileHover={{ scale: 1.02 }}
                   className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer"
-                  onClick={() => window.location.href = `/game/${board.id}`}
+                  onClick={() => (window.location.href = `/game/${board.id}`)}
                 >
                   <div className="p-6">
                     <div className="flex items-center justify-between mb-3">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium text-white ${
-                        TIERS[board.tierId.toUpperCase()]?.color || 'bg-gray-600'
-                      }`}>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium text-white ${
+                          TIERS[board.tierId.toUpperCase()]?.color ||
+                          "bg-gray-600"
+                        }`}
+                      >
                         {TIERS[board.tierId.toUpperCase()]?.name}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {getTimeUntilGame(board.gameInfo?.startTime)}
+                        {getTimeUntilGame(board?.createdAt)}
                       </span>
                     </div>
-                    
+
                     <h3 className="text-lg font-semibold mb-2">
-                      {board.gameInfo?.teams?.away} @ {board.gameInfo?.teams?.home}
+                      {board.gameInfo?.teams?.away} @{" "}
+                      {board.gameInfo?.teams?.home}
                     </h3>
-                    
+
                     <div className="flex items-center justify-between text-sm text-gray-600">
                       <div className="flex items-center">
                         <Grid3X3 className="h-4 w-4 mr-1" />
@@ -389,10 +416,15 @@ export default function Dashboard() {
                       </div>
                       <div className="flex items-center">
                         <Trophy className="h-4 w-4 mr-1 text-yellow-500" />
-                        <span>{formatCurrency(TIERS[board.tierId.toUpperCase()]?.prizePerQuarter)}/qtr</span>
+                        <span>
+                          {formatCurrency(
+                            TIERS[board.tierId.toUpperCase()]?.prizePerQuarter
+                          )}
+                          /qtr
+                        </span>
                       </div>
                     </div>
-                    
+
                     <div className="mt-4 bg-blue-50 rounded-md p-3 text-sm">
                       <div className="flex items-center text-blue-700">
                         <Zap className="h-4 w-4 mr-2" />
@@ -406,16 +438,17 @@ export default function Dashboard() {
           ) : (
             <div className="bg-white rounded-lg shadow-md p-12 text-center">
               <Grid3X3 className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Active Games</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No Active Games
+              </h3>
               <p className="text-gray-600 mb-4">
-                {stats.activeTiers.length > 0 
+                {stats.activeTiers.length > 0
                   ? "No games available for your tiers right now"
-                  : "Choose a tier to see available games"
-                }
+                  : "Choose a tier to see available games"}
               </p>
               <Link
                 to="/games"
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors hover:text-white"
               >
                 Browse Games
                 <ChevronRight className="ml-2 h-4 w-4" />
@@ -431,11 +464,16 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Recent Wins</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Recent Wins
+            </h2>
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="divide-y divide-gray-200">
                 {recentWins.map((win) => (
-                  <div key={win.id} className="p-4 flex items-center justify-between">
+                  <div
+                    key={win.id}
+                    className="p-4 flex items-center justify-between"
+                  >
                     <div className="flex items-center">
                       <Trophy className="h-8 w-8 text-yellow-500 mr-3" />
                       <div>
@@ -472,9 +510,12 @@ export default function Dashboard() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-bold mb-2">Double Your Daily Plays!</h3>
+                <h3 className="text-xl font-bold mb-2">
+                  Double Your Daily Plays!
+                </h3>
                 <p className="text-blue-100">
-                  Add Telegram to get 10 daily trivia attempts instead of 5, plus instant win notifications
+                  Add Telegram to get 10 daily trivia attempts instead of 5,
+                  plus instant win notifications
                 </p>
               </div>
               <Link

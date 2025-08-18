@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   Users,
   Search,
@@ -14,24 +14,33 @@ import {
   Eye,
   Download,
   RefreshCw,
-  MessageSquare
-} from 'lucide-react';
-import { db, collections, formatCurrency } from '../../firebase/config';
-import { collection, query, where, orderBy, limit, getDocs, doc, updateDoc } from 'firebase/firestore';
-import toast from 'react-hot-toast';
+  MessageSquare,
+} from "lucide-react";
+import { db, collections, formatCurrency } from "../../firebase/config";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  getDocs,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
+import toast from "react-hot-toast";
 
 export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [filterOptions, setFilterOptions] = useState({
-    status: 'all',
-    tier: 'all',
-    hasTelegram: 'all'
+    status: "all",
+    tier: "all",
+    hasTelegram: "all",
   });
-  const [sortBy, setSortBy] = useState('createdAt');
-  const [sortOrder, setSortOrder] = useState('desc');
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
 
   useEffect(() => {
     loadUsers();
@@ -40,64 +49,70 @@ export default function AdminUsers() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      
+
       const usersQuery = query(
         collection(db, collections.users),
-        orderBy('createdAt', 'desc'),
+        orderBy("createdAt", "desc"),
         limit(100)
       );
-      
+
       const snapshot = await getDocs(usersQuery);
       const usersData = [];
-      
+
       for (const doc of snapshot.docs) {
         const userData = { id: doc.id, ...doc.data() };
-        
+
         // Get user stats
         const [donations, wins, squares] = await Promise.all([
-          getDocs(query(
-            collection(db, collections.donations),
-            where('userId', '==', doc.id)
-          )),
-          getDocs(query(
-            collection(db, collections.winners),
-            where('userId', '==', doc.id)
-          )),
-          getDocs(query(
-            collection(db, collections.squareClaims),
-            where('userId', '==', doc.id)
-          ))
+          getDocs(
+            query(
+              collection(db, collections.donations),
+              where("userId", "==", doc.id)
+            )
+          ),
+          getDocs(
+            query(
+              collection(db, collections.winners),
+              where("userId", "==", doc.id)
+            )
+          ),
+          getDocs(
+            query(
+              collection(db, collections.squareClaims),
+              where("userId", "==", doc.id)
+            )
+          ),
         ]);
-        
+
         let totalDonations = 0;
         let totalWinnings = 0;
-        
-        donations.forEach(d => totalDonations += d.data().amount || 0);
-        wins.forEach(w => totalWinnings += w.data().prizeAmount || 0);
-        
+
+        donations.forEach((d) => (totalDonations += d.data().amount || 0));
+        wins.forEach((w) => (totalWinnings += w.data().prizeAmount || 0));
+
         userData.stats = {
           totalDonations,
           totalWinnings,
           totalSquares: squares.size,
-          totalWins: wins.size
+          totalWins: wins.size,
         };
-        
+
         usersData.push(userData);
       }
-      
+
       setUsers(usersData);
       setLoading(false);
     } catch (error) {
-      console.error('Error loading users:', error);
-      toast.error('Failed to load users');
+      console.error("Error loading users:", error);
+      toast.error("Failed to load users");
       setLoading(false);
     }
   };
 
   const toggleUserStatus = async (userId, currentStatus) => {
-    const newStatus = currentStatus === 'banned' ? 'active' : 'banned';
-    const action = newStatus === 'banned' ? 'ban' : 'unban';
-    
+    const newStatus = currentStatus === "banned" ? "active" : "banned";
+    const action = newStatus === "banned" ? "ban" : "unban";
+
     if (!window.confirm(`Are you sure you want to ${action} this user?`)) {
       return;
     }
@@ -106,9 +121,11 @@ export default function AdminUsers() {
       await updateDoc(doc(db, collections.users, userId), {
         status: newStatus,
         [`${action}Date`]: new Date(),
-        [`${action}Reason`]: prompt(`Please provide a reason for ${action}ning:`) || 'Admin action'
+        [`${action}Reason`]:
+          prompt(`Please provide a reason for ${action}ning:`) ||
+          "Admin action",
       });
-      
+
       toast.success(`User ${action}ned successfully`);
       loadUsers();
     } catch (error) {
@@ -119,59 +136,76 @@ export default function AdminUsers() {
 
   const exportUsers = () => {
     const csv = [
-      ['Email', 'Name', 'Status', 'Telegram', 'Total Donations', 'Total Winnings', 'Squares', 'Wins', 'Created Date'],
-      ...filteredUsers.map(user => [
+      [
+        "Email",
+        "Name",
+        "Status",
+        "Telegram",
+        "Total Donations",
+        "Total Winnings",
+        "Squares",
+        "Wins",
+        "Created Date",
+      ],
+      ...filteredUsers.map((user) => [
         user.email,
-        user.displayName || '',
-        user.status || 'active',
-        user.hasTelegram ? 'Yes' : 'No',
+        user.displayName || "",
+        user.status || "active",
+        user.hasTelegram ? "Yes" : "No",
         user.stats.totalDonations,
         user.stats.totalWinnings,
         user.stats.totalSquares,
         user.stats.totalWins,
-        user.createdAt?.toDate?.().toLocaleDateString() || ''
-      ])
-    ].map(row => row.join(',')).join('\n');
-    
-    const blob = new Blob([csv], { type: 'text/csv' });
+        user.createdAt?.toDate?.().toLocaleDateString() || "",
+      ]),
+    ]
+      .map((row) => row.join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `users-export-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `users-export-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
   };
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = searchTerm === '' || 
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.phone?.includes(searchTerm);
-    
-    const matchesStatus = filterOptions.status === 'all' || 
-      (filterOptions.status === 'active' && user.status !== 'banned') ||
-      (filterOptions.status === 'banned' && user.status === 'banned');
-    
-    const matchesTelegram = filterOptions.hasTelegram === 'all' ||
-      (filterOptions.hasTelegram === 'yes' && user.hasTelegram) ||
-      (filterOptions.hasTelegram === 'no' && !user.hasTelegram);
-    
-    return matchesSearch && matchesStatus && matchesTelegram;
-  }).sort((a, b) => {
-    let aVal = a[sortBy] || 0;
-    let bVal = b[sortBy] || 0;
-    
-    if (sortBy.includes('.')) {
-      const [obj, prop] = sortBy.split('.');
-      aVal = a[obj]?.[prop] || 0;
-      bVal = b[obj]?.[prop] || 0;
-    }
-    
-    if (sortOrder === 'asc') {
-      return aVal > bVal ? 1 : -1;
-    } else {
-      return aVal < bVal ? 1 : -1;
-    }
-  });
+  const filteredUsers = users
+    .filter((user) => {
+      const matchesSearch =
+        searchTerm === "" ||
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.phone?.includes(searchTerm);
+
+      const matchesStatus =
+        filterOptions.status === "all" ||
+        (filterOptions.status === "active" && user.status !== "banned") ||
+        (filterOptions.status === "banned" && user.status === "banned");
+
+      const matchesTelegram =
+        filterOptions.hasTelegram === "all" ||
+        (filterOptions.hasTelegram === "yes" && user.hasTelegram) ||
+        (filterOptions.hasTelegram === "no" && !user.hasTelegram);
+
+      return matchesSearch && matchesStatus && matchesTelegram;
+    })
+    .sort((a, b) => {
+      let aVal = a[sortBy] || 0;
+      let bVal = b[sortBy] || 0;
+
+      if (sortBy.includes(".")) {
+        const [obj, prop] = sortBy.split(".");
+        aVal = a[obj]?.[prop] || 0;
+        bVal = b[obj]?.[prop] || 0;
+      }
+
+      if (sortOrder === "asc") {
+        return aVal > bVal ? 1 : -1;
+      } else {
+        return aVal < bVal ? 1 : -1;
+      }
+    });
 
   const UserDetailsModal = ({ user, onClose }) => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -202,19 +236,23 @@ export default function AdminUsers() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Display Name</p>
-                  <p className="font-medium">{user.displayName || 'Not set'}</p>
+                  <p className="font-medium">{user.displayName || "Not set"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Phone</p>
-                  <p className="font-medium">{user.phone || 'Not provided'}</p>
+                  <p className="font-medium">{user.phone || "Not provided"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Status</p>
                   <p className="font-medium">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      user.status === 'banned' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                    }`}>
-                      {user.status === 'banned' ? 'Banned' : 'Active'}
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        user.status === "banned"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-green-100 text-green-800"
+                      }`}
+                    >
+                      {user.status === "banned" ? "Banned" : "Active"}
                     </span>
                   </p>
                 </div>
@@ -230,14 +268,18 @@ export default function AdminUsers() {
                     <DollarSign className="h-5 w-5 text-green-600 mr-2" />
                     <p className="text-sm text-gray-600">Total Donations</p>
                   </div>
-                  <p className="text-xl font-bold">{formatCurrency(user.stats.totalDonations)}</p>
+                  <p className="text-xl font-bold">
+                    {formatCurrency(user.stats.totalDonations)}
+                  </p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="flex items-center mb-2">
                     <Trophy className="h-5 w-5 text-yellow-600 mr-2" />
                     <p className="text-sm text-gray-600">Total Winnings</p>
                   </div>
-                  <p className="text-xl font-bold">{formatCurrency(user.stats.totalWinnings)}</p>
+                  <p className="text-xl font-bold">
+                    {formatCurrency(user.stats.totalWinnings)}
+                  </p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="flex items-center mb-2">
@@ -262,19 +304,23 @@ export default function AdminUsers() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Created</span>
-                  <span>{user.createdAt?.toDate?.().toLocaleString() || 'Unknown'}</span>
+                  <span>
+                    {user.createdAt?.toDate?.().toLocaleString() || "Unknown"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Last Active</span>
-                  <span>{user.lastActive?.toDate?.().toLocaleString() || 'Unknown'}</span>
+                  <span>
+                    {user.lastActive?.toDate?.().toLocaleString() || "Unknown"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Telegram Connected</span>
-                  <span>{user.hasTelegram ? 'Yes' : 'No'}</span>
+                  <span>{user.hasTelegram ? "Yes" : "No"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Current Tiers</span>
-                  <span>{user.currentTiers?.join(', ') || 'None'}</span>
+                  <span>{user.currentTiers?.join(", ") || "None"}</span>
                 </div>
               </div>
             </div>
@@ -287,12 +333,12 @@ export default function AdminUsers() {
                   onClose();
                 }}
                 className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md transition-colors ${
-                  user.status === 'banned'
-                    ? 'bg-green-600 text-white hover:bg-green-700'
-                    : 'bg-red-600 text-white hover:bg-red-700'
+                  user.status === "banned"
+                    ? "bg-green-600 text-white hover:bg-green-700"
+                    : "bg-red-600 text-white hover:bg-red-700"
                 }`}
               >
-                {user.status === 'banned' ? (
+                {user.status === "banned" ? (
                   <>
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Unban User
@@ -308,7 +354,7 @@ export default function AdminUsers() {
                 onClick={() => {
                   window.location.href = `mailto:${user.email}`;
                 }}
-                className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors hover:text-white"
               >
                 <Mail className="h-4 w-4 mr-2" />
                 Send Email
@@ -334,7 +380,9 @@ export default function AdminUsers() {
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              User Management
+            </h1>
             <p className="text-gray-600 mt-2">View and manage platform users</p>
           </div>
           <div className="flex gap-3">
@@ -347,7 +395,7 @@ export default function AdminUsers() {
             </button>
             <button
               onClick={loadUsers}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors hover:text-white"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
@@ -382,7 +430,7 @@ export default function AdminUsers() {
               <div>
                 <p className="text-sm text-gray-600">Active Users</p>
                 <p className="text-xl font-bold">
-                  {users.filter(u => u.status !== 'banned').length}
+                  {users.filter((u) => u.status !== "banned").length}
                 </p>
               </div>
             </div>
@@ -399,7 +447,7 @@ export default function AdminUsers() {
               <div>
                 <p className="text-sm text-gray-600">With Telegram</p>
                 <p className="text-xl font-bold">
-                  {users.filter(u => u.hasTelegram).length}
+                  {users.filter((u) => u.hasTelegram).length}
                 </p>
               </div>
             </div>
@@ -416,7 +464,7 @@ export default function AdminUsers() {
               <div>
                 <p className="text-sm text-gray-600">Banned Users</p>
                 <p className="text-xl font-bold">
-                  {users.filter(u => u.status === 'banned').length}
+                  {users.filter((u) => u.status === "banned").length}
                 </p>
               </div>
             </div>
@@ -435,22 +483,29 @@ export default function AdminUsers() {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          
+
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-gray-400" />
             <select
               value={filterOptions.status}
-              onChange={(e) => setFilterOptions({ ...filterOptions, status: e.target.value })}
+              onChange={(e) =>
+                setFilterOptions({ ...filterOptions, status: e.target.value })
+              }
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
               <option value="banned">Banned</option>
             </select>
-            
+
             <select
               value={filterOptions.hasTelegram}
-              onChange={(e) => setFilterOptions({ ...filterOptions, hasTelegram: e.target.value })}
+              onChange={(e) =>
+                setFilterOptions({
+                  ...filterOptions,
+                  hasTelegram: e.target.value,
+                })
+              }
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">All Users</option>
@@ -501,14 +556,16 @@ export default function AdminUsers() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {user.displayName || 'Anonymous'}
+                            {user.displayName || "Anonymous"}
                           </div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
+                          <div className="text-sm text-gray-500">
+                            {user.email}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {user.phone || '-'}
+                          {user.phone || "-"}
                         </div>
                         <div className="text-sm text-gray-500">
                           {user.hasTelegram && (
@@ -521,17 +578,23 @@ export default function AdminUsers() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm">
-                          <div>Donated: {formatCurrency(user.stats.totalDonations)}</div>
-                          <div className="text-gray-500">Won: {formatCurrency(user.stats.totalWinnings)}</div>
+                          <div>
+                            Donated: {formatCurrency(user.stats.totalDonations)}
+                          </div>
+                          <div className="text-gray-500">
+                            Won: {formatCurrency(user.stats.totalWinnings)}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          user.status === 'banned' 
-                            ? 'bg-red-100 text-red-800' 
-                            : 'bg-green-100 text-green-800'
-                        }`}>
-                          {user.status === 'banned' ? (
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            user.status === "banned"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-green-100 text-green-800"
+                          }`}
+                        >
+                          {user.status === "banned" ? (
                             <>
                               <Ban className="h-3 w-3 mr-1" />
                               Banned
@@ -554,11 +617,25 @@ export default function AdminUsers() {
                             <Eye className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => toggleUserStatus(user.id, user.status)}
-                            className={user.status === 'banned' ? 'text-green-600 hover:text-green-900' : 'text-red-600 hover:text-red-900'}
-                            title={user.status === 'banned' ? 'Unban User' : 'Ban User'}
+                            onClick={() =>
+                              toggleUserStatus(user.id, user.status)
+                            }
+                            className={
+                              user.status === "banned"
+                                ? "text-green-600 hover:text-green-900"
+                                : "text-red-600 hover:text-red-900"
+                            }
+                            title={
+                              user.status === "banned"
+                                ? "Unban User"
+                                : "Ban User"
+                            }
                           >
-                            {user.status === 'banned' ? <CheckCircle className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
+                            {user.status === "banned" ? (
+                              <CheckCircle className="h-4 w-4" />
+                            ) : (
+                              <Ban className="h-4 w-4" />
+                            )}
                           </button>
                         </div>
                       </td>
@@ -566,7 +643,10 @@ export default function AdminUsers() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
+                    <td
+                      colSpan="5"
+                      className="px-6 py-12 text-center text-gray-500"
+                    >
                       No users found
                     </td>
                   </tr>

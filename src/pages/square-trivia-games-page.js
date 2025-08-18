@@ -52,7 +52,7 @@ export default function Games() {
     try {
       setLoading(true);
 
-      // Load all active games
+      // 1. Fetch all games
       const gamesQuery = query(
         collection(db, collections.games),
         where("status", "in", ["upcoming", "active"]),
@@ -60,43 +60,49 @@ export default function Games() {
       );
 
       const gamesSnapshot = await getDocs(gamesQuery);
-      const gamesData = [];
+      const gamesData = gamesSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-      for (const doc of gamesSnapshot.docs) {
-        const gameData = { id: doc.id, ...doc.data() };
-
-        // Load boards for this game
+      // 2. Fetch all boards for these games in one go
+      const gameIds = gamesData.map((g) => g.id);
+      let boardsSnap = [];
+      if (gameIds.length > 0) {
         const boardsQuery = query(
           collection(db, collections.boards),
-          where("gameId", "==", doc.id),
+          where("gameId", "in", gameIds),
           where("isActive", "==", true)
         );
-
-        const boardsSnapshot = await getDocs(boardsQuery);
-        const gameBoards = [];
-
-        boardsSnapshot.forEach((boardDoc) => {
-          const boardData = { id: boardDoc.id, ...boardDoc.data() };
-
-          // Count filled squares
-          const filledSquares = Object.values(boardData.squares || {}).filter(
-            (square) => square.claims && square.claims.length > 0
-          ).length;
-
-          boardData.filledSquares = filledSquares;
-          boardData.totalSquares = 50;
-          boardData.fillPercentage = (filledSquares / 50) * 100;
-
-          gameBoards.push(boardData);
-        });
-
-        gameData.boards = gameBoards;
-        gamesData.push(gameData);
+        boardsSnap = await getDocs(boardsQuery);
       }
+
+      // 3. Group boards by game
+      const boardsMap = {};
+      boardsSnap.forEach((boardDoc) => {
+        const boardData = { id: boardDoc.id, ...boardDoc.data() };
+
+        // Count filled squares
+        const filledSquares = Object.values(boardData.squares || {}).filter(
+          (square) => square.claims && square.claims.length > 0
+        ).length;
+
+        boardData.filledSquares = filledSquares;
+        boardData.totalSquares = 50;
+        boardData.fillPercentage = (filledSquares / 50) * 100;
+
+        if (!boardsMap[boardData.gameId]) boardsMap[boardData.gameId] = [];
+        boardsMap[boardData.gameId].push(boardData);
+      });
+
+      // 4. Attach boards to games
+      gamesData.forEach((game) => {
+        game.boards = boardsMap[game.id] || [];
+      });
 
       setGames(gamesData);
 
-      // Group games by date
+      // 5. Group games by date
       const grouped = gamesData.reduce((acc, game) => {
         const date = new Date(game.gameDate?.toDate?.() || game.gameDate);
         const dateKey = date.toLocaleDateString("en-US", {
@@ -105,11 +111,9 @@ export default function Games() {
           day: "numeric",
         });
 
-        if (!acc[dateKey]) {
-          acc[dateKey] = [];
-        }
-
+        if (!acc[dateKey]) acc[dateKey] = [];
         acc[dateKey].push(game);
+
         return acc;
       }, {});
 
@@ -225,7 +229,7 @@ export default function Games() {
               userData.currentTiers.length === 0) && (
               <button
                 onClick={() => setShowTierSelection(true)}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors hover:text-white"
               >
                 <Plus className="h-5 w-5 mr-2" />
                 Choose a Tier
@@ -383,9 +387,9 @@ export default function Games() {
                                   {getTimeUntilGame(game.gameDate)}
                                 </span>
                               </div>
-
+                              {console.log(game)}
                               <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                                {game.awayTeam} @ {game.homeTeam}
+                                {game?.teams?.away} @ {game.teams?.home}
                               </h3>
 
                               <p className="text-sm text-gray-600">
@@ -445,7 +449,7 @@ export default function Games() {
                                     {isUserTier ? (
                                       <Link
                                         to={`/game/${board.id}`}
-                                        className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
+                                        className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
                                       >
                                         Play Now
                                       </Link>
@@ -490,7 +494,7 @@ export default function Games() {
               userData.currentTiers.length === 0) && (
               <button
                 onClick={() => setShowTierSelection(true)}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors hover:text-white"
               >
                 Choose a Tier to Get Started
                 <ChevronRight className="ml-2 h-4 w-4" />

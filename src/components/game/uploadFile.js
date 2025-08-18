@@ -37,8 +37,7 @@ export const bulkUploadQuestions = async (file) => {
               !row.category ||
               !row.difficulty ||
               !row.timeLimit ||
-              !row.points ||
-              !row.explanation
+              !row.points
             ) {
               console.warn(
                 `Skipping row ${index + 1}: Missing required fields`,
@@ -70,6 +69,26 @@ export const bulkUploadQuestions = async (file) => {
             ) {
               console.warn(
                 `Skipping row ${index + 1}: Invalid difficulty '${row.difficulty}'`
+              );
+              skippedCount++;
+              continue;
+            }
+
+            if (Number(row.timeLimit) > 60 || Number(row.timeLimit) < 10) {
+              console.warn(
+                `Invalid Value in ${index + 1}: Invalid time limit '${row.timeLimit}'`
+              );
+              skippedCount++;
+              continue;
+            }
+
+            if (
+              Number(row.points) < 50 ||
+              Number(row.points) % 50 !== 0 ||
+              Number(row.points) > 500
+            ) {
+              console.warn(
+                `Invalid Value in ${index + 1}: Invalid points '${row.points}'. Points must be between 50 and 500 and divisible by 50`
               );
               skippedCount++;
               continue;

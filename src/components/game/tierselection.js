@@ -402,7 +402,7 @@ export default function TierSelection({
               <button
                 onClick={processPayment}
                 disabled={processing}
-                className="px-8 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                className="px-8 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center hover:text-white"
               >
                 {processing ? (
                   <>

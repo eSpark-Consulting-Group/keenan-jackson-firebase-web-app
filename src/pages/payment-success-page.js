@@ -18,67 +18,78 @@ import confetti from "canvas-confetti";
 import toast from "react-hot-toast";
 
 export default function PaymentSuccess() {
-  const { user, userData } = useAuth();
+  const { user, userData, refreshUserData } = useAuth();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [paymentDetails, setPaymentDetails] = useState(null);
 
   const sessionId = searchParams.get("session_id");
 
-useEffect(() => {
-  const runConfetti = () => {
-    const duration = 3 * 1000;
-    const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+  useEffect(() => {
+    const runConfetti = () => {
+      const duration = 3 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
 
-    function randomInRange(min, max) {
-      return Math.random() * (max - min) + min;
-    }
-
-    const interval = setInterval(function () {
-      const timeLeft = animationEnd - Date.now();
-      if (timeLeft <= 0) return clearInterval(interval);
-
-      const particleCount = 50 * (timeLeft / duration);
-
-      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
-    }, 250);
-  };
-
-  const verifyPayment = async () => {
-    if (!sessionId) {
-      toast.error("Session ID missing in URL");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const res = await callFunction("verifyCheckoutSession", { sessionId, uid: user?.uid });
-
-      if (res.success) {
-        const tier = TIERS[res.tierId?.toUpperCase()] || null;
-        setPaymentDetails({
-          tier: tier,
-          amount: tier?.amount || 0,
-          accessGranted: true
-        });
-        toast.success(`Payment successful! Tier: ${res?.tier}`);
-        runConfetti();
-      } else {
-        toast.error(res?.message || "Payment not completed");
+      function randomInRange(min, max) {
+        return Math.random() * (max - min) + min;
       }
-    } catch (err) {
-      console.error(err);
-      toast.error("Error verifying payment");
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  verifyPayment();
-}, [sessionId]);
+      const interval = setInterval(function () {
+        const timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) return clearInterval(interval);
 
+        const particleCount = 50 * (timeLeft / duration);
+
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+        });
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+        });
+      }, 250);
+    };
+
+    const verifyPayment = async () => {
+      if (!sessionId) {
+        toast.error("Session ID missing in URL");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await callFunction("verifyCheckoutSession", {
+          sessionId,
+          uid: user?.uid,
+        });
+
+        if (res.success) {
+          const tier = TIERS[res.tierId?.toUpperCase()] || null;
+          setPaymentDetails({
+            tier: tier,
+            amount: tier?.amount || 0,
+            accessGranted: true,
+          });
+          toast.success(`Payment successful! Tier: ${res.tier}`);
+          runConfetti();
+          refreshUserData();
+        } else {
+          toast.error(res.message || "Payment not completed");
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error("Error verifying payment");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifyPayment();
+  }, [sessionId]);
 
   const nextSteps = [
     {
@@ -274,7 +285,7 @@ useEffect(() => {
         >
           <Link
             to="/games"
-            className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transform hover:scale-105 transition-all duration-200"
+            className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transform hover:scale-105 transition-all duration-200 hover:text-white"
           >
             <Trophy className="mr-2 h-5 w-5" />
             Start Playing Now

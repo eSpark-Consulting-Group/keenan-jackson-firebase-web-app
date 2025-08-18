@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   XCircle,
   ArrowLeft,
@@ -8,8 +8,8 @@ import {
   Mail,
   ChevronRight,
   AlertCircle,
-  Shield
-} from 'lucide-react';
+  Shield,
+} from "lucide-react";
 
 export default function PaymentCancel() {
   const reasons = [
@@ -18,22 +18,22 @@ export default function PaymentCancel() {
       title: "Changed Your Mind?",
       description: "No worries! You can always come back when you're ready.",
       action: "Browse Tiers",
-      link: "/games"
+      link: "/games",
     },
     {
       icon: HelpCircle,
       title: "Have Questions?",
       description: "Our support team is here to help with any concerns.",
       action: "Contact Support",
-      link: "mailto:support@squaretrivia.com"
+      link: "mailto:support@squaretrivia.com",
     },
     {
       icon: Mail,
       title: "Try Free Entry",
       description: "No purchase necessary - request free entry by mail.",
       action: "Learn More",
-      link: "/free-entry"
-    }
+      link: "/free-entry",
+    },
   ];
 
   const benefits = [
@@ -41,7 +41,7 @@ export default function PaymentCancel() {
     "NO FEES on playing or winning",
     "Guaranteed prize amounts every game",
     "Instant payout option available",
-    "Fair competition with hidden answer times"
+    "Fair competition with hidden answer times",
   ];
 
   return (
@@ -56,11 +56,11 @@ export default function PaymentCancel() {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-red-100 rounded-full mb-6">
             <XCircle className="h-10 w-10 text-red-600" />
           </div>
-          
+
           <h1 className="text-3xl font-bold text-gray-900 mb-4">
             Payment Cancelled
           </h1>
-          
+
           <p className="text-xl text-gray-600">
             Your payment was not processed and no charges were made.
           </p>
@@ -84,16 +84,14 @@ export default function PaymentCancel() {
               <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-100 rounded-full mb-4">
                 <reason.icon className="h-6 w-6 text-gray-600" />
               </div>
-              
+
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 {reason.title}
               </h3>
-              
-              <p className="text-gray-600 mb-4 text-sm">
-                {reason.description}
-              </p>
-              
-              {reason.link.startsWith('mailto:') ? (
+
+              <p className="text-gray-600 mb-4 text-sm">{reason.description}</p>
+
+              {reason.link.startsWith("mailto:") ? (
                 <a
                   href={reason.link}
                   className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
@@ -124,7 +122,7 @@ export default function PaymentCancel() {
           <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
             Why Players Love Square Trivia
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {benefits.map((benefit, index) => (
               <motion.div
@@ -149,8 +147,9 @@ export default function PaymentCancel() {
           className="bg-white rounded-lg shadow-lg p-8 mb-8 text-center"
         >
           <blockquote className="text-lg text-gray-700 italic mb-4">
-            "I was skeptical at first, but Square Trivia is amazing! Won $900 in my second week 
-            just by knowing sports and answering fast. The NO FEES promise is real!"
+            "I was skeptical at first, but Square Trivia is amazing! Won $900 in
+            my second week just by knowing sports and answering fast. The NO
+            FEES promise is real!"
           </blockquote>
           <cite className="text-gray-600 not-italic">
             - Michael T., $100 Tier Player
@@ -171,8 +170,9 @@ export default function PaymentCancel() {
                 Your Information is Safe
               </h3>
               <p className="text-gray-700">
-                No payment information was stored during this process. All transactions are 
-                processed securely through Stripe when you're ready to join.
+                No payment information was stored during this process. All
+                transactions are processed securely through Stripe when you're
+                ready to join.
               </p>
             </div>
           </div>
@@ -188,20 +188,21 @@ export default function PaymentCancel() {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Ready to Give It Another Try?
           </h2>
-          
+
           <p className="text-gray-600 mb-8">
-            Join thousands of players winning real money with their sports knowledge
+            Join thousands of players winning real money with their sports
+            knowledge
           </p>
-          
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/games"
-              className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transform hover:scale-105 transition-all duration-200"
+              className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transform hover:scale-105 transition-all duration-200 hover:text-white"
             >
               <CreditCard className="mr-2 h-5 w-5" />
               Try Again
             </Link>
-            
+
             <Link
               to="/dashboard"
               className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-blue-600 bg-white border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
@@ -210,10 +211,13 @@ export default function PaymentCancel() {
               Back to Dashboard
             </Link>
           </div>
-          
+
           <p className="text-sm text-gray-500 mt-6">
-            Questions? Email us at{' '}
-            <a href="mailto:support@squaretrivia.com" className="text-blue-600 hover:text-blue-800">
+            Questions? Email us at{" "}
+            <a
+              href="mailto:support@squaretrivia.com"
+              className="text-blue-600 hover:text-blue-800"
+            >
               support@squaretrivia.com
             </a>
           </p>

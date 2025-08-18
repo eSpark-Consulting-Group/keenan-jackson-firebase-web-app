@@ -160,6 +160,9 @@ export const getTierById = (tierId) => {
 
 // Helper to format currency
 export const formatCurrency = (amount) => {
+  if (isNaN(amount)) {
+    return "$0";
+  }
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
