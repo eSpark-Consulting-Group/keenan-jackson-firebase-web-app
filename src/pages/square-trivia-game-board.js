@@ -333,7 +333,7 @@ export default function GameBoard() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {game.awayTeam} @ {game.homeTeam}
+                {game?.teams.away} @ {game?.teams?.home}
               </h1>
               <div className="flex items-center space-x-4 text-sm text-gray-600">
                 <span
