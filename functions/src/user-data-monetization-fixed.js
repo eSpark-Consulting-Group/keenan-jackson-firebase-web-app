@@ -136,14 +136,21 @@ async function handleGrantTelegramAccess(userId, telegramUsername, tier) {
 }
 
 exports.addTelegramToAccount = functions.https.onCall(async (data, context) => {
+  // data comes from frontend
+  console.log(data, "dataCcQCCCAQ   ");
   const { userId, telegramUsername } = data;
 
+  console.log("addTelegramToAccount called", { userId, telegramUsername });
+
+  // Optional: check authentication
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
       "User must be authenticated."
     );
   }
+  console.log("context.auth.uid", context.auth.uid, userId);
+  // Optional: validate userId matches authenticated user
   if (context.auth.uid !== userId) {
     throw new functions.https.HttpsError(
       "permission-denied",
@@ -162,27 +169,48 @@ exports.addTelegramToAccount = functions.https.onCall(async (data, context) => {
     }
 
     const userRef = db.collection("users").doc(userId);
-    await userRef.set(
-      {
-        telegramUsername: validation.value,
-        hasTelegram: true,
-        preferredNotificationMethod: "both",
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
+    console.log("userRef....!....", userRef);
 
     const userDoc = await userRef.get();
-    const userData = userDoc.data();
+    const userData = userDoc.data() || {};
 
-    // Grant access for active tiers (direct call instead of httpsCallable)
+    const updates = {
+      telegramUsername: validation.value,
+      hasTelegram: true,
+      preferredNotificationMethod: "both",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    let addedExtraAttempts = false;
+
+    // ✅ Only adjust if they are adding Telegram for the first time
+    if (!userData.hasTelegram && !userData.telegramUsername) {
+      const currentAttempts = userData.dailyTriviaAttempts || 0;
+
+      // Cap at 10 for Telegram users
+      const newAttempts = Math.min(currentAttempts + 5, 10);
+
+      updates.dailyTriviaAttempts = newAttempts;
+      addedExtraAttempts = true;
+    } else {
+      // Just make sure they’re not above the cap
+      const currentAttempts = userData.dailyTriviaAttempts || 0;
+      const maxAllowed = telegramUsername ? 10 : 5;
+
+      if (currentAttempts > maxAllowed) {
+        updates.dailyTriviaAttempts = maxAllowed;
+      }
+    }
+
+    // Save updates
+    await userRef.set(updates, { merge: true });
+
+    // Grant Telegram access for active tiers
+    // 🔑 Instead of httpsCallable, use the helper directly
+    // 🔑 Instead of httpsCallable, use the helper directly
     if (userData.currentTiers && userData.currentTiers.length > 0) {
       for (const tier of userData.currentTiers) {
-        await grantTelegramAccessForTierLogic({
-          userId,
-          tier,
-          telegramUsername: validation.value,
-        });
+        await handleGrantTelegramAccess(userId, telegramUsername, tier);
       }
     }
 
