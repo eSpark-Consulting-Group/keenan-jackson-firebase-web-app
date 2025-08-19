@@ -34,7 +34,6 @@
 //   ...enhancedWinnerNotifications,
 // });
 
-
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const cors = require("./corsConfig");
@@ -117,5 +116,5 @@ Object.assign(exports, {
   ...adminPanel,
   ...automatedGameMonitoring,
   ...enhancedWinnerNotifications,
-  ...backendGameFunctions
+  ...backendGameFunctions,
 });

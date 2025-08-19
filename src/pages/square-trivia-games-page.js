@@ -387,7 +387,6 @@ export default function Games() {
                                   {getTimeUntilGame(game.gameDate)}
                                 </span>
                               </div>
-                              {console.log(game)}
                               <h3 className="text-xl font-semibold text-gray-900 mb-1">
                                 {game?.teams?.away} @ {game.teams?.home}
                               </h3>

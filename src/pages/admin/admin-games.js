@@ -425,7 +425,6 @@ export default function AdminGames() {
                           </div>
                         </div>
                       </td>
-                      {console.log(game)}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
                           {game.gameDate?.toDate?.().toLocaleDateString()}
