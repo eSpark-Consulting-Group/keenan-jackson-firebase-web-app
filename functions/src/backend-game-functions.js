@@ -128,13 +128,28 @@ exports.claimSquare = functions.https.onCall(async (data, context) => {
   const userId = context.auth.uid;
 
   try {
+    functions.logger.info("📌 claimSquare called", {
+      boardId,
+      squarePosition,
+      tokenId,
+      answerTime,
+      userId,
+    });
     // Verify token
-    const tokenDoc = await db.collection("squareTokens").doc(tokenId).get();
+    const tokenRef = db.collection("accessTokens").doc(tokenId);
+    functions.logger.debug("🔍 Checking tokenRef path", {
+      path: tokenRef.path,
+    });
+    const tokenDoc = await tokenRef.get();
+    functions.logger.debug("🔍 tokenDoc.exists", { exists: tokenDoc.exists });
     if (!tokenDoc.exists) {
+      functions.logger.error("❌ Invalid token, not found in Firestore", {
+        tokenId,
+      });
       throw new functions.https.HttpsError("invalid-argument", "Invalid token");
     }
-
     const token = tokenDoc.data();
+    functions.logger.info("✅ Token data", token);
 
     // Verify token belongs to user and hasn't been used
     if (token.userId !== userId) {
@@ -194,7 +209,8 @@ exports.claimSquare = functions.https.onCall(async (data, context) => {
       userId,
       tokenId,
       answerTime: answerTime / 1000, // Convert to seconds
-      claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+      // claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+      claimedAt: new Date(), // ✅ becomes a Firestore Timestamp
     };
 
     squareData.claims = [...(squareData.claims || []), newClaim];
@@ -207,7 +223,7 @@ exports.claimSquare = functions.https.onCall(async (data, context) => {
     });
 
     // Mark token as used
-    await db.collection("squareTokens").doc(tokenId).update({
+    await db.collection("accessTokens").doc(tokenId).update({
       used: true,
       usedAt: admin.firestore.FieldValue.serverTimestamp(),
       usedForSquare: squarePosition,
@@ -775,7 +791,7 @@ exports.validateAnswer = functions.https.onCall(async (data, context) => {
 
     if (isCorrect) {
       // Generate square token
-      const tokenRef = await db.collection("squareTokens").add({
+      const tokenRef = await db.collection("accessTokens").add({
         userId,
         tierId: session.tierId,
         answerTime: answerTime,

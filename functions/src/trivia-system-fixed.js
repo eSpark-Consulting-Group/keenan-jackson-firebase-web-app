@@ -251,6 +251,12 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
       remainingAttempts: attemptsCheck.remainingAfterThisAttempt,
       attemptsUsed: attemptsCheck.attemptsUsedAfterThis,
     });
+    const shuffledAnswers = shuffleArray(question.answers);
+    const correctIndex = shuffledAnswers.findIndex((a) => a.isCorrect);
+    // Save the correct index in the session doc (but not send to frontend)
+    await sessionRef.update({
+      correctIndex: correctIndex,
+    });
 
     // Return question without correct answer
     return {
@@ -261,7 +267,7 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
       question: {
         id: question.id,
         question: question.question,
-        answers: shuffleArray(question.answers),
+        answers: shuffledAnswers.map((a) => ({ text: a.text })),
         sport: question.sport,
         difficulty: question.difficulty,
       },
@@ -490,6 +496,9 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
       );
     }
 
+    const isCorrect = normalizedAnswerIndex === session.correctIndex;
+
+
     // Get the original question to check answer
     const questionDoc = await admin
       .firestore()
@@ -502,7 +511,6 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
     }
 
     const question = questionDoc.data();
-    const isCorrect = question.correctAnswerIndex === normalizedAnswerIndex;
 
     // SKILL-BASED: Calculate precise answer time
     const answeredAt = admin.firestore.FieldValue.serverTimestamp();
@@ -569,7 +577,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
         success: true,
         correct: true,
         tokenId: tokenRef.id,
-        correctAnswerIndex: question.correctAnswerIndex,
+         correctAnswerIndex: session.correctIndex,
         // Include answer time in response
         answerTime: answerTimeSeconds,
         message: `Correct! You answered in ${answerTimeSeconds} seconds. You can now place a square on the board.`,
@@ -586,7 +594,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
       return {
         success: true,
         correct: false,
-        correctAnswerIndex: question.correctAnswerIndex,
+         correctAnswerIndex: session.correctIndex,
         message: "Incorrect answer. Try another question!",
       };
     }
