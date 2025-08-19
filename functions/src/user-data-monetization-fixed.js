@@ -101,7 +101,7 @@ exports.trackUserEvent = functions.https.onCall(async (data, context) => {
 
 exports.addTelegramToAccount = functions.https.onCall(async (data, context) => {
   // data comes from frontend
-  console.log(data, "dataCcQCCCAQ   ")
+  console.log(data, "dataCcQCCCAQ   ");
   const { userId, telegramUsername } = data;
 
   console.log("addTelegramToAccount called", { userId, telegramUsername });
@@ -134,28 +134,30 @@ exports.addTelegramToAccount = functions.https.onCall(async (data, context) => {
 
     const userRef = db.collection("users").doc(userId);
     console.log("userRef....!....", userRef);
-    await userRef.set(
-      {
-        telegramUsername: validation.value,
-        hasTelegram: true,
-        preferredNotificationMethod: "both",
-        // updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
 
-    // Update user profile in Firestore
-    await userRef.update({
+    const userDoc = await userRef.get();
+    const userData = userDoc.data() || {};
+
+    const updates = {
       telegramUsername: validation.value,
       hasTelegram: true,
       preferredNotificationMethod: "both",
-      // updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    let addedExtraAttempts = false;
+
+    // ✅ Only give +5 attempts if user didn't have Telegram before
+    if (!userData.hasTelegram && !userData.telegramUsername) {
+      const currentAttempts = userData.dailyTriviaAttempts || 0;
+      updates.dailyTriviaAttempts = currentAttempts + 5;
+      addedExtraAttempts = true;
+    }
+
+    // Save updates
+    await userRef.set(updates, { merge: true });
 
     // Grant Telegram access for active tiers
-    const userDoc = await userRef.get();
-    const userData = userDoc.data();
-    console.log("userData........", userData);
     if (userData.currentTiers && userData.currentTiers.length > 0) {
       for (const tier of userData.currentTiers) {
         const grantTelegramAccessForTier = functions.httpsCallable(
@@ -171,10 +173,11 @@ exports.addTelegramToAccount = functions.https.onCall(async (data, context) => {
 
     return {
       success: true,
-      message:
-        "Telegram added successfully! You now have access to all benefits.",
+      message: addedExtraAttempts
+        ? "Telegram added successfully! +5 daily attempts unlocked 🎉"
+        : "Telegram updated successfully.",
       benefits: {
-        extraAttempts: 5,
+        extraAttempts: addedExtraAttempts ? 5 : 0,
         instantNotifications: true,
         communityAccess: true,
       },
@@ -184,11 +187,15 @@ exports.addTelegramToAccount = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("internal", error.message);
   }
 });
+
 exports.setAdminClaim = functions.https.onCall(async (data, context) => {
   const { uid } = data;
 
   if (!uid) {
-    throw new functions.https.HttpsError("invalid-argument", "User UID is required");
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "User UID is required"
+    );
   }
 
   try {
@@ -206,37 +213,37 @@ const TIER_CONFIG = {
   tier_25: {
     amount: 25,
     name: "$25 Tier",
-    telegramGroupId: '-1002279525248',
+    telegramGroupId: "-1002279525248",
     payoutPercentage: 0.77,
   },
   tier_50: {
     amount: 50,
     name: "$50 Tier",
-    telegramGroupId: '-1002862739955',
+    telegramGroupId: "-1002862739955",
     payoutPercentage: 0.77,
   },
   tier_100: {
     amount: 100,
     name: "$100 Tier",
-    telegramGroupId: '-1002749874729',
+    telegramGroupId: "-1002749874729",
     payoutPercentage: 0.77,
   },
   tier_250: {
     amount: 250,
     name: "$250 Tier",
-    telegramGroupId: '-1002554143674',
+    telegramGroupId: "-1002554143674",
     payoutPercentage: 0.8,
   },
   tier_500: {
     amount: 500,
     name: "$500 Tier",
-    telegramGroupId: '-1002477878800',
+    telegramGroupId: "-1002477878800",
     payoutPercentage: 0.8,
   },
   tier_1000: {
     amount: 1000,
     name: "$1000 Tier",
-    telegramGroupId: '-1002775562003',
+    telegramGroupId: "-1002775562003",
     payoutPercentage: 0.8,
   },
 };
@@ -259,7 +266,7 @@ exports.sendTelegramMessage = functions.https.onRequest(async (req, res) => {
     );
 
     const bot = new TelegramBot(
-      "7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ",
+      "7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ"
       // { polling: false }
     );
     console.log("Telegram bot initialized");
@@ -300,12 +307,10 @@ exports.sendTelegramMessage = functions.https.onRequest(async (req, res) => {
       );
     }
 
-    res
-      .status(200)
-      .send({
-        message: "Message sent (or invite generated)",
-        inviteLink: inviteLink.invite_link,
-      });
+    res.status(200).send({
+      message: "Message sent (or invite generated)",
+      inviteLink: inviteLink.invite_link,
+    });
   } catch (error) {
     console.error("Error sending Telegram message:", error);
     res.status(500).send({ error: error.message });

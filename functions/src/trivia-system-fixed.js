@@ -5,6 +5,8 @@
 
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const { logger } = require('firebase-functions');
+
 const crypto = require('crypto');
 
 // =====================================
@@ -83,6 +85,8 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
   const { tier, boardId } = data;
   const userId = context.auth.uid;
 
+  logger.info('Trivia question request started', { userId, tier, boardId });
+
   // Validate inputs
   if (!tier || !TIER_CONFIG[tier]) {
     throw new functions.https.HttpsError('invalid-argument', 'Invalid tier specified');
@@ -112,13 +116,28 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
       ? TRIVIA_CONFIG.MAX_ATTEMPTS_WITH_TELEGRAM 
       : TRIVIA_CONFIG.MAX_ATTEMPTS_PER_DAY;
 
-    const attemptsToday = await checkDailyAttempts(userId,dailyLimit);
-    if (attemptsToday >= dailyLimit) {
-      const message = hasTelegram 
-        ? 'Daily trivia limit reached. Try again tomorrow.'
-        : `Daily trivia limit reached. Add Telegram to get ${TRIVIA_CONFIG.MAX_ATTEMPTS_WITH_TELEGRAM - TRIVIA_CONFIG.MAX_ATTEMPTS_PER_DAY} more attempts per day!`;
-      
-      throw new functions.https.HttpsError('resource-exhausted', message);
+    logger.info('User data retrieved', {
+      userId,
+      hasTelegram,
+      dailyLimit,
+      currentRemainingAttempts: userData.dailyTriviaAttempts,
+      lastTriviaAttempt: userData.lastTriviaAttempt?.toDate()?.toISOString()
+    });
+
+    // SIMPLE APPROACH: Check and update attempts
+    const attemptsCheck = await checkAndUpdateDailyAttempts(userId, dailyLimit, userData);
+    
+    logger.info('Attempts check result', {
+      userId,
+      canMakeAttempt: attemptsCheck.canMakeAttempt,
+      remainingAfterThisAttempt: attemptsCheck.remainingAfterThisAttempt,
+      attemptsUsedAfterThis: attemptsCheck.attemptsUsedAfterThis,
+      message: attemptsCheck.message
+    });
+    
+    // Check if user can make attempt
+    if (!attemptsCheck.canMakeAttempt) {
+      throw new functions.https.HttpsError('resource-exhausted', attemptsCheck.message);
     }
 
     // Verify board exists and is active
@@ -182,15 +201,20 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    // Record attempt
+    // Record attempt in triviaAttempts collection
     await recordTriviaAttempt(userId, sessionRef.id, false);
+    
+    logger.info('Question generated successfully', {
+      userId,
+      sessionId: sessionRef.id,
+      remainingAttempts: attemptsCheck.remainingAfterThisAttempt,
+      attemptsUsed: attemptsCheck.attemptsUsedAfterThis
+    });
 
     // Return question without correct answer
     return {
       success: true,
       sessionId: sessionRef.id,
-      
-      // Include session start time for client-side backup timing
       sessionStartTime: Date.now(),
       
       question: {
@@ -207,8 +231,8 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
         maxSquares: TIER_CONFIG[tier]?.maxSquaresPerBoard
       },
       triviaStatus: {
-        attemptsUsed: attemptsToday + 1,
-        attemptsRemaining: dailyLimit - attemptsToday - 1,
+        attemptsUsed: attemptsCheck.attemptsUsedAfterThis,
+        attemptsRemaining: attemptsCheck.remainingAfterThisAttempt,
         dailyLimit: dailyLimit,
         hasTelegram: hasTelegram,
         telegramBenefit: !hasTelegram ? `Add Telegram for ${TRIVIA_CONFIG.MAX_ATTEMPTS_WITH_TELEGRAM - dailyLimit} more daily attempts!` : null
@@ -216,10 +240,107 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
     };
 
   } catch (error) {
-    console.error('Get trivia question error:', error);
+    logger.error('Get trivia question error', {
+      userId,
+      error: error.message,
+      code: error.code
+    });
     throw error;
   }
 });
+
+async function checkAndUpdateDailyAttempts(userId, dailyLimit, userData) {
+  const userRef = admin.firestore().collection('users').doc(userId);
+
+  try {
+    logger.info('Starting checkAndUpdateDailyAttempts', { userId, dailyLimit });
+
+    // Get current date (Pakistan time)
+    const now = new Date();
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+
+    const lastAttemptDate = userData.lastTriviaAttempt?.toDate();
+    const lastAttemptDay = lastAttemptDate ? new Date(lastAttemptDate) : null;
+    if (lastAttemptDay) lastAttemptDay.setHours(0, 0, 0, 0);
+
+    const isNewDay = !lastAttemptDate || (lastAttemptDay && lastAttemptDay.getTime() !== today.getTime());
+
+    logger.info('New day check result', { userId, isNewDay });
+
+    let currentRemaining = userData.dailyTriviaAttempts;
+
+    // Reset attempts only if it's a new day or user has no attempts recorded
+    if (isNewDay || typeof currentRemaining !== 'number') {
+      currentRemaining = dailyLimit;
+      await userRef.update({
+        dailyTriviaAttempts: currentRemaining,
+        lastTriviaAttempt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      logger.info('Resetting attempts for new day or first-time user', { userId, currentRemaining });
+    }
+
+    // BLOCK if user has 0 remaining attempts
+    if (currentRemaining <= 0) {
+      const message = userData.hasTelegram || !!userData.telegramUsername
+        ? 'Daily trivia limit reached. Try again tomorrow.'
+        : `Daily trivia limit reached. Add Telegram to get ${TRIVIA_CONFIG.MAX_ATTEMPTS_WITH_TELEGRAM - TRIVIA_CONFIG.MAX_ATTEMPTS_PER_DAY} more attempts per day!`;
+
+      logger.info('Blocking attempt - limit reached', { userId, currentRemaining, message });
+
+      return {
+        canMakeAttempt: false,
+        message,
+        remainingAfterThisAttempt: 0,
+        attemptsUsedAfterThis: dailyLimit
+      };
+    }
+
+    // User can make attempt - reduce remaining by 1
+    const newRemaining = currentRemaining - 1;
+    const attemptsUsed = dailyLimit - newRemaining;
+
+    await userRef.update({
+      dailyTriviaAttempts: newRemaining,
+      totalTriviaAttempts: admin.firestore.FieldValue.increment(1),
+      lastTriviaAttempt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    logger.info('checkAndUpdateDailyAttempts completed successfully', {
+      userId,
+      finalResult: {
+        canMakeAttempt: true,
+        remainingAfterThisAttempt: newRemaining,
+        attemptsUsedAfterThis: attemptsUsed
+      }
+    });
+
+    return {
+      canMakeAttempt: true,
+      remainingAfterThisAttempt: newRemaining,
+      attemptsUsedAfterThis: attemptsUsed,
+      message: 'Attempt allowed'
+    };
+
+  } catch (error) {
+    logger.error('DETAILED Error in checkAndUpdateDailyAttempts', {
+      userId,
+      dailyLimit,
+      userData,
+      error: {
+        message: error.message,
+        stack: error.stack
+      }
+    });
+
+    return {
+      canMakeAttempt: false,
+      message: 'Error checking attempts. Please try again.',
+      remainingAfterThisAttempt: 0,
+      attemptsUsedAfterThis: dailyLimit
+    };
+  }
+}
 
 /**
  * Submit trivia answer and earn square if correct
@@ -915,43 +1036,6 @@ async function verifyUserTierAccess(userId, tier) {
   } catch (error) {
     console.error('Error verifying tier access:', error);
     return false;
-  }
-}
-
-/**
- * Check daily trivia attempts
- */
-async function checkDailyAttempts(userId, dailyLimit) {
-  try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    console.log(`[checkDailyAttempts] Today start: ${today.toISOString()}`);
-
-    // Count today's attempts from triviaAttempts collection
-    const attemptsQuery = await admin.firestore()
-      .collection('triviaAttempts')
-      .where('userId', '==', userId)
-      .where('timestamp', '>=', admin.firestore.Timestamp.fromDate(today))
-      .get();
-
-    const attemptsToday = attemptsQuery.size;
-    console.log(`[checkDailyAttempts] User ${userId} has ${attemptsToday} attempts today`);
-
-    // Update users collection with remaining attempts
-    const userRef = admin.firestore().collection('users').doc(userId);
-    const remainingAttempts = Math.max(dailyLimit - attemptsToday, 0);
-    console.log(`[checkDailyAttempts] Updating dailyTriviaAttempts to ${remainingAttempts}`);
-
-    await userRef.update({
-      dailyTriviaAttempts: remainingAttempts
-    });
-
-    console.log(`[checkDailyAttempts] User doc updated successfully`);
-
-    return attemptsToday;
-  } catch (error) {
-    console.error(`[checkDailyAttempts] Error checking/updating daily attempts:`, error);
-    return 0;
   }
 }
 

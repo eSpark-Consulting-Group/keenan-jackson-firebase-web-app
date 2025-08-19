@@ -50,43 +50,43 @@ const TELEGRAM_BOT_TOKEN = "7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ";
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
 
 // Function to handle Telegram webhook and store chat_id
-exports.addTelegramToAccount = functions.https.onRequest(async (req, res) => {
-  try {
-    // Ensure it's a POST from Telegram
-    if (req.method !== "POST") {
-      return res.status(405).send("Method Not Allowed");
-    }
+// exports.addTelegramToAccount = functions.https.onRequest(async (req, res) => {
+//   try {
+//     // Ensure it's a POST from Telegram
+//     if (req.method !== "POST") {
+//       return res.status(405).send("Method Not Allowed");
+//     }
 
-    const message = req.body.message;
-    if (!message || !message.chat || !message.chat.id) {
-      return res.status(400).send("Invalid Telegram message format");
-    }
+//     const message = req.body.message;
+//     if (!message || !message.chat || !message.chat.id) {
+//       return res.status(400).send("Invalid Telegram message format");
+//     }
 
-    const chatId = message.chat.id;
-    const text = message.text;
+//     const chatId = message.chat.id;
+//     const text = message.text;
 
-    // If user sends /start, store chat_id
-    if (text && text.startsWith("/start")) {
-      await db.collection("telegramUsers").doc(String(chatId)).set({
-        chatId,
-        firstName: message.chat.first_name || "",
-        username: message.chat.username || "",
-        dateAdded: admin.firestore.FieldValue.serverTimestamp(),
-      });
+//     // If user sends /start, store chat_id
+//     if (text && text.startsWith("/start")) {
+//       await db.collection("telegramUsers").doc(String(chatId)).set({
+//         chatId,
+//         firstName: message.chat.first_name || "",
+//         username: message.chat.username || "",
+//         dateAdded: admin.firestore.FieldValue.serverTimestamp(),
+//       });
 
-      // Reply to user
-      await axios.post(`${TELEGRAM_API}/sendMessage`, {
-        chat_id: chatId,
-        text: "✅ Your Telegram account has been linked successfully!",
-      });
-    }
+//       // Reply to user
+//       await axios.post(`${TELEGRAM_API}/sendMessage`, {
+//         chat_id: chatId,
+//         text: "✅ Your Telegram account has been linked successfully!",
+//       });
+//     }
 
-    return res.status(200).send("OK");
-  } catch (error) {
-    console.error("Error handling Telegram webhook:", error);
-    return res.status(500).send("Internal Server Error");
-  }
-});
+//     return res.status(200).send("OK");
+//   } catch (error) {
+//     console.error("Error handling Telegram webhook:", error);
+//     return res.status(500).send("Internal Server Error");
+//   }
+// });
 
 // Test function using v1 API
 exports.helloWorld = functions.https.onRequest((req, res) => {
