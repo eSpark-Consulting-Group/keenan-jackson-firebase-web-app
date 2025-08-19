@@ -2,6 +2,8 @@ const functions = require("firebase-functions");
 const { onRequest, onCall } = require("firebase-functions/v2/https");
 const { validateTelegramUsername } = require("./utility-functions-fixed");
 const admin = require("firebase-admin");
+const { grantTelegramAccess } = require("./payment-system-modified");
+const { verifyUserTierAccess } = require("./trivia-system-fixed");
 // import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 
 const db = admin.firestore();
@@ -99,6 +101,40 @@ exports.trackUserEvent = functions.https.onCall(async (data, context) => {
   await updateUserProfile(userId, eventType, eventData);
 });
 
+/**
+ * Internal helper: safely grant Telegram access for a user & tier
+ */
+/**
+ * Internal helper: safely grant Telegram access for a user & tier
+ */
+async function handleGrantTelegramAccess(userId, telegramUsername, tier) {
+  try {
+    // Step 1: Verify user has access to the tier
+    const hasAccess = await verifyUserTierAccess(userId, tier);
+    if (!hasAccess) {
+      console.warn(
+        `User ${userId} does not have access to tier ${tier}, skipping Telegram grant`
+      );
+      return { success: false, message: "No active access to this tier" };
+    }
+
+    // Step 2: Grant access (re-uses your existing function)
+    await grantTelegramAccess(userId, telegramUsername, tier);
+
+    // Step 3: Return result for logging
+    return {
+      success: true,
+      message: `Telegram access granted for tier ${tier}`,
+    };
+  } catch (err) {
+    console.error(
+      `Failed to grant Telegram access for user ${userId}, tier ${tier}:`,
+      err
+    );
+    return { success: false, message: err.message || "Grant failed" };
+  }
+}
+
 exports.addTelegramToAccount = functions.https.onCall(async (data, context) => {
   // data comes from frontend
   console.log(data, "dataCcQCCCAQ   ");
@@ -147,27 +183,34 @@ exports.addTelegramToAccount = functions.https.onCall(async (data, context) => {
 
     let addedExtraAttempts = false;
 
-    // ✅ Only give +5 attempts if user didn't have Telegram before
+    // ✅ Only adjust if they are adding Telegram for the first time
     if (!userData.hasTelegram && !userData.telegramUsername) {
       const currentAttempts = userData.dailyTriviaAttempts || 0;
-      updates.dailyTriviaAttempts = currentAttempts + 5;
+
+      // Cap at 10 for Telegram users
+      const newAttempts = Math.min(currentAttempts + 5, 10);
+
+      updates.dailyTriviaAttempts = newAttempts;
       addedExtraAttempts = true;
+    } else {
+      // Just make sure they’re not above the cap
+      const currentAttempts = userData.dailyTriviaAttempts || 0;
+      const maxAllowed = telegramUsername ? 10 : 5;
+
+      if (currentAttempts > maxAllowed) {
+        updates.dailyTriviaAttempts = maxAllowed;
+      }
     }
 
     // Save updates
     await userRef.set(updates, { merge: true });
 
     // Grant Telegram access for active tiers
+    // 🔑 Instead of httpsCallable, use the helper directly
+    // 🔑 Instead of httpsCallable, use the helper directly
     if (userData.currentTiers && userData.currentTiers.length > 0) {
       for (const tier of userData.currentTiers) {
-        const grantTelegramAccessForTier = functions.httpsCallable(
-          "grantTelegramAccessForTier"
-        );
-        await grantTelegramAccessForTier({
-          userId,
-          tier,
-          telegramUsername: validation.value,
-        });
+        await handleGrantTelegramAccess(userId, telegramUsername, tier);
       }
     }
 

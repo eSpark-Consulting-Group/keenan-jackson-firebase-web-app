@@ -5,7 +5,7 @@
 const functions = require('firebase-functions');
 
 const admin = require('firebase-admin');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripe = require('stripe')(functions.config().stripe.secret);
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
@@ -1144,4 +1144,5 @@ exports.cleanupExpiredAccess = functions.pubsub
   handleSuccessfulPayment,
   handleFailedPayment,
   handleRefund,
+  grantTelegramAccess
 };
