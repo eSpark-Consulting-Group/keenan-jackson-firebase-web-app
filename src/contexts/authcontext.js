@@ -119,7 +119,7 @@ export function AuthProvider({ children }) {
         totalWins: 0,
         totalPrizeAmount: 0,
         averageAnswerTime: 0,
-        dailyTriviaAttempts: 0,
+        dailyTriviaAttempts: additionalData.telegramUsername ? 10 : 5,
         lastTriviaReset: serverTimestamp(),
         hasTelegram: !!additionalData.telegramUsername,
         notifications: {

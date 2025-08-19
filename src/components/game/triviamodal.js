@@ -74,7 +74,7 @@ export default function TriviaModal({
         intervalRef.current = setInterval(() => {
           setTimeRemaining((prev) => {
             if (prev <= 1) {
-              handleTimeout();
+              handleTimeout(response.sessionId);
               return 0;
             }
             return prev - 1;
@@ -93,13 +93,17 @@ export default function TriviaModal({
     }
   };
 
-  const handleTimeout = () => {
+  const handleTimeout = (sid) => {
     if (!submitted) {
-      submitAnswer(null); // Submit with no answer
+      submitAnswer(null, sid); // Submit with no answer
     }
   };
 
-  const submitAnswer = async (answerIndex) => {
+  const submitAnswer = async (answerIndex, sid = sessionId) => {
+    if (!sid) {
+      console.error("Missing sessionId on submit");
+      return;
+    }
     if (submitted) return;
 
     setSubmitted(true);
@@ -118,8 +122,8 @@ export default function TriviaModal({
     try {
       // Call cloud function to submit answer
       const response = await callFunction("submitTriviaAnswer", {
-        sessionId,
-        answerIndex: answerIndex ?? -1, // -1 for timeout/no answer
+        sessionId: sid,
+        answerIndex: answerIndex ?? null, // null for timeout/no answer
         answerTime: parseFloat(answerTime),
       });
 
@@ -128,7 +132,7 @@ export default function TriviaModal({
           correct: response.correct,
           correctAnswer: response.correctAnswer,
           answerTime: response.answerTime,
-          token: response.token,
+          token: response.tokenId,
         });
 
         if (response.correct) {
@@ -139,7 +143,7 @@ export default function TriviaModal({
         // Wait a bit to show result, then complete
         setTimeout(
           () => {
-            onComplete(response.correct, response.answerTime, response.token);
+            onComplete(response.correct, response.answerTime, response.tokenId);
           },
           response.correct ? 3000 : 2000
         );
@@ -277,15 +281,15 @@ export default function TriviaModal({
                           w-full text-left p-4 rounded-lg border-2 transition-all
                           ${
                             !submitted && isSelected
-                              ? "border-blue-500 bg-blue-50"
-                              : "border-gray-200 hover:border-gray-300"
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300"
                           }
                           ${isCorrect ? "border-green-500 bg-green-50" : ""}
                           ${isWrong ? "border-red-500 bg-red-50" : ""}
                           ${
                             submitted && !isCorrect && !isWrong
-                              ? "opacity-50"
-                              : ""
+                            ? "opacity-50"
+                            : ""
                           }
                         `}
                       >
@@ -355,8 +359,8 @@ export default function TriviaModal({
                       w-full py-3 px-4 rounded-lg font-medium transition-all
                       ${
                         selectedAnswer !== null
-                          ? "bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
-                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        ? "bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
+                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
                       }
                     `}
                   >

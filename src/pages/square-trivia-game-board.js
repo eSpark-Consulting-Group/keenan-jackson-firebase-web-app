@@ -227,7 +227,7 @@ export default function GameBoard() {
     }
 
     // Check if user has daily attempts left
-    if (userData.dailyTriviaAttempts >= (userData.hasTelegram ? 10 : 5)) {
+    if (userData.dailyTriviaAttempts <= 0) {
       toast.error("No daily attempts left. Come back tomorrow!");
       return;
     }
@@ -250,8 +250,9 @@ export default function GameBoard() {
       // Call cloud function to claim square
       const result = await callFunction("claimSquare", {
         boardId: board.id,
-        position: selectedSquare,
-        tokenId: token.id,
+        squarePosition: selectedSquare,
+        tokenId: token,
+        answerTime,
       });
 
       if (result.success) {
@@ -287,6 +288,10 @@ export default function GameBoard() {
       });
     }
   };
+
+const total = userData.hasTelegram ? 10 : 5;
+const remaining = Math.min(Math.max(userData.dailyTriviaAttempts, 0), total);
+const percentRemaining = total === 0 ? 0 : (remaining / total) * 100;
 
   if (loading) {
     return (
@@ -400,7 +405,7 @@ export default function GameBoard() {
               onRevealSquare={handleRevealSquare}
               allowSelection={
                 isGameActive &&
-                userData.dailyTriviaAttempts < (userData.hasTelegram ? 10 : 5)
+                userData.dailyTriviaAttempts > 0
               }
             />
           </motion.div>
@@ -483,8 +488,7 @@ export default function GameBoard() {
                   <p className="text-gray-500 mb-4">
                     You don't have any squares yet
                   </p>
-                  {userData.dailyTriviaAttempts <
-                  (userData.hasTelegram ? 10 : 5) ? (
+                  {userData.dailyTriviaAttempts > 0 ? (
                     <p className="text-sm text-blue-600">
                       Click on an available square to play trivia and claim it!
                     </p>
@@ -508,16 +512,15 @@ export default function GameBoard() {
                 <div className="flex justify-between text-sm text-gray-600 mb-2">
                   <span>Remaining today</span>
                   <span>
-                    {(userData.hasTelegram ? 10 : 5) -
-                      userData.dailyTriviaAttempts}{" "}
-                    / {userData.hasTelegram ? 10 : 5}
+                    {userData.hasTelegram ? 10 : 5} -
+                      {userData.dailyTriviaAttempts}
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div
                     className="bg-purple-600 h-3 rounded-full transition-all duration-300"
                     style={{
-                      width: `${(((userData.hasTelegram ? 10 : 5) - userData.dailyTriviaAttempts) / (userData.hasTelegram ? 10 : 5)) * 100}%`,
+                      width: `${percentRemaining}%`,
                     }}
                   />
                 </div>
