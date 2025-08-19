@@ -13,6 +13,7 @@ import {
   Check,
   X,
   Gift,
+  Info,
 } from "lucide-react";
 import { useAuth } from "../contexts/authcontext";
 import { formatCurrency } from "../firebase/config";
@@ -110,6 +111,8 @@ export default function Profile() {
 
     try {
       await addTelegramToAccount(formData.telegramUsername);
+      const startLink = `https://t.me/${process.env.REACT_APP_TELEGRAM_BOT_USERNAME}?start=${userData?.id}`;
+      window.open(startLink, "_blank");
       toast.success(
         "Telegram added successfully! You now get 10 daily attempts!"
       );
@@ -303,9 +306,14 @@ export default function Profile() {
 
                 {/* Telegram */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Telegram Username
-                  </label>
+                  <div className="flex gap-x-3 items-center">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Telegram Username
+                    </label>
+                    <div title="Enter your Telegram username. After adding it, you’ll be redirected to Telegram. If you have the Telegram desktop app, click 'Start Bot'; otherwise, choose 'Open in Web' to continue.">
+                      <Info size={12} />
+                    </div>
+                  </div>
                   <div className="flex items-center">
                     <AtSign className="h-5 w-5 text-gray-400 mr-2" />
                     {userData?.hasTelegram ? (

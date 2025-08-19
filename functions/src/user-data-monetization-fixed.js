@@ -4,7 +4,9 @@ const { validateTelegramUsername } = require("./utility-functions-fixed");
 const admin = require("firebase-admin");
 const { grantTelegramAccess } = require("./payment-system-modified");
 const { verifyUserTierAccess } = require("./trivia-system-fixed");
+const { default: axios } = require("axios");
 // import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+const { logger } = require("firebase-functions");
 
 const db = admin.firestore();
 
@@ -75,6 +77,21 @@ const enhancedUserSchema = {
     youtubetv: { eligible: false, converted: false },
   },
 };
+
+const TELEGRAM_BOT_TOKEN = "7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ";
+
+// Helper: send Telegram message
+async function sendTelegramNotification(chatId, message) {
+  if (!chatId) return;
+
+  await axios.post(
+    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+    {
+      chat_id: chatId,
+      text: message,
+    }
+  );
+}
 
 // =====================================
 // DATA COLLECTION FUNCTIONS
@@ -230,6 +247,84 @@ exports.addTelegramToAccount = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("internal", error.message);
   }
 });
+
+exports.telegramWebhook = functions.https.onRequest(async (req, res) => {
+  const body = req.body;
+
+  if (!body || !body.message) {
+    return res.send("ok");
+  }
+  logger.info("Incoming update", { body: req.body });
+
+  const msg = body.message;
+  const chatId = msg.chat.id;
+  const text = msg.text;
+
+  if (!msg) {
+    logger.warn("No message in update", { update: req.body });
+    return res.send("ok");
+  }
+
+  logger.debug("Chat ID extracted", { chatId });
+  logger.debug("MESSAGE", { msg });
+
+  // User typed /start <firebaseUserId>
+  if (text && text.startsWith("/start")) {
+    const parts = text.split(" ");
+    const userId = parts[1]; // you pass this in link
+
+    if (userId) {
+      await admin.firestore().collection("users").doc(userId).update({
+        telegramChatId: chatId,
+      });
+
+      // send confirmation
+      // await axios.post(
+      //   `https://api.telegram.org/bot7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ/sendMessage`,
+      //   {
+      //     chat_id: chatId,
+      //     text: "✅ Telegram connected successfully!",
+      //   }
+      // );
+    }
+  }
+
+  res.send("ok");
+});
+
+// Cloud function triggered every 3 hours (Alert for trivia question availability)
+exports.sendTriviaAttemptNotifications = functions.pubsub
+  .schedule("every 5 minutes") // or "every 5 minutes" for testing
+  .timeZone("UTC")
+  .onRun(async () => {
+    const usersSnapshot = await admin.firestore().collection("users").get();
+
+    const promises = [];
+
+    usersSnapshot.forEach((doc) => {
+      const user = doc.data();
+      const attempts = user.dailyTriviaAttempts ?? 0;
+      const chatId = user.telegramChatId;
+
+      // ✅ Only send if user has telegramChatId
+      if (chatId) {
+        let message = "";
+        if (attempts > 0) {
+          message = `You have ${attempts} daily trivia attempts left. 🎯`;
+        } else {
+          message =
+            "You have 0 attempts left. Please check again after midnight. ⏰";
+        }
+
+        promises.push(sendTelegramNotification(chatId, message));
+      }
+    });
+
+    await Promise.all(promises);
+    console.log(
+      "Trivia attempt notifications sent to all users with Telegram."
+    );
+  });
 
 exports.setAdminClaim = functions.https.onCall(async (data, context) => {
   const { uid } = data;
