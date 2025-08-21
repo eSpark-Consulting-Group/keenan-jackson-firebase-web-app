@@ -446,7 +446,7 @@ async function checkGameProcessing() {
     const upcomingGames = await admin
       .firestore()
       .collection("games")
-      .where("status", "==", "upcoming")
+      .where("status", "==", "scheduled")
       .where("startTime", "<=", new Date(Date.now() + 24 * 60 * 60 * 1000)) // Next 24h
       .get();
 
@@ -457,7 +457,7 @@ async function checkGameProcessing() {
     if (missingApiId.length > 0) {
       result.status = HEALTH_STATUS.DEGRADED;
       result.issues.push(
-        `${missingApiId.length} upcoming games missing API Sports ID`
+        `${missingApiId.length} scheduled games missing API Sports ID`
       );
     }
   } catch (error) {

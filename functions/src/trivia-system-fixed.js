@@ -917,7 +917,7 @@ exports.getAvailableBoards = functions.https.onCall(async (data, context) => {
     const activeGames = await admin
       .firestore()
       .collection("games")
-      .where("status", "in", ["upcoming", "active"])
+      .where("status", "in", ["scheduled", "active"])
       .get();
 
     const boards = [];

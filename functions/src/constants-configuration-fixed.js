@@ -174,7 +174,7 @@
 
   // Game statuses
   STATUS: {
-    UPCOMING: "upcoming",
+    UPCOMING: "scheduled",
     ACTIVE: "active",
     COMPLETED: "completed",
     CANCELLED: "cancelled",

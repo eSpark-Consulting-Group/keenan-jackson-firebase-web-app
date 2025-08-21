@@ -17,6 +17,34 @@ const mailTransport = nodemailer.createTransport({
     pass: process.env.EMAIL_PASSWORD
   }
 });
+
+const sgMail = require("@sendgrid/mail");
+
+// Set API key
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+// Example send function
+const sendMail = async ({to, subject, html}) => {
+  const msg = {
+    to,
+    from: process.env.SENDGRID_FROM_EMAIL, // must be a verified sender in SendGrid
+    subject,
+    html,
+  };
+
+  try {
+    await sgMail.send(msg);
+    console.log("Email sent successfully");
+  } catch (error) {
+    console.error("Error sending email:", error);
+
+    // SendGrid sometimes nests errors
+    if (error.response) {
+      console.error(error.response.body);
+    }
+  }
+};
+
 // =====================================
 // CONSTANTS (from Artifact #1)
 // =====================================
@@ -303,7 +331,7 @@ async function handleSuccessfulPayment(paymentIntent) {
     }
 
     // Send confirmation email
-    // await sendPaymentConfirmation(userId, donationId, tierId);
+    await sendPaymentConfirmation(userId, donationId, tierId);
 
     // Update analytics
     await updateAnalytics('donation_completed', {
@@ -644,7 +672,6 @@ async function sendPaymentConfirmation(userId, donationId, tier) {
   const donation = donationDoc.data();
   
   const mailOptions = {
-    from: 'Square Trivia <noreply@squaretrivia.com>',
     to: user.email,
     subject: `Payment Confirmed - ${TIER_CONFIG[tier].name} Access`,
     html: `
@@ -703,7 +730,7 @@ async function sendPaymentConfirmation(userId, donationId, tier) {
     `
   };
 
-  await mailTransport.sendMail(mailOptions);
+  await sendMail(mailOptions);
 }
 
 async function sendPaymentFailureNotification(userId, donationId) {

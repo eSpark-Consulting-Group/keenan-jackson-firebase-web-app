@@ -34,6 +34,7 @@ import {
 } from "firebase/firestore";
 import toast from "react-hot-toast";
 import { httpsCallable } from "firebase/functions";
+import UpdateScoreModal from "../../components/game/updatescoremodal";
 
 export default function AdminGames() {
   const [loading, setLoading] = useState(false);
@@ -46,6 +47,8 @@ export default function AdminGames() {
   const [searchedGames, setSearchedGames] = useState([]);
   const [gamesLoading, setGamesLoading] = useState(false);
   const [createGameLoading, setCreateGameLoading] = useState(false);
+  const [openUpdateScoreModal, setOpenUpdateScoreModal] = useState(null);
+  const [scoreLoading, setScoreLoading] = useState(false);
 
   // Form state for creating new game
   const [gameForm, setGameForm] = useState({
@@ -189,20 +192,26 @@ export default function AdminGames() {
     }
   };
 
-  const updateScore = async (gameId) => {
-    const homeScore = prompt("Enter home team score:");
-    const awayScore = prompt("Enter away team score:");
-
-    if (homeScore === null || awayScore === null) return;
-
+  const updateScore = async (gameId, score) => {
+    setScoreLoading(true)
     try {
-      await updateDoc(doc(db, collections.games, gameId), {
-        currentScore: {
-          home: parseInt(homeScore),
-          away: parseInt(awayScore),
-        },
-        lastScoreUpdate: new Date(),
+      const markQuarterWinners = httpsCallable(functions, "markQuarterWinners");
+
+      const result = await markQuarterWinners({
+        gameId,
+        quarter: score.quarter,
+        homeScore: Number(score.homeScore),
+        awayScore: Number(score.awayScore),
       });
+      setOpenUpdateScoreModal(null);
+      setScoreLoading(false);
+      // await updateDoc(doc(db, collections.games, gameId), {
+      //   currentScore: {
+      //     home: parseInt(homeScore),
+      //     away: parseInt(awayScore),
+      //   },
+      //   lastScoreUpdate: new Date(),
+      // });
 
       toast.success("Score updated successfully");
       loadGames();
@@ -256,7 +265,7 @@ export default function AdminGames() {
         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}
       >
         <Icon className="h-3 w-3 mr-1" />
-        {status}
+        {status === "scheduled" ? "upcoming" : status}
       </span>
     );
   };
@@ -439,11 +448,11 @@ export default function AdminGames() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm">
                           <span className="font-medium">
-                            {game?.scores?.away}
+                            {game?.scores?.away || 0}
                           </span>
                           <span className="mx-1">-</span>
                           <span className="font-medium">
-                            {game?.scores?.home}
+                            {game?.scores?.home || 0}
                           </span>
                         </div>
                       </td>
@@ -469,7 +478,7 @@ export default function AdminGames() {
                         <div className="flex items-center justify-end gap-2">
                           {game.status === "active" && (
                             <button
-                              onClick={() => updateScore(game.id)}
+                              onClick={() => setOpenUpdateScoreModal(game.id)}
                               className="text-blue-600 hover:text-blue-900"
                               title="Update Score"
                             >
@@ -933,6 +942,12 @@ export default function AdminGames() {
           </div>
         )}
       </div>
+      <UpdateScoreModal
+        open={openUpdateScoreModal}
+        onClose={() => setOpenUpdateScoreModal(null)}
+        onSuccess={updateScore}
+        loading={scoreLoading}
+      />
     </div>
   );
 }

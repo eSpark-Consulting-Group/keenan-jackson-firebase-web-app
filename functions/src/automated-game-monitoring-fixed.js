@@ -163,7 +163,7 @@ class ApiSportsService {
     // Determine game status
     let gameStatus = "unknown";
     const statusMap = {
-      NS: "upcoming", // Not Started
+      NS: "scheduled", // Not Started
       Q1: "active", // 1st Quarter
       Q2: "active", // 2nd Quarter
       Q3: "active", // 3rd Quarter

@@ -27,6 +27,7 @@ import {
   getDocs,
   doc,
   updateDoc,
+  getDoc,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
 
@@ -42,7 +43,7 @@ export default function AdminPayouts() {
     completedTodayAmount: 0,
   });
   const [filterOptions, setFilterOptions] = useState({
-    status: "pending",
+    status: "all",
     type: "all",
     dateRange: "7days",
   });
@@ -64,9 +65,9 @@ export default function AdminPayouts() {
         constraints.unshift(where("status", "==", filterOptions.status));
       }
 
-      if (filterOptions.type !== "all") {
-        constraints.unshift(where("type", "==", filterOptions.type));
-      }
+      // if (filterOptions.type !== "all") {
+      //   constraints.unshift(where("type", "==", filterOptions.type));
+      // }
 
       // Date range filter
       if (filterOptions.dateRange !== "all") {
@@ -92,19 +93,17 @@ export default function AdminPayouts() {
         }
       }
 
-      const q = query(collection(db, collections.payouts), ...constraints);
+      const q = query(collection(db, collections.winners), ...constraints);
       const snapshot = await getDocs(q);
-
       const payoutsData = [];
-      for (const doc of snapshot.docs) {
-        const payoutData = { id: doc.id, ...doc.data() };
+      for (const winnerDoc of snapshot.docs) {
+        const payoutData = { id: winnerDoc.id, ...winnerDoc.data() };
 
         // Get user info
         if (payoutData.userId) {
           try {
-            const userDoc = await getDocs(
-              doc(db, collections.users, payoutData.userId)
-            );
+            const userRef = doc(db, collections.users, payoutData.userId);
+            const userDoc = await getDoc(userRef);
             if (userDoc.exists()) {
               payoutData.user = userDoc.data();
             }
@@ -143,18 +142,18 @@ export default function AdminPayouts() {
     };
 
     payoutsData.forEach((payout) => {
-      if (payout.status === "pending") {
+      if (payout.status === "pending_payout") {
         stats.pendingCount++;
-        stats.pendingAmount += payout.amount || 0;
+        stats.pendingAmount += payout.prizeAmount || 0;
       } else if (payout.status === "processing") {
         stats.processingCount++;
-        stats.processingAmount += payout.amount || 0;
+        stats.processingAmount += payout.prizeAmount || 0;
       } else if (
         payout.status === "completed" &&
         payout.completedAt?.toDate?.() >= today
       ) {
         stats.completedToday++;
-        stats.completedTodayAmount += payout.amount || 0;
+        stats.completedTodayAmount += payout.prizeAmount || 0;
       }
     });
 
@@ -174,7 +173,7 @@ export default function AdminPayouts() {
         updateData.processingStartedAt = new Date();
       }
 
-      await updateDoc(doc(db, collections.payouts, payoutId), updateData);
+      await updateDoc(doc(db, collections.winners, payoutId), updateData);
 
       toast.success(`Payout marked as ${newStatus}`);
       loadPayouts();
@@ -275,13 +274,13 @@ export default function AdminPayouts() {
 
   const getStatusBadge = (status) => {
     const badges = {
-      pending: { color: "bg-yellow-100 text-yellow-800", icon: Clock },
+      pending_payout: { color: "bg-yellow-100 text-yellow-800", icon: Clock },
       processing: { color: "bg-blue-100 text-blue-800", icon: Send },
       completed: { color: "bg-green-100 text-green-800", icon: CheckCircle },
       failed: { color: "bg-red-100 text-red-800", icon: XCircle },
     };
 
-    const badge = badges[status] || badges.pending;
+    const badge = badges[status] || badges.pending_payout;
     const Icon = badge.icon;
 
     return (
@@ -289,7 +288,7 @@ export default function AdminPayouts() {
         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}
       >
         <Icon className="h-3 w-3 mr-1" />
-        {status}
+        {status === "pending_payout" ? "pending" : status}
       </span>
     );
   };
@@ -436,7 +435,7 @@ export default function AdminPayouts() {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">All Status</option>
-              <option value="pending">Pending</option>
+              <option value="pending_payout">Pending</option>
               <option value="processing">Processing</option>
               <option value="completed">Completed</option>
               <option value="failed">Failed</option>
@@ -588,7 +587,7 @@ export default function AdminPayouts() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {formatCurrency(payout.amount)}
+                            {formatCurrency(payout.prizeAmount)}
                           </div>
                           {payout.type === "instant" && (
                             <div className="text-xs text-gray-500">
@@ -616,7 +615,7 @@ export default function AdminPayouts() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">
-                          {payout.status === "pending" && (
+                          {payout.status === "pending_payout" && (
                             <>
                               <button
                                 onClick={() =>

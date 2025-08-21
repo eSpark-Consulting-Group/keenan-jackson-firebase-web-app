@@ -55,7 +55,7 @@ export default function Games() {
       // 1. Fetch all games
       const gamesQuery = query(
         collection(db, collections.games),
-        where("status", "in", ["upcoming", "active"]),
+        where("status", "in", ["scheduled", "active"]),
         orderBy("gameDate", "asc")
       );
 
@@ -130,7 +130,7 @@ export default function Games() {
     // Listen for game updates
     const gamesQuery = query(
       collection(db, collections.games),
-      where("status", "in", ["upcoming", "active"])
+      where("status", "in", ["scheduled", "active"])
     );
 
     return onSnapshot(gamesQuery, (snapshot) => {

@@ -259,7 +259,7 @@ exports.createGameWithApiMapping = functions.https.onCall(
           startTime: admin.firestore.Timestamp.fromDate(new Date(startTime)),
           gameType,
           apiSportsId,
-          status: "upcoming",
+          status: "scheduled",
           processedQuarters: {},
           scores: {},
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -312,7 +312,7 @@ exports.updateGameStatus = functions.https.onCall(async (data, context) => {
 
   const { gameId, status, reason } = data;
 
-  const validStatuses = ["upcoming", "active", "completed", "cancelled"];
+  const validStatuses = ["scheduled", "active", "completed", "cancelled"];
   if (!validStatuses.includes(status)) {
     throw new functions.https.HttpsError("invalid-argument", "Invalid status");
   }
@@ -397,71 +397,71 @@ exports.markQuarterWinners = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError("not-found", "Game not found");
     }
 
-    const game = gameDoc.data();
+    // const game = gameDoc.data();
 
     // Calculate winning positions
     const winningPositions = calculateWinningPositions(homeScore, awayScore);
 
     // Process winners for all boards
-    const boards = await admin
-      .firestore()
-      .collection("boards")
-      .where("gameId", "==", gameId)
-      .get();
+    // const boards = await admin
+    //   .firestore()
+    //   .collection("boards")
+    //   .where("gameId", "==", gameId)
+    //   .get();
 
-    const winners = [];
+    // const winners = [];
     const batch = admin.firestore().batch();
 
-    for (const boardDoc of boards.docs) {
-      const board = boardDoc.data();
+    // for (const boardDoc of boards.docs) {
+    //   const board = boardDoc.data();
 
-      for (const position of winningPositions) {
-        const square = board.squares?.[position];
+    //   for (const position of winningPositions) {
+    //     const square = board.squares?.[position];
 
-        if (square?.userId) {
-          // Create winner record with new payout percentage
-          const winnerRef = admin.firestore().collection("winners").doc();
-          const prizeAmount = calculatePrizeAmount(board.tier);
+    //     if (square?.userId) {
+    //       // Create winner record with new payout percentage
+    //       const winnerRef = admin.firestore().collection("winners").doc();
+    //       const prizeAmount = calculatePrizeAmount(board.tier);
 
-          batch.set(winnerRef, {
-            userId: square.userId,
-            gameId,
-            boardId: boardDoc.id,
-            quarter,
-            position,
-            score: `${homeScore}-${awayScore}`,
-            prizeAmount,
-            tier: board.tier,
-            payoutPercentage: TIER_CONFIG[board.tier].payoutPercentage,
-            game: `${game.teams.away} @ ${game.teams.home}`,
-            sport: game.sport,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            markedBy: adminId,
-            payoutStatus: "pending",
-            notificationStatus: "pending",
-          });
+    //       batch.set(winnerRef, {
+    //         userId: square.userId,
+    //         gameId,
+    //         boardId: boardDoc.id,
+    //         quarter,
+    //         position,
+    //         score: `${homeScore}-${awayScore}`,
+    //         prizeAmount,
+    //         tier: board.tier,
+    //         payoutPercentage: TIER_CONFIG[board.tier].payoutPercentage,
+    //         game: `${game.teams.away} @ ${game.teams.home}`,
+    //         sport: game.sport,
+    //         createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    //         markedBy: adminId,
+    //         payoutStatus: "pending",
+    //         notificationStatus: "pending",
+    //       });
 
-          winners.push({
-            winnerId: winnerRef.id,
-            userId: square.userId,
-            position,
-            prizeAmount,
-            tier: board.tier,
-            payoutPercentage: TIER_CONFIG[board.tier].payoutPercentage,
-          });
+    //       winners.push({
+    //         winnerId: winnerRef.id,
+    //         userId: square.userId,
+    //         position,
+    //         prizeAmount,
+    //         tier: board.tier,
+    //         payoutPercentage: TIER_CONFIG[board.tier].payoutPercentage,
+    //       });
 
-          // Mark square as winner
-          batch.update(boardDoc.ref, {
-            [`squares.${position}.isWinner`]: true,
-            [`squares.${position}.winQuarter`]: quarter,
-          });
-        }
-      }
-    }
+    //       // Mark square as winner
+    //       batch.update(boardDoc.ref, {
+    //         [`squares.${position}.isWinner`]: true,
+    //         [`squares.${position}.winQuarter`]: quarter,
+    //       });
+    //     }
+    //   }
+    // }
 
     // Update game with scores
     batch.update(gameDoc.ref, {
-      [`scores.${quarter}`]: { home: homeScore, away: awayScore },
+      [`quarterScores.${quarter}`]: { home: homeScore, away: awayScore },
       [`processedQuarters.${quarter}`]: true,
       [`manualScoreEntry.${quarter}`]: {
         enteredBy: adminId,
@@ -472,25 +472,25 @@ exports.markQuarterWinners = functions.https.onCall(async (data, context) => {
     await batch.commit();
 
     // Trigger winner notifications
-    if (winners.length > 0) {
-      await triggerWinnerNotifications(winners);
-    }
+    // if (winners.length > 0) {
+    //   await triggerWinnerNotifications(winners);
+    // }
 
     // Log admin action
-    await logAdminAction(adminId, "mark_winners", {
-      gameId,
-      quarter,
-      score: `${homeScore}-${awayScore}`,
-      winnerCount: winners.length,
-      totalPrizes: winners.reduce((sum, w) => sum + w.prizeAmount, 0),
-    });
+    // await logAdminAction(adminId, "mark_winners", {
+    //   gameId,
+    //   quarter,
+    //   score: `${homeScore}-${awayScore}`,
+    //   winnerCount: winners.length,
+    //   totalPrizes: winners.reduce((sum, w) => sum + w.prizeAmount, 0),
+    // });
 
     return {
       success: true,
-      message: `Marked ${winners.length} winners for ${quarter}`,
-      winners: winners.length,
-      totalPrizes: winners.reduce((sum, w) => sum + w.prizeAmount, 0),
-      winningPositions,
+      message: `Quarter ${quarter} score updated successfully`,
+      // winners: winners.length,
+      // totalPrizes: winners.reduce((sum, w) => sum + w.prizeAmount, 0),
+      // winningPositions,
     };
   } catch (error) {
     console.error("Mark winners error:", error);
@@ -1540,7 +1540,7 @@ exports.getAdminStats = functions.https.onCall(async (data, context) => {
     // Game stats
     const games = await admin.firestore().collection("games").get();
     const upcomingGames = games.docs.filter(
-      (doc) => doc.data().status === "upcoming"
+      (doc) => doc.data().status === "scheduled"
     ).length;
     const activeGames = games.docs.filter(
       (doc) => doc.data().status === "active"
@@ -1624,7 +1624,7 @@ exports.getAdminStats = functions.https.onCall(async (data, context) => {
         },
         games: {
           total: games.size,
-          upcoming: upcomingGames,
+          scheduled: upcomingGames,
           active: activeGames,
           completed: completedGames,
         },

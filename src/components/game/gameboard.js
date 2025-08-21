@@ -321,7 +321,7 @@ export default function GameBoard() {
   }
 
   const tier = TIERS[board.tierId.toUpperCase()];
-  const isGameActive = game.status === "active" || game.status === "upcoming";
+  const isGameActive = game.status === "active" || game.status === "scheduled";
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">

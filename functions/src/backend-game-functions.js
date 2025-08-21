@@ -52,7 +52,7 @@ exports.createGame = functions.https.onCall(async (data, context) => {
       gameType,
       sport,
       externalGameId,
-      status: "upcoming",
+      status: "scheduled",
       currentQuarter: 0,
       // homeScore: 0,
       // awayScore: 0,
@@ -264,120 +264,137 @@ exports.determineWinners = functions.pubsub
         return null;
       }
 
-      // Process each game
-      const winnerPromises = gamesSnapshot.docs.map(async (gameDoc) => {
+      // 2) Process each game independently
+      const perGameTasks = gamesSnapshot.docs.map(async (gameDoc) => {
         const game = gameDoc.data();
         const gameId = gameDoc.id;
 
-        // Check each completed quarter
         const quarters = ["q1", "q2", "q3", "q4"];
-
         for (const quarter of quarters) {
-          const quarterScore = game.quarterScores[quarter];
+          const quarterScore = game.quarterScores?.[quarter];
 
-          // Skip if quarter not completed or already processed
+          // Skip if quarter doesn't exist, has no scores yet, or already processed
           if (!quarterScore || quarterScore.processed) continue;
 
-          // Get winning positions
-          const homeLastDigit = quarterScore.home % 10;
-          const awayLastDigit = quarterScore.away % 10;
+          // Compute the two winning positions for this quarter's digits
+          const homeLastDigit = Number(quarterScore.home) % 10;
+          const awayLastDigit = Number(quarterScore.away) % 10;
           const winningPositions = [
-            homeLastDigit * 10 + awayLastDigit, // home-away order
-            awayLastDigit * 10 + homeLastDigit, // away-home order
+            homeLastDigit * 10 + awayLastDigit, // home-away
+            awayLastDigit * 10 + homeLastDigit, // away-home
           ];
 
-          // Find boards for this game
+          // 2a) Find all boards for this game
           const boardsSnapshot = await db
             .collection("boards")
             .where("gameId", "==", gameId)
             .get();
 
-          // Check each board for winners
+          // Collect work first; don't mark processed unless we have at least one winner
+          const actions = []; // each action is an async function we'll run later
+
           for (const boardDoc of boardsSnapshot.docs) {
             const board = boardDoc.data();
             const boardId = boardDoc.id;
 
             for (const position of winningPositions) {
               const square = board.squares?.[position];
-              if (!square || !square.claims || square.claims.length === 0)
-                continue;
+              if (!square || !square.claims || square.claims.length === 0) continue;
 
-              // Determine winner based on speed
               if (square.claims.length === 1) {
                 // Solo winner
-                await processWinner({
-                  userId: square.claims[0].userId,
-                  gameId,
-                  boardId,
-                  quarter,
-                  position,
-                  tierId: board.tierId,
-                  answerTime: square.claims[0].answerTime,
-                  isSoloWin: true,
+                const onlyClaim = square.claims[0];
+                actions.push(async () => {
+                  await processWinner({
+                    userId: onlyClaim.userId,
+                    gameId,
+                    boardId,
+                    quarter,
+                    position,
+                    tierId: board.tierId,
+                    answerTime: onlyClaim.answerTime,
+                    isSoloWin: true,
+                  });
                 });
               } else {
-                // Competition - fastest wins
+                // Multiple claimants: fastest wins
                 const sorted = [...square.claims].sort(
                   (a, b) => a.answerTime - b.answerTime
                 );
                 const winner = sorted[0];
                 const loser = sorted[1];
 
-                // Process winner
-                await processWinner({
-                  userId: winner.userId,
-                  gameId,
-                  boardId,
-                  quarter,
-                  position,
-                  tierId: board.tierId,
-                  answerTime: winner.answerTime,
-                  isSoloWin: false,
-                  opponentTime: loser.answerTime,
-                });
+                actions.push(async () => {
+                  // Winner
+                  await processWinner({
+                    userId: winner.userId,
+                    gameId,
+                    boardId,
+                    quarter,
+                    position,
+                    tierId: board.tierId,
+                    answerTime: winner.answerTime,
+                    isSoloWin: false,
+                    opponentTime: loser.answerTime,
+                  });
 
-                // Process loser - Remove from square and grant consolation
-                await processLoser({
-                  userId: loser.userId,
-                  gameId,
-                  boardId,
-                  quarter,
-                  position,
-                  tierId: board.tierId,
-                  answerTime: loser.answerTime,
-                  winnerTime: winner.answerTime,
-                  winnerId: winner.userId,
-                });
+                  // Loser
+                  await processLoser({
+                    userId: loser.userId,
+                    gameId,
+                    boardId,
+                    quarter,
+                    position,
+                    tierId: board.tierId,
+                    answerTime: loser.answerTime,
+                    winnerTime: winner.answerTime,
+                    winnerId: winner.userId,
+                  });
 
-                // Remove loser from square
-                square.claims = square.claims.filter(
-                  (claim) => claim.userId !== loser.userId
-                );
-                await db
-                  .collection("boards")
-                  .doc(boardId)
-                  .update({
-                    [`squares.${position}`]: square,
+                  // Remove loser from the square on this board
+                  const updatedClaims = square.claims.filter(
+                    (c) => c.userId !== loser.userId
+                  );
+                  await db.collection("boards").doc(boardId).update({
+                    [`squares.${position}.claims`]: updatedClaims,
                     claimedSquares: admin.firestore.FieldValue.increment(-1),
                   });
+                });
               }
             }
           }
 
-          // Mark quarter as processed
-          await gameDoc.ref.update({
-            [`quarterScores.${quarter}.processed`]: true,
-            [`quarterScores.${quarter}.processedAt`]:
-              admin.firestore.FieldValue.serverTimestamp(),
-          });
+          // 2b) If we found at least one winner action, run them then mark THIS quarter processed
+          if (actions.length > 0) {
+            console.log(
+              `Game ${gameId} / ${quarter}: ${actions.length} winner/loser actions`
+            );
+
+            // Run all winner/loser updates for this quarter
+            for (const act of actions) {
+              await act();
+            }
+
+            // Now mark ONLY this quarter on ONLY this game as processed
+            await gameDoc.ref.update({
+              [`quarterScores.${quarter}.processed`]: true,
+              [`quarterScores.${quarter}.processedAt`]:
+                admin.firestore.FieldValue.serverTimestamp(),
+              // (optional) store which positions matched for debugging/analytics
+              [`quarterScores.${quarter}.winningPositions`]: winningPositions,
+            });
+          } else {
+            // No winners yet for this quarter -> leave unprocessed so it can retry next run
+            console.log(`Game ${gameId} / ${quarter}: no winners yet, skipping`);
+          }
         }
       });
 
-      await Promise.all(winnerPromises);
+      await Promise.all(perGameTasks);
       console.log("Winner determination complete");
       return null;
-    } catch (error) {
-      console.error("Determine winners error:", error);
+    } catch (err) {
+      console.error("Determine winners error:", err);
       return null;
     }
   });

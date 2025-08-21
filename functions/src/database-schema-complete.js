@@ -151,7 +151,7 @@ const GameSchema = {
   actualStartTime: null, // Timestamp - when game actually started
   
   // Status tracking
-  status: 'upcoming', // string - 'upcoming', 'active', 'completed', 'cancelled'
+  status: 'scheduled', // string - 'scheduled', 'active', 'completed', 'cancelled'
   
   // Score tracking
   scores: {
