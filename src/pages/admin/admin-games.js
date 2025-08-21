@@ -240,11 +240,13 @@ export default function AdminGames() {
     }
   };
 
+  console.log(games);
+
   const filteredGames = games.filter((game) => {
     const matchesSearch =
       searchTerm === "" ||
-      game?.homeTeam?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      game?.awayTeam?.toLowerCase().includes(searchTerm.toLowerCase());
+      game?.teams?.home?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      game?.teams?.away?.toLowerCase().includes(searchTerm.toLowerCase());
 
     return matchesSearch;
   });
