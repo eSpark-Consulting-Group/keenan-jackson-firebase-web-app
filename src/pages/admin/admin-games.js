@@ -193,7 +193,7 @@ export default function AdminGames() {
   };
 
   const updateScore = async (gameId, score) => {
-    setScoreLoading(true)
+    setScoreLoading(true);
     try {
       const markQuarterWinners = httpsCallable(functions, "markQuarterWinners");
 
@@ -326,6 +326,25 @@ export default function AdminGames() {
     };
     searchGames();
   }, [sportsForm.teamName, sportsForm.sport, sportsForm.week]);
+
+  useEffect(() => {
+    if (!gameForm?.gameType) return;
+
+    let invalidTiers = [];
+
+    if (gameForm.gameType === "regular") {
+      invalidTiers = ["tier_250", "tier_500", "tier_1000"];
+    } else if (gameForm.gameType === "playoff") {
+      invalidTiers = ["tier_1000"];
+    }
+
+    setGameForm((prev) => ({
+      ...prev,
+      selectedTiers: prev.selectedTiers.filter(
+        (tierId) => !invalidTiers.includes(tierId)
+      ),
+    }));
+  }, [gameForm?.gameType]);
 
   if ((loading && games.length === 0) || loading) {
     return (
@@ -714,6 +733,15 @@ export default function AdminGames() {
                                   });
                                 }
                               }}
+                              disabled={
+                                (gameForm?.gameType === "regular" &&
+                                  tier?.id === "tier_250") ||
+                                (gameForm?.gameType === "regular" &&
+                                  tier?.id === "tier_500") ||
+                                ((gameForm?.gameType === "regular" ||
+                                  gameForm?.gameType === "playoff") &&
+                                  tier?.id === "tier_1000")
+                              }
                               className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                             />
                             <span
@@ -738,6 +766,15 @@ export default function AdminGames() {
                           sport: "",
                           startTime: "",
                           teamName: "",
+                        });
+                        setGameForm({
+                          sport: "",
+                          homeTeam: "",
+                          awayTeam: "",
+                          startTime: "",
+                          apiGameId: "",
+                          selectedTiers: [],
+                          gameType: "",
                         });
                       }}
                       className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"

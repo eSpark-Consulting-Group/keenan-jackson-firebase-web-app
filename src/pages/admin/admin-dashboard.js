@@ -352,7 +352,7 @@ export default function AdminDashboard() {
               </Link>
               <Link
                 to="/admin/trivia"
-                className="w-full flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                className="w-full flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors hover:text-white"
               >
                 <Brain className="h-4 w-4 mr-2" />
                 Add Questions

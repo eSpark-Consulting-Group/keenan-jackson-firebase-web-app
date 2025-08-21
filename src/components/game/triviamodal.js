@@ -130,10 +130,11 @@ export default function TriviaModal({
       if (response.success) {
         setResult({
           correct: response.correct,
-          correctAnswer: response.correctAnswer,
+          correctAnswer: response.correctAnswerIndex,
           answerTime: response.answerTime,
           token: response.tokenId,
         });
+        console.log(response);
 
         if (response.correct) {
           setShowCelebration(true);
