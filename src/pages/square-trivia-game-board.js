@@ -259,13 +259,19 @@ export default function GameBoard() {
         toast.success(
           `Square ${selectedSquare} claimed! Answer time: ${answerTime}s`
         );
+        setShowTriviaModal(false);
+        setSelectedSquare(null);
 
         // Reload board data to show updated square
         await loadBoardData();
       } else {
+        setShowTriviaModal(false);
+        setSelectedSquare(null);
         toast.error(result.error || "Failed to claim square");
       }
     } catch (error) {
+      setShowTriviaModal(false);
+      setSelectedSquare(null);
       console.error("Error claiming square:", error);
       toast.error("Failed to claim square");
     } finally {
@@ -397,6 +403,7 @@ const percentRemaining = total === 0 ? 0 : (remaining / total) * 100;
             className="lg:col-span-2"
           >
             <SquareGrid
+              game={game}
               board={board}
               currentUserId={user.uid}
               onSquareClick={handleSquareClick}

@@ -17,6 +17,7 @@ const GRID_CONFIG = {
 
 export default function SquareGrid({ 
   board, 
+  game,
   currentUserId, 
   onSquareClick, 
   winningSquares = [],
@@ -70,6 +71,8 @@ export default function SquareGrid({
   };
 
   const getSquareContent = (position, status) => {
+    const row = Math.floor(position / 10);
+    const col = position % 10;
     const squareData = board.squares?.[position];
     const isWinning = winningSquares.includes(position);
     const isRevealed = revealedSquares.has(position);
@@ -78,7 +81,7 @@ export default function SquareGrid({
     if (!squareData || !squareData.claims || squareData.claims.length === 0) {
       return (
         <div className="text-center">
-          <div className="text-2xl font-bold text-gray-400">{position}</div>
+          <div className="text-2xl font-bold text-gray-400">{`${row}-${col}`}</div>
           {hoveredSquare === position && (
             <div className="text-xs text-gray-500 mt-1">Click to claim</div>
           )}
@@ -204,7 +207,7 @@ export default function SquareGrid({
       <div className="mb-2 grid grid-cols-11 gap-1">
         <div></div> {/* Empty corner */}
         <div className="col-span-10 text-center text-sm font-semibold text-gray-700">
-          {board.gameInfo?.teams?.home || 'Home Team'} →
+          {`${game?.teams?.home} Team` || 'Home Team'} →
         </div>
       </div>
 
@@ -282,7 +285,7 @@ export default function SquareGrid({
 
         {/* Away team label */}
         <div className="absolute -left-16 top-1/2 -translate-y-1/2 -rotate-90 text-sm font-semibold text-gray-700">
-          ← {board.gameInfo?.teams?.away || 'Away Team'}
+          ← {`${game?.teams?.away} Team` || 'Away Team'}
         </div>
       </div>
 
