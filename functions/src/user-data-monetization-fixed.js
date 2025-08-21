@@ -152,8 +152,99 @@ async function handleGrantTelegramAccess(userId, telegramUsername, tier) {
   }
 }
 
+async function handleGameCommand(chatId) {
+  const gamesSnapshot = await admin.firestore().collection("games").get();
+
+  if (gamesSnapshot.empty) {
+    await sendTelegramNotification(chatId, "No games available at the moment.");
+    return;
+  }
+
+  const promises = [];
+
+  gamesSnapshot.forEach((doc) => {
+    const game = doc.data();
+
+    let formattedDate = "";
+    if (game.gameDate && game.gameDate.toDate) {
+      formattedDate = game.gameDate.toDate().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    }
+
+    const message =
+      `📅 Game Date: ${formattedDate}\n` +
+      `🏟 Sports: ${game.sport}\n` +
+      `🏠 Home Team: ${game.teams.home}\n` +
+      `🛫 Away Team: ${game.teams.away}`;
+
+    promises.push(sendTelegramNotification(chatId, message));
+  });
+
+  await Promise.all(promises);
+}
+
+async function handleWinCommand(chatId) {
+  const userSnapshot = await admin
+    .firestore()
+    .collection("users")
+    .where("telegramChatId", "==", chatId)
+    .limit(1)
+    .get();
+
+  if (userSnapshot.empty) {
+    await sendTelegramNotification(
+      chatId,
+      "⚠️ User not linked. Please start again with /start <userId>."
+    );
+    return;
+  }
+
+  const userId = userSnapshot.docs[0].id;
+
+  const winsSnapshot = await admin
+    .firestore()
+    .collection("winners")
+    .where("userId", "==", userId)
+    .get();
+
+  if (winsSnapshot.empty) {
+    await sendTelegramNotification(chatId, "❌ You don’t have any wins yet.");
+    return;
+  }
+
+  const messages = [];
+
+  winsSnapshot.forEach((doc) => {
+    const win = doc.data();
+
+    let formattedDate = "";
+    if (win.createdAt && win.createdAt.toDate) {
+      formattedDate = win.createdAt.toDate().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    }
+
+    const msg =
+      `🏆 Win Details\n` +
+      `📅 Date: ${formattedDate}\n` +
+      `🎮 Game ID: ${win.gameId}\n` +
+      `📝 Board ID: ${win.boardId}\n` +
+      `🎯 Position: ${win.position}\n` +
+      `👤 Solo Win: ${win.isSoloWin ? "Yes" : "No"}\n` +
+      `📌 Status: ${win.status}`;
+
+    messages.push(msg);
+  });
+
+  await sendTelegramNotification(chatId, messages.join("\n\n"));
+}
+
 exports.addTelegramToAccount = functions.https.onCall(async (data, context) => {
-  // data comes from frontend
   console.log(data, "dataCcQCCCAQ   ");
   const { userId, telegramUsername } = data;
 
@@ -268,25 +359,22 @@ exports.telegramWebhook = functions.https.onRequest(async (req, res) => {
   logger.debug("Chat ID extracted", { chatId });
   logger.debug("MESSAGE", { msg });
 
-  // User typed /start <firebaseUserId>
   if (text && text.startsWith("/start")) {
     const parts = text.split(" ");
-    const userId = parts[1]; // you pass this in link
+    const userId = parts[1];
 
     if (userId) {
       await admin.firestore().collection("users").doc(userId).update({
         telegramChatId: chatId,
       });
-
-      // send confirmation
-      // await axios.post(
-      //   `https://api.telegram.org/bot7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ/sendMessage`,
-      //   {
-      //     chat_id: chatId,
-      //     text: "✅ Telegram connected successfully!",
-      //   }
-      // );
     }
+  }
+
+  if (text && text.startsWith("/games")) {
+    await handleGameCommand(chatId);
+  }
+  if (text && text.startsWith("/wins")) {
+    await handleWinCommand(chatId);
   }
 
   res.send("ok");
@@ -294,7 +382,7 @@ exports.telegramWebhook = functions.https.onRequest(async (req, res) => {
 
 // Cloud function triggered every 3 hours (Alert for trivia question availability)
 exports.sendTriviaAttemptNotifications = functions.pubsub
-  .schedule("every 5 minutes") // or "every 5 minutes" for testing
+  .schedule("every 3 hours")
   .timeZone("UTC")
   .onRun(async () => {
     const usersSnapshot = await admin.firestore().collection("users").get();
@@ -324,6 +412,70 @@ exports.sendTriviaAttemptNotifications = functions.pubsub
     console.log(
       "Trivia attempt notifications sent to all users with Telegram."
     );
+  });
+
+// Cloud function triggered every 3 hours (Alert for Game start Reminders)
+exports.sendGameReminders = functions.pubsub
+  .schedule("every 3 hours")
+  .timeZone("UTC")
+  .onRun(async () => {
+    const now = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(now.getDate() + 1);
+
+    const gamesSnapshot = await admin.firestore().collection("games").get();
+
+    const promises = [];
+
+    gamesSnapshot.forEach((doc) => {
+      const game = doc.data();
+
+      // Ensure gameDate exists
+      if (!game.gameDate) return;
+
+      const gameDate = game.gameDate.toDate
+        ? game.gameDate.toDate()
+        : new Date(game.gameDate);
+
+      if (
+        gameDate.toDateString() !== now.toDateString() &&
+        gameDate.toDateString() !== tomorrow.toDateString()
+      ) {
+        return;
+      }
+
+      const message =
+        `📢 Game Reminder!\n` +
+        `📅 Date: ${gameDate.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })}\n` +
+        `🏟 Sport: ${game.sport}\n` +
+        `🏠 Home: ${game.teams?.home}\n` +
+        `🛫 Away: ${game.teams?.away}`;
+
+      // Send to all users with Telegram
+      promises.push(
+        admin
+          .firestore()
+          .collection("users")
+          .where("telegramChatId", "!=", null)
+          .get()
+          .then((usersSnapshot) => {
+            const userPromises = [];
+            usersSnapshot.forEach((userDoc) => {
+              const chatId = userDoc.data().telegramChatId;
+              if (chatId) {
+                userPromises.push(sendTelegramNotification(chatId, message));
+              }
+            });
+            return Promise.all(userPromises);
+          })
+      );
+    });
+
+    await Promise.all(promises);
   });
 
 exports.setAdminClaim = functions.https.onCall(async (data, context) => {

@@ -281,15 +281,15 @@ export default function TriviaModal({
                           w-full text-left p-4 rounded-lg border-2 transition-all
                           ${
                             !submitted && isSelected
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-200 hover:border-gray-300"
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 hover:border-gray-300"
                           }
                           ${isCorrect ? "border-green-500 bg-green-50" : ""}
                           ${isWrong ? "border-red-500 bg-red-50" : ""}
                           ${
                             submitted && !isCorrect && !isWrong
-                            ? "opacity-50"
-                            : ""
+                              ? "opacity-50"
+                              : ""
                           }
                         `}
                       >
@@ -320,9 +320,10 @@ export default function TriviaModal({
                     animate={{ opacity: 1, y: 0 }}
                     className={`
                       p-4 rounded-lg mb-6 text-center
-                      ${result.correct
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
+                      ${
+                        result.correct
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
                       }
                     `}
                   >
@@ -359,8 +360,8 @@ export default function TriviaModal({
                       w-full py-3 px-4 rounded-lg font-medium transition-all
                       ${
                         selectedAnswer !== null
-                        ? "bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
-                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                          ? "bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
+                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
                       }
                     `}
                   >
