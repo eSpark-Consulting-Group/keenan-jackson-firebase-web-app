@@ -92,6 +92,21 @@ exports.createGame = functions.https.onCall(async (data, context) => {
 
 // Helper function to create board
 async function createBoardForTier(gameId, tierId) {
+  // Read the game doc
+  const gameRef = db.collection("games").doc(gameId);
+  const gameSnap = await gameRef.get();
+  if (!gameSnap.exists) {
+    throw new Error("Game not found");
+  }
+
+  const gameData = gameSnap.data();
+
+  const gameInfo = {
+    teams: gameData.teams || { home: "", away: "" },
+    sport: gameData.sport || "",
+    startTime: gameData.gameDate || null,
+  };
+
   const boardRef = await db.collection("boards").add({
     gameId,
     tierId,
@@ -101,6 +116,7 @@ async function createBoardForTier(gameId, tierId) {
     maxPlayersPerSquare: 2,
     status: "open",
     isActive: true,
+    gameInfo,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 

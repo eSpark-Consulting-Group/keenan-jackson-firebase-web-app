@@ -81,7 +81,7 @@ const enhancedUserSchema = {
 const TELEGRAM_BOT_TOKEN = "7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ";
 
 // Helper: send Telegram message
-export async function sendTelegramNotification(chatId, message) {
+ async function sendTelegramNotification(chatId, message) {
   if (!chatId) return;
 
   await axios.post(
