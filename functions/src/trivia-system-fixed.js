@@ -109,36 +109,6 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    const result = await admin.firestore().runTransaction(async (transaction) => {
-      const userSnap = await transaction.get(userRef);
-
-      if (!userSnap.exists) {
-        throw new functions.https.HttpsError("not-found", "User not found");
-      }
-
-      const userData = userSnap.data();
-      const currentTiers = [...(userData.currentTiers || [])];
-
-      // 🔑 Remove only one occurrence of the tier
-      const index = currentTiers.indexOf(tier);
-      if (index === -1) {
-        throw new functions.https.HttpsError(
-          "failed-precondition",
-          "Tier not available in user’s currentTiers"
-        );
-      }
-      currentTiers.splice(index, 1);
-
-      // Delete tier access doc
-      transaction.delete(tierAccessRef);
-
-      // Update user's currentTiers
-      transaction.update(userRef, {
-        currentTiers: currentTiers,
-      });
-
-      return { currentTiers };
-    });
     // Verify user has active tier access
     const hasAccess = await verifyUserTierAccess(userId, tier);
     if (!hasAccess) {
@@ -235,6 +205,50 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
         "No questions available"
       );
     }
+
+    const result = await admin.firestore().runTransaction(async (transaction) => {
+      const userSnap = await transaction.get(userRef);
+
+      if (!userSnap.exists) {
+        throw new functions.https.HttpsError("not-found", "User not found");
+      }
+
+      const userData = userSnap.data();
+      const currentTiers = [...(userData.currentTiers || [])];
+
+      // 🔑 Remove only one occurrence of the tier
+      const index = currentTiers.indexOf(tier);
+      if (index === -1) {
+        throw new functions.https.HttpsError(
+          "failed-precondition",
+          "Tier not available in user’s currentTiers"
+        );
+      }
+      currentTiers.splice(index, 1);
+
+      const stillHasTier = currentTiers.includes(tier);
+
+      if (!stillHasTier) {
+        const accessQuery = await db
+          .collection("tierAccess")
+          .where("userId", "==", userId)
+          .where("tier", "==", tier)
+          .where("active", "==", true)
+          .limit(1)
+          .get();
+
+        if (!accessQuery.empty) {
+          transaction.delete(accessQuery.docs[0].ref);
+        }
+      }
+
+      // Update user's currentTiers
+      transaction.update(userRef, {
+        currentTiers: currentTiers,
+      });
+
+      return { currentTiers };
+    });
 
     // Create trivia session with timing information - SKILL-BASED TRACKING
     const sessionRef = await admin
