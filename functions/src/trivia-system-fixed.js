@@ -238,7 +238,9 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
           .get();
 
         if (!accessQuery.empty) {
-          transaction.delete(accessQuery.docs[0].ref);
+          transaction.update(accessQuery, {
+            active: false,
+          });
         }
       }
 
