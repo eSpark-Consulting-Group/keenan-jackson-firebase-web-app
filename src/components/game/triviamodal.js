@@ -138,13 +138,17 @@ export default function TriviaModal({
 
         if (response.correct) {
           setShowCelebration(true);
-          setTimeout(() => setShowCelebration(false), 3000);
+          setTimeout(() => {
+            setShowCelebration(false);
+            onClose();
+          }, 3000);
         }
 
         // Wait a bit to show result, then complete
         setTimeout(
           () => {
             onComplete(response.correct, response.answerTime, response.tokenId);
+            onClose();
           },
           response.correct ? 3000 : 2000
         );
@@ -195,7 +199,7 @@ export default function TriviaModal({
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="relative bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+          className="relative bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto overflow-x-hidden"
         >
           {/* Celebration confetti */}
           {showCelebration && (

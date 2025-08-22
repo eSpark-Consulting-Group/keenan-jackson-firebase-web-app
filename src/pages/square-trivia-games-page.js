@@ -156,10 +156,10 @@ export default function Games() {
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter((game) => {
-        const searchLower = searchTerm.toLowerCase();
+        const searchLower = searchTerm?.toLowerCase();
         return (
-          game.homeTeam.toLowerCase().includes(searchLower) ||
-          game.awayTeam.toLowerCase().includes(searchLower)
+          game.teams?.home?.toLowerCase().includes(searchLower) ||
+          game?.teams?.away?.toLowerCase().includes(searchLower)
         );
       });
     }
@@ -199,9 +199,9 @@ export default function Games() {
   const sports = [
     { value: "all", label: "All Sports" },
     { value: "NFL", label: "NFL" },
-    { value: "NBA", label: "NBA" },
-    { value: "NCAAF", label: "College Football" },
-    { value: "NCAAB", label: "College Basketball" },
+    // { value: "NBA", label: "NBA" },
+    { value: "CFB", label: "College Football" },
+    // { value: "NCAAB", label: "College Basketball" },
   ];
 
   if (loading) {

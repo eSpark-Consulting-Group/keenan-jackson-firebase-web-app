@@ -350,6 +350,15 @@ export default function Profile() {
                       Add Telegram to get 10 daily attempts instead of 5!
                     </p>
                   )}
+                  {userData?.hasTelegram && !userData?.telegramChatId && (
+                    <a
+                      className="text-xs text-blue-600 mt-1"
+                      href={`https://t.me/${process.env.REACT_APP_TELEGRAM_BOT_USERNAME}?start=${userData?.id}`}
+                      target="_blank"
+                    >
+                      Connect Telegram
+                    </a>
+                  )}
                 </div>
               </div>
             </div>

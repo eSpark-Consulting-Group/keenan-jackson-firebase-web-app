@@ -10,6 +10,7 @@ const {
   handleFailedPayment,
   handleRefund,
 } = require("./payment-system-modified");
+const { logger } = require("firebase-functions");
 
 // Initialize admin if not already done
 if (!admin.apps.length) {
@@ -299,7 +300,8 @@ exports.determineWinners = functions.pubsub
 
             for (const position of winningPositions) {
               const square = board.squares?.[position];
-              if (!square || !square.claims || square.claims.length === 0) continue;
+              if (!square || !square.claims || square.claims.length === 0)
+                continue;
 
               if (square.claims.length === 1) {
                 // Solo winner
@@ -323,6 +325,7 @@ exports.determineWinners = functions.pubsub
                 );
                 const winner = sorted[0];
                 const loser = sorted[1];
+                logger.info(`WINNER: ${winner}`);
 
                 actions.push(async () => {
                   // Winner
@@ -355,10 +358,13 @@ exports.determineWinners = functions.pubsub
                   const updatedClaims = square.claims.filter(
                     (c) => c.userId !== loser.userId
                   );
-                  await db.collection("boards").doc(boardId).update({
-                    [`squares.${position}.claims`]: updatedClaims,
-                    claimedSquares: admin.firestore.FieldValue.increment(-1),
-                  });
+                  await db
+                    .collection("boards")
+                    .doc(boardId)
+                    .update({
+                      [`squares.${position}.claims`]: updatedClaims,
+                      claimedSquares: admin.firestore.FieldValue.increment(-1),
+                    });
                 });
               }
             }
@@ -385,7 +391,9 @@ exports.determineWinners = functions.pubsub
             });
           } else {
             // No winners yet for this quarter -> leave unprocessed so it can retry next run
-            console.log(`Game ${gameId} / ${quarter}: no winners yet, skipping`);
+            console.log(
+              `Game ${gameId} / ${quarter}: no winners yet, skipping`
+            );
           }
         }
       });

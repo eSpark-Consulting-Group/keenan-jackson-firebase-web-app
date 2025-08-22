@@ -827,9 +827,9 @@ export default function AdminGames() {
                           Please select sport
                         </option>
                         <option value="NFL">NFL</option>
-                        <option value="NBA">NBA</option>
+                        {/* <option value="NBA">NBA</option> */}
                         <option value="CFB">NCAA Football</option>
-                        <option value="NCAA_BB">NCAA Basketball</option>
+                        {/* <option value="NCAA_BB">NCAA Basketball</option> */}
                       </select>
                     </div>
 
@@ -895,6 +895,13 @@ export default function AdminGames() {
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                         required
+                        defaultValue={
+                          sportsForm?.sport === "NFL"
+                            ? 1
+                            : sportsForm?.sport === "CFB"
+                              ? 0
+                              : undefined
+                        }
                       />
                     </div>
                   </div>

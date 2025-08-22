@@ -22,6 +22,7 @@ import {
   orderBy,
   limit,
   getDocs,
+  getCountFromServer,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
 
@@ -66,6 +67,7 @@ export default function AdminDashboard() {
         pendingPayoutsSnapshot,
         completedPayoutsSnapshot,
         recentActivitySnapshot,
+        triviaAttemptsCountSnapshot,
       ] = await Promise.all([
         getDocs(collection(db, collections.users)),
         getDocs(
@@ -106,7 +108,10 @@ export default function AdminDashboard() {
             limit(10)
           )
         ),
+        getCountFromServer(collection(db, "triviaAttempts")),
       ]);
+
+      const triviaAttemptsCount = triviaAttemptsCountSnapshot.data().count;
 
       // Calculate stats
       let totalRevenue = 0;
@@ -137,7 +142,7 @@ export default function AdminDashboard() {
         activeGames: activeGamesSnapshot.size,
         pendingPayouts: pendingPayoutAmount,
         totalPrizesPaid,
-        questionsAnswered: Math.floor(Math.random() * 50000), // In real app, query trivia attempts
+        questionsAnswered: triviaAttemptsCount,
       });
 
       // Calculate trends (mock data - in real app, compare to previous period)
