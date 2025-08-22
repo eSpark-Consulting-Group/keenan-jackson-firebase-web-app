@@ -88,6 +88,9 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
   const { tier, boardId } = data;
   const userId = context.auth.uid;
 
+  const userRef = admin.firestore().collection("users").doc(userId);
+  const tierAccessRef = admin.firestore().collection("tierAccess").doc(`${userId}_${tier}`);
+
   logger.info("Trivia question request started", { userId, tier, boardId });
 
   // Validate inputs
@@ -106,6 +109,36 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
   }
 
   try {
+    const result = await admin.firestore().runTransaction(async (transaction) => {
+      const userSnap = await transaction.get(userRef);
+
+      if (!userSnap.exists) {
+        throw new functions.https.HttpsError("not-found", "User not found");
+      }
+
+      const userData = userSnap.data();
+      const currentTiers = [...(userData.currentTiers || [])];
+
+      // 🔑 Remove only one occurrence of the tier
+      const index = currentTiers.indexOf(tier);
+      if (index === -1) {
+        throw new functions.https.HttpsError(
+          "failed-precondition",
+          "Tier not available in user’s currentTiers"
+        );
+      }
+      currentTiers.splice(index, 1);
+
+      // Delete tier access doc
+      transaction.delete(tierAccessRef);
+
+      // Update user's currentTiers
+      transaction.update(userRef, {
+        currentTiers: currentTiers,
+      });
+
+      return { currentTiers };
+    });
     // Verify user has active tier access
     const hasAccess = await verifyUserTierAccess(userId, tier);
     if (!hasAccess) {
@@ -577,7 +610,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
         success: true,
         correct: true,
         tokenId: tokenRef.id,
-         correctAnswerIndex: session.correctIndex,
+        correctAnswerIndex: session.correctIndex,
         // Include answer time in response
         answerTime: answerTimeSeconds,
         message: `Correct! You answered in ${answerTimeSeconds} seconds. You can now place a square on the board.`,
@@ -594,7 +627,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
       return {
         success: true,
         correct: false,
-         correctAnswerIndex: session.correctIndex,
+        correctAnswerIndex: session.correctIndex,
         message: "Incorrect answer. Try another question!",
       };
     }

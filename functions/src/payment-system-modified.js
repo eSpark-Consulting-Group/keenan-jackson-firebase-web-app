@@ -301,30 +301,50 @@ async function handleSuccessfulPayment(paymentIntent) {
     const userDoc = await userRef.get();
     const userData = userDoc.data() || {};
 
+    const newCurrentTiers = [...(userData.currentTiers || []), tierId];
+
     batch.set(userRef, {
       totalDonations: (userData.totalDonations || 0) + TIER_CONFIG[tierId].amount,
-      currentTiers: admin.firestore.FieldValue.arrayUnion(tierId),
+      currentTiers: newCurrentTiers,
       lastDonation: admin.firestore.FieldValue.serverTimestamp(),
     }, { merge: true });
 
     // Create tier access record
-    const accessRef = admin.firestore().collection('tierAccess').doc();
-    batch.set(accessRef, {
-      userId,
-      tier: tierId,
-      donationId,
-      telegramUsername: metadata.telegramUsername || null,
-      grantedAt: admin.firestore.FieldValue.serverTimestamp(),
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      active: true
-    });
+    const accessQuery = await admin
+      .firestore()
+      .collection('tierAccess')
+      .where('userId', '==', userId)
+      .where('tier', '==', tierId)
+      .where('active', '==', true)
+      .limit(1)
+      .get();
+
+    if (accessQuery.empty) {
+      const accessRef = admin.firestore().collection('tierAccess').doc();
+      batch.set(accessRef, {
+        userId,
+        tier: tierId,
+        donationId,
+        telegramUsername: telegramUsername || null,
+        grantedAt: admin.firestore.FieldValue.serverTimestamp(),
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        active: true
+      });
+    } else {
+      const accessDoc = accessQuery.docs[0];
+      const accessRef = accessDoc.ref;
+      batch.update(accessRef, {
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
 
     // Commit all changes
     await batch.commit();
 
     // Grant Telegram access only if user has Telegram
-    if (metadata.telegramUsername) {
-      await grantTelegramAccess(userId, metadata.telegramUsername, tierId);
+    if (telegramUsername) {
+      await grantTelegramAccess(userId, telegramUsername, tierId);
     } else {
       // Log web-only access
       console.log(`User ${userId} has web-only access for tier ${tierId}`);
