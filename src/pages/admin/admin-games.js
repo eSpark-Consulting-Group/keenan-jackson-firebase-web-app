@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import {
   Plus,
   Edit,
+  Eye,
   Trash2,
   CheckCircle,
   XCircle,
@@ -34,7 +35,7 @@ import {
 } from "firebase/firestore";
 import toast from "react-hot-toast";
 import { httpsCallable } from "firebase/functions";
-import UpdateScoreModal from "../../components/game/updatescoremodal";
+// import UpdateScoreModal from "../../components/game/updatescoremodal";
 
 export default function AdminGames() {
   const [loading, setLoading] = useState(false);
@@ -47,8 +48,8 @@ export default function AdminGames() {
   const [searchedGames, setSearchedGames] = useState([]);
   const [gamesLoading, setGamesLoading] = useState(false);
   const [createGameLoading, setCreateGameLoading] = useState(false);
-  const [openUpdateScoreModal, setOpenUpdateScoreModal] = useState(null);
-  const [scoreLoading, setScoreLoading] = useState(false);
+  // const [openUpdateScoreModal, setOpenUpdateScoreModal] = useState(null);
+  // const [scoreLoading, setScoreLoading] = useState(false);
 
   // Form state for creating new game
   const [gameForm, setGameForm] = useState({
@@ -192,34 +193,34 @@ export default function AdminGames() {
     }
   };
 
-  const updateScore = async (gameId, score) => {
-    setScoreLoading(true);
-    try {
-      const markQuarterWinners = httpsCallable(functions, "markQuarterWinners");
+  // const updateScore = async (gameId, score) => {
+  //   setScoreLoading(true);
+  //   try {
+  //     const markQuarterWinners = httpsCallable(functions, "markQuarterWinners");
 
-      const result = await markQuarterWinners({
-        gameId,
-        quarter: score.quarter,
-        homeScore: Number(score.homeScore),
-        awayScore: Number(score.awayScore),
-      });
-      setOpenUpdateScoreModal(null);
-      setScoreLoading(false);
-      // await updateDoc(doc(db, collections.games, gameId), {
-      //   currentScore: {
-      //     home: parseInt(homeScore),
-      //     away: parseInt(awayScore),
-      //   },
-      //   lastScoreUpdate: new Date(),
-      // });
+  //     const result = await markQuarterWinners({
+  //       gameId,
+  //       quarter: score.quarter,
+  //       homeScore: Number(score.homeScore),
+  //       awayScore: Number(score.awayScore),
+  //     });
+  //     setOpenUpdateScoreModal(null);
+  //     setScoreLoading(false);
+  //     // await updateDoc(doc(db, collections.games, gameId), {
+  //     //   currentScore: {
+  //     //     home: parseInt(homeScore),
+  //     //     away: parseInt(awayScore),
+  //     //   },
+  //     //   lastScoreUpdate: new Date(),
+  //     // });
 
-      toast.success("Score updated successfully");
-      loadGames();
-    } catch (error) {
-      console.error("Error updating score:", error);
-      toast.error("Failed to update score");
-    }
-  };
+  //     toast.success("Score updated successfully");
+  //     loadGames();
+  //   } catch (error) {
+  //     console.error("Error updating score:", error);
+  //     toast.error("Failed to update score");
+  //   }
+  // };
 
   const deleteGame = async (gameId) => {
     if (
@@ -497,9 +498,18 @@ export default function AdminGames() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() =>
+                              (window.location.href = `/game/${game.id}`)
+                            }
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Update Score"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
                           {game.status === "active" && (
                             <button
-                              onClick={() => setOpenUpdateScoreModal(game.id)}
+                              // onClick={() => setOpenUpdateScoreModal(game.id)}
                               className="text-blue-600 hover:text-blue-900"
                               title="Update Score"
                             >
@@ -981,12 +991,12 @@ export default function AdminGames() {
           </div>
         )}
       </div>
-      <UpdateScoreModal
+      {/* <UpdateScoreModal
         open={openUpdateScoreModal}
         onClose={() => setOpenUpdateScoreModal(null)}
         onSuccess={updateScore}
         loading={scoreLoading}
-      />
+      /> */}
     </div>
   );
 }
