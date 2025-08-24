@@ -81,7 +81,7 @@ const enhancedUserSchema = {
 const TELEGRAM_BOT_TOKEN = "7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ";
 
 // Helper: send Telegram message
- async function sendTelegramNotification(chatId, message) {
+async function sendTelegramNotification(chatId, message) {
   if (!chatId) return;
 
   await axios.post(
@@ -1337,3 +1337,48 @@ function calculateValueScore(user) {
 
   return score;
 }
+
+exports.savePayoutDetails = functions.https.onCall(async (data, context) => {
+  try {
+    // Ensure user is logged in
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "You must be logged in to save payout details."
+      );
+    }
+
+    const userId = context.auth.uid;
+    const { method, ...details } = data;
+
+    if (!method) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Payout method is required."
+      );
+    }
+
+    // Save to Firestore under user doc
+    await db
+      .collection("users")
+      .doc(userId)
+      .set(
+        {
+          payoutDetails: {
+            method,
+            ...details,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+        },
+        { merge: true } // don’t overwrite whole doc
+      );
+
+    return { success: true, message: "Payout details saved successfully" };
+  } catch (error) {
+    console.error("Error saving payout details:", error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "Something went wrong while saving payout details."
+    );
+  }
+});

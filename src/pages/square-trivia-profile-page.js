@@ -18,6 +18,7 @@ import {
 import { useAuth } from "../contexts/authcontext";
 import { formatCurrency } from "../firebase/config";
 import toast from "react-hot-toast";
+import PayoutModal from "../components/Auth/payout-modal";
 
 export default function Profile() {
   const {
@@ -32,6 +33,7 @@ export default function Profile() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [addingTelegram, setAddingTelegram] = useState(false);
+  const [payoutModal, setPayoutModal] = useState(false);
 
   const [formData, setFormData] = useState({
     displayName: userData?.displayName || "",
@@ -359,6 +361,12 @@ export default function Profile() {
                       Connect Telegram
                     </a>
                   )}
+                  <p
+                    className="text-xs text-blue-600 mt-6 cursor-pointer"
+                    onClick={() => setPayoutModal(true)}
+                  >
+                    Add Payout Method
+                  </p>
                 </div>
               </div>
             </div>
@@ -595,6 +603,7 @@ export default function Profile() {
           </motion.div>
         </div>
       </div>
+      <PayoutModal isOpen={payoutModal} onClose={() => setPayoutModal(false)} />
     </div>
   );
 }
