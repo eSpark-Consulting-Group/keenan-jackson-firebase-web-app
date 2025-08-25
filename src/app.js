@@ -46,6 +46,7 @@ import AdminReports from "./pages/admin/admin-reports";
 // Styles
 import "./styles/index.css";
 import LandingPage from "./pages/LandingPage";
+import Payouts from "./pages/square-trivia-payouts-page";
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -225,6 +226,16 @@ function App() {
                     <ProtectedRoute>
                       <Layout>
                         <PaymentCancel />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/payouts"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <Payouts />
                       </Layout>
                     </ProtectedRoute>
                   }

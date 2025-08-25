@@ -9,6 +9,7 @@ import {
   User,
   LogOut,
   HelpCircle,
+  DollarSignIcon,
   Shield,
   Mail,
   Brain,
@@ -45,6 +46,12 @@ export default function Layout({ children }) {
       name: "How to Play",
       href: "/how-to-play",
       icon: HelpCircle,
+      public: true,
+    },
+    {
+      name: "Payouts",
+      href: "/payouts",
+      icon: DollarSignIcon,
       public: true,
     },
   ];
