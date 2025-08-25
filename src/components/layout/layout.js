@@ -9,7 +9,6 @@ import {
   User,
   LogOut,
   HelpCircle,
-  DollarSignIcon,
   Shield,
   Mail,
   Brain,
@@ -51,7 +50,7 @@ export default function Layout({ children }) {
     {
       name: "Payouts",
       href: "/payouts",
-      icon: DollarSignIcon,
+      icon: DollarSign,
       public: true,
     },
   ];
@@ -59,6 +58,12 @@ export default function Layout({ children }) {
   const userNavigation = [
     { name: "Profile", href: "/profile", icon: User },
     { name: "Settings", href: "/settings", icon: Settings },
+    {
+      name: "Payouts",
+      href: "/payouts",
+      icon: DollarSign,
+      public: true,
+    },
   ];
 
   const adminNavigation = [
