@@ -154,8 +154,8 @@ export default function TriviaModal({
           () => {
             onComplete(response.correct, response.answerTime, response.tokenId);
             onClose();
-            refreshUserData();
-            navigate("/games");
+            // refreshUserData();
+            // navigate("/games");
           },
           response.correct ? 3000 : 2000
         );
