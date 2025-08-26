@@ -727,12 +727,12 @@ exports.sendGameReminders = functions.pubsub
         ? game.gameDate.toDate()
         : new Date(game.gameDate);
 
-      // if (
-      //   gameDate.toDateString() !== now.toDateString() &&
-      //   gameDate.toDateString() !== tomorrow.toDateString()
-      // ) {
-      //   return;
-      // }
+      if (
+        gameDate.toDateString() !== now.toDateString() &&
+        gameDate.toDateString() !== tomorrow.toDateString()
+      ) {
+        return;
+      }
 
       const message =
         `📢 Game Reminder!\n` +
