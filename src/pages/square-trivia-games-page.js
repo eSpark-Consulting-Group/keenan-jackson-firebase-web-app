@@ -58,7 +58,6 @@ export default function Games() {
         const q = query(
           collection(db, "tierAccess"),
           where("userId", "==", userData.id),
-          where("active", "==", true)
         );
         const snapshot = await getDocs(q);
         const tiers = snapshot.docs.map((doc) => doc.data().tier);
