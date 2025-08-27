@@ -41,11 +41,33 @@ export default function Games() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showTierSelection, setShowTierSelection] = useState(false);
   const [groupedGames, setGroupedGames] = useState({});
+  const [userTierAccess, setUserTierAccess] = useState([]); // store allowed tierIds
 
   useEffect(() => {
     loadGames();
     const unsubscribe = setupRealtimeListeners();
     return () => unsubscribe?.();
+  }, [userData]);
+
+  useEffect(() => {
+    if (!userData?.id) return;
+
+    // Fetch user's active tierAccess once
+    const loadTierAccess = async () => {
+      try {
+        const q = query(
+          collection(db, "tierAccess"),
+          where("userId", "==", userData.id),
+        );
+        const snapshot = await getDocs(q);
+        const tiers = snapshot.docs.map((doc) => doc.data().tier);
+        setUserTierAccess(tiers);
+      } catch (err) {
+        console.error("Error loading tier access:", err);
+      }
+    };
+
+    loadTierAccess();
   }, [userData]);
 
   const loadGames = async () => {
@@ -390,7 +412,6 @@ export default function Games() {
                               <h3 className="text-xl font-semibold text-gray-900 mb-1">
                                 {game?.teams?.away} @ {game.teams?.home}
                               </h3>
-
                               <p className="text-sm text-gray-600">
                                 {new Date(
                                   game.gameDate?.toDate?.() || game.gameDate
@@ -402,10 +423,10 @@ export default function Games() {
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                               {game.boards.map((board) => {
                                 const tier = TIERS[board.tierId.toUpperCase()];
-                                const isUserTier =
-                                  userData?.currentTiers?.includes(
-                                    board.tierId
-                                  );
+                                const isUserTier = userData?.currentTiers?.includes(board.tierId)
+                                const hasAccess = userTierAccess.includes(
+                                  board.tierId
+                                );
 
                                 return (
                                   <div
@@ -452,15 +473,23 @@ export default function Games() {
                                       >
                                         Play Now
                                       </Link>
-                                    ) : (
-                                      <button
-                                        disabled
-                                        className="block w-full bg-gray-300 text-gray-500 py-2 px-3 rounded text-sm font-medium cursor-not-allowed"
-                                      >
-                                        <Lock className="h-4 w-4 inline mr-1" />
-                                        Locked
-                                      </button>
-                                    )}
+                                    ) :
+                                      hasAccess ? (
+                                        <Link
+                                          to={`/game/${board.id}`}
+                                          className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
+                                        >
+                                          View Board
+                                        </Link>
+                                      ) : (
+                                        <button
+                                          disabled
+                                          className="block w-full bg-gray-300 text-gray-500 py-2 px-3 rounded text-sm font-medium cursor-not-allowed"
+                                        >
+                                          <Lock className="h-4 w-4 inline mr-1" />
+                                          Locked
+                                        </button>
+                                      )}
                                   </div>
                                 );
                               })}

@@ -68,11 +68,11 @@ export default function GameBoard() {
       setBoard(boardData);
 
       // Check if user has access to this tier
-      if (!userData?.currentTiers?.includes(boardData.tierId)) {
-        toast.error("You need access to this tier to view this board");
-        navigate("/games");
-        return;
-      }
+      // if (!userData?.currentTiers?.includes(boardData.tierId)) {
+      //   toast.error("You need access to this tier to view this board");
+      //   navigate("/games");
+      //   return;
+      // }
 
       // Load game data
       if (boardData.gameId) {

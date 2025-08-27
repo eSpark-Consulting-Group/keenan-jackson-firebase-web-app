@@ -90,7 +90,7 @@ export default function TriviaModal({
       }
     } catch (error) {
       console.error("Error starting trivia session:", error);
-      toast.error("Failed to load trivia question");
+      toast.error(error?.message);
       onClose();
     } finally {
       setLoading(false);
