@@ -406,7 +406,6 @@ export default function Games() {
                                   userData?.currentTiers?.includes(
                                     board.tierId
                                   );
-                                console.log(board, "BOARD");
 
                                 return (
                                   <div
