@@ -118,6 +118,9 @@ export default function AdminReports() {
         squaresSnapshot,
         payoutsSnapshot,
         winnersSnapshot,
+        triviaSnapshot,
+        triviaAttemptsSnapshot,
+        boardsSnapshot,
       ] = await Promise.all([
         getDocs(collection(db, collections.users)),
         getDocs(
@@ -149,6 +152,24 @@ export default function AdminReports() {
         getDocs(
           query(
             collection(db, collections.winners),
+            where("createdAt", ">=", startDate)
+          )
+        ),
+        getDocs(
+          query(
+            collection(db, collections.trivia),
+            where("createdAt", ">=", startDate)
+          )
+        ),
+        getDocs(
+          query(
+            collection(db, collections.triviaAttempts),
+            where("timestamp", ">=", startDate)
+          )
+        ),
+        getDocs(
+          query(
+            collection(db, collections.boards),
             where("createdAt", ">=", startDate)
           )
         ),
@@ -238,12 +259,42 @@ export default function AdminReports() {
         .sort((a, b) => b.totalWon - a.totalWon)
         .slice(0, 10);
 
+      let totalClaims = 0;
+      let totalAnswerTime = 0;
+      let allClaims = [];
+
+      boardsSnapshot.forEach((boardDoc) => {
+        const board = boardDoc.data();
+
+        const squares = board.squares || {};
+
+        Object.values(squares).forEach((square) => {
+          const claims = square.claims || [];
+          totalClaims += claims.length;
+
+          claims.forEach((claim) => {
+            allClaims.push({
+              boardId: boardDoc.id,
+              ...claim,
+            });
+
+            if (typeof claim.answerTime === "number") {
+              totalAnswerTime += claim.answerTime;
+            }
+          });
+        });
+      });
+
+      // 3. Calculate average
+      const averageAnswerTime =
+        totalClaims > 0 ? totalAnswerTime / totalClaims : 0;
+
       // Set all state
       setOverview({
         totalRevenue,
         totalUsers,
         totalGames: gamesSnapshot.size,
-        totalSquaresClaimed: squaresSnapshot.size,
+        totalSquaresClaimed: totalClaims,
         totalPrizesPaid,
         averageRevenuePerUser,
         conversionRate,
@@ -269,26 +320,68 @@ export default function AdminReports() {
       });
 
       setGamePerformance({
-        fillRate: 0.75, // Mock data
+        fillRate: 0.75,
         averageSquaresPerGame:
           squaresSnapshot.size / Math.max(gamesSnapshot.size, 1),
         gamesByTier,
         completionRate,
       });
 
-      // Mock trivia stats
-      setTriviaStats({
-        totalQuestions: 1250,
-        totalAttempts: 45000,
-        correctRate: 0.65,
-        averageAnswerTime: 8.5,
-        popularQuestions: [],
-        questionsByDifficulty: {
-          easy: 300,
-          medium: 500,
-          hard: 350,
-          expert: 100,
+      const trivia = triviaSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      const triviaAttempts = triviaAttemptsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      const totalQuestions = trivia.length;
+
+      const totalAttempts = triviaAttempts.length;
+
+      const correctAttempts = triviaAttempts.filter((a) => a.correct).length;
+
+      const correctRate =
+        totalAttempts > 0 ? correctAttempts / totalAttempts : 0;
+
+      // 5. Popular questions (by attempts count)
+      const attemptsByQuestion = {};
+      triviaAttempts.forEach((a) => {
+        if (!attemptsByQuestion[a.questionId])
+          attemptsByQuestion[a.questionId] = 0;
+        attemptsByQuestion[a.questionId]++;
+      });
+
+      const popularQuestions = Object.entries(attemptsByQuestion)
+        .sort((a, b) => b[1] - a[1]) // sort by attempts count
+        .slice(0, 5) // top 5
+        .map(([questionId, count]) => {
+          const q = trivia.find((t) => t.id === questionId);
+          return {
+            id: questionId,
+            question: q?.question || "Unknown",
+            attempts: count,
+          };
+        });
+
+      // 6. Questions by difficulty
+      const questionsByDifficulty = trivia.reduce(
+        (acc, q) => {
+          acc[q.difficulty] = (acc[q.difficulty] || 0) + 1;
+          return acc;
         },
+        { easy: 0, medium: 0, hard: 0, expert: 0 }
+      );
+
+      // --- Final set ---
+      setTriviaStats({
+        totalQuestions,
+        totalAttempts,
+        correctRate,
+        averageAnswerTime,
+        popularQuestions,
+        questionsByDifficulty,
       });
 
       setLoading(false);
@@ -607,7 +700,7 @@ export default function AdminReports() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Avg Answer Time</span>
                     <span className="font-semibold">
-                      {triviaStats.averageAnswerTime}s
+                      {triviaStats.averageAnswerTime?.toFixed(3)}s
                     </span>
                   </div>
                 </div>
@@ -899,7 +992,7 @@ export default function AdminReports() {
               />
               <MetricCard
                 title="Avg Answer Time"
-                value={`${triviaStats.averageAnswerTime}s`}
+                value={`${triviaStats.averageAnswerTime?.toFixed(3)}s`}
                 icon={Clock}
                 color="bg-yellow-600"
               />

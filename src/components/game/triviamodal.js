@@ -154,23 +154,23 @@ export default function TriviaModal({
           () => {
             onComplete(response.correct, response.answerTime, response.tokenId);
             onClose();
-            // refreshUserData();
-            // navigate("/games");
+            refreshUserData();
+            navigate("/games");
           },
           response.correct ? 3000 : 2000
         );
       } else {
         toast.error(response.error || "Failed to submit answer");
         onClose();
-        // refreshUserData();
-        // navigate("/games");
+        refreshUserData();
+        navigate("/games");
       }
     } catch (error) {
       console.error("Error submitting answer:", error);
       toast.error("Failed to submit answer");
       onClose();
-      // refreshUserData();
-      // navigate("/games");
+      refreshUserData();
+      navigate("/games");
     }
   };
 

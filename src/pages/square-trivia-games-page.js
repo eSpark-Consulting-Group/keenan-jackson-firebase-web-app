@@ -204,7 +204,7 @@ export default function Games() {
     // { value: "NCAAB", label: "College Basketball" },
   ];
 
-  if (loading) {
+  if (loading && Object.keys(groupedGames)?.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -406,6 +406,7 @@ export default function Games() {
                                   userData?.currentTiers?.includes(
                                     board.tierId
                                   );
+                                console.log(board, "BOARD");
 
                                 return (
                                   <div
