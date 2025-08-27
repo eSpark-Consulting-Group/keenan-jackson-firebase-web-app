@@ -6,11 +6,16 @@ const GRID_CONFIG = {
   ROWS: 5,
   COLS: 10,
   ROW_DIGITS: [
-    [0, 5],  // Row 0: represents digits 0 and 5
-    [1, 6],  // Row 1: represents digits 1 and 6
-    [2, 7],  // Row 2: represents digits 2 and 7
-    [3, 8],  // Row 3: represents digits 3 and 8
-    [4, 9],  // Row 4: represents digits 4 and 9
+    [0],  // Row 0: represents digits 0 and 5
+    [1],  // Row 1: represents digits 1 and 6
+    [2],  // Row 2: represents digits 2 and 7
+    [3],  // Row 3: represents digits 3 and 8
+    [4],  // Row 4: represents digits 4 and 9
+    [5],  // Row 0: represents digits 0 and 5
+    [6],  // Row 1: represents digits 1 and 6
+    [7],  // Row 2: represents digits 2 and 7
+    [8],  // Row 3: represents digits 3 and 8
+    [9],  // Row 4: represents digits 4 and 9
   ],
   COL_DIGITS: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 };
@@ -225,63 +230,72 @@ export default function SquareGrid({
 
         {/* Grid with row headers */}
         {GRID_CONFIG.ROW_DIGITS.map((rowDigits, row) => (
-          <div key={row} className="grid grid-cols-11 gap-1 mb-1">
-            {/* Row header */}
-            <div className="flex items-center justify-center text-sm font-bold text-gray-700 bg-gray-100 rounded px-2">
-              {rowDigits.join('/')}
+  <div key={row} className="grid grid-cols-11 gap-1 mb-1">
+    {/* Row header */}
+    <div className="flex items-center justify-center text-sm font-bold text-gray-700 bg-gray-100 rounded px-2">
+      {rowDigits.join('/')}
+    </div>
+
+    {/* Squares */}
+    {GRID_CONFIG.COL_DIGITS.map(col => {
+      
+      // Skip mirrored duplicates and 0-0
+      if (row > col 
+        // || (row === 0 && col === 0)
+      ) {
+        return <div key={`${row}-${col}`} />;
+      }
+
+      const position = row * GRID_CONFIG.COLS + col;
+      const status = getSquareStatus(position);
+      const isClickable = allowSelection && (status === 'available' || status === 'partial');
+      const isWinning = winningSquares.includes(position);
+      const isRevealed = revealedSquares.has(position);
+
+      return (
+        <motion.div
+          key={position}
+          whileHover={isClickable || isWinning ? { scale: 1.05 } : {}}
+          whileTap={isClickable || isWinning ? { scale: 0.95 } : {}}
+          onClick={() => handleSquareClick(position)}
+          onMouseEnter={() => setHoveredSquare(position)}
+          onMouseLeave={() => setHoveredSquare(null)}
+          className={`
+            relative aspect-square border-2 rounded-lg flex items-center justify-center
+            transition-all duration-200 
+            ${getSquareColor(position, status)}
+            ${(isClickable || isWinning) ? 'cursor-pointer' : 'cursor-default'}
+            ${selectedInfo?.position === position ? 'ring-2 ring-red-400' : ''}
+          `}
+        >
+          {getSquareContent(position, status)}
+
+          {/* Winning indicator */}
+          {isWinning && (
+            <div className="absolute top-0 right-0 -mt-1 -mr-1">
+              <div className="relative">
+                <Trophy className="h-4 w-4 text-yellow-600" />
+                {!isRevealed && (
+                  <div className="absolute inset-0 animate-ping">
+                    <Trophy className="h-4 w-4 text-yellow-400 opacity-75" />
+                  </div>
+                )}
+              </div>
             </div>
-            
-            {/* Squares */}
-            {GRID_CONFIG.COL_DIGITS.map(col => {
-              const position = row * GRID_CONFIG.COLS + col;
-              const status = getSquareStatus(position);
-              const isClickable = allowSelection && (status === 'available' || status === 'partial');
-              const isWinning = winningSquares.includes(position);
-              const isRevealed = revealedSquares.has(position);
-              
-              return (
-                <motion.div
-                  key={position}
-                  whileHover={isClickable || isWinning ? { scale: 1.05 } : {}}
-                  whileTap={isClickable || isWinning ? { scale: 0.95 } : {}}
-                  onClick={() => handleSquareClick(position)}
-                  onMouseEnter={() => setHoveredSquare(position)}
-                  onMouseLeave={() => setHoveredSquare(null)}
-                  className={`
-                    relative aspect-square border-2 rounded-lg flex items-center justify-center
-                    transition-all duration-200 
-                    ${getSquareColor(position, status)}
-                    ${(isClickable || isWinning) ? 'cursor-pointer' : 'cursor-default'}
-                    ${selectedInfo?.position === position ? 'ring-2 ring-red-400' : ''}
-                  `}
-                >
-                  {getSquareContent(position, status)}
-                  
-                  {/* Winning indicator */}
-                  {isWinning && (
-                    <div className="absolute top-0 right-0 -mt-1 -mr-1">
-                      <div className="relative">
-                        <Trophy className="h-4 w-4 text-yellow-600" />
-                        {!isRevealed && (
-                          <div className="absolute inset-0 animate-ping">
-                            <Trophy className="h-4 w-4 text-yellow-400 opacity-75" />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Privacy indicator */}
-                  {status !== 'available' && !isWinning && (
-                    <div className="absolute bottom-0 right-0 -mb-1 -mr-1">
-                      <EyeOff className="h-3 w-3 text-gray-400" />
-                    </div>
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
-        ))}
+          )}
+
+          {/* Privacy indicator */}
+          {status !== 'available' && !isWinning && (
+            <div className="absolute bottom-0 right-0 -mb-1 -mr-1">
+              <EyeOff className="h-3 w-3 text-gray-400" />
+            </div>
+          )}
+        </motion.div>
+      );
+    })}
+  </div>
+))}
+
 
         {/* Away team label */}
         <div className="absolute -left-16 top-1/2 -translate-y-1/2 -rotate-90 text-sm font-semibold text-gray-700">
