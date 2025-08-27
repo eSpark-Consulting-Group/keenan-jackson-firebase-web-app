@@ -11,6 +11,7 @@ import {
   Search,
   RefreshCw,
   Zap,
+  Eye,
 } from "lucide-react";
 import {
   db,
@@ -577,7 +578,8 @@ export default function AdminPayouts() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {payout.user?.displayName || "Unknown User"}
+                            <a href={`/admin/users/${payout.userId}`}>
+                            {payout.user?.displayName || "Unknown User"}</a>
                           </div>
                           <div className="text-sm text-gray-500">
                             {payout.user?.email || payout.email}
@@ -638,6 +640,7 @@ export default function AdminPayouts() {
                             </>
                           )}
                           {payout.status === "processing" && (
+                            <>
                             <button
                               onClick={() =>
                                 updatePayoutStatus(payout.id, "completed")
@@ -647,7 +650,31 @@ export default function AdminPayouts() {
                             >
                               <CheckCircle className="h-4 w-4" />
                             </button>
+                            <button
+                                onClick={() =>
+                                  updatePayoutStatus(payout.id, "failed")
+                                }
+                                className="text-red-600 hover:text-red-900"
+                                title="Mark as Failed"
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </button>
+                            </>
+                            
                           )}
+                          {payout.status === "failed" && (
+                             <button
+                                onClick={() =>
+                                  updatePayoutStatus(payout.id, "processing")
+                                }
+                                className="text-blue-600 hover:text-blue-900"
+                                title="Start Processing Again"
+                              >
+                                <Send className="h-4 w-4" />
+                              </button>
+                          )}
+                            <a href={`/admin/payouts/${payout.id}`}>
+                              <Eye className="h-4 w-4" /></a>
                         </div>
                       </td>
                     </tr>
