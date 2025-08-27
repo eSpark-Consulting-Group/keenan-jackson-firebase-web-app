@@ -513,7 +513,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
             .get();
 
           if (!accessQuery.empty) {
-            transaction.update(accessQuery.docs[0].ref, { active: false });
+            transaction.delete(accessQuery.docs[0].ref);
           }
         }
 
@@ -617,6 +617,50 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
         answerTimeSeconds: answerTimeSeconds,
       });
 
+      const result = await admin.firestore().runTransaction(async (transaction) => {
+        const userSnap = await transaction.get(userRef);
+
+        if (!userSnap.exists) {
+          throw new functions.https.HttpsError("not-found", "User not found");
+        }
+
+        const userData = userSnap.data();
+        const currentTiers = [...(userData.currentTiers || [])];
+
+        // 🔑 Remove only one occurrence of the tier
+        const index = currentTiers.indexOf(tier);
+        if (index === -1) {
+          throw new functions.https.HttpsError(
+            "failed-precondition",
+            "Tier not available in user’s currentTiers"
+          );
+        }
+        currentTiers.splice(index, 1);
+
+        const stillHasTier = currentTiers.includes(tier);
+
+        if (!stillHasTier) {
+          const accessQuery = await db
+            .collection("tierAccess")
+            .where("userId", "==", userId)
+            .where("tier", "==", tier)
+            .where("active", "==", true)
+            .limit(1)
+            .get();
+
+          if (!accessQuery.empty) {
+            transaction.update(accessQuery.docs[0].ref, { active: false });
+          }
+        }
+
+        // Update user's currentTiers
+        transaction.update(userRef, {
+          currentTiers: currentTiers,
+        });
+
+        return { currentTiers };
+      });
+
       return {
         success: true,
         correct: true,
@@ -667,7 +711,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
             .get();
 
           if (!accessQuery.empty) {
-            transaction.update(accessQuery.docs[0].ref, { active: false });
+            transaction.delete(accessQuery.docs[0].ref);
           }
         }
 
