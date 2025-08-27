@@ -2,29 +2,48 @@
 // Complete payment processing with Stripe, free entry, and tier management
 // Updated with new payment structure: 77%/80% payouts and 4% instant payout fee
 
-const functions = require('firebase-functions');
+const functions = require("firebase-functions");
 
-const admin = require('firebase-admin');
-const stripe = require('stripe')(functions.config().stripe.secret);
-const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const admin = require("firebase-admin");
+const stripe = require("stripe")(functions.config().stripe.secret);
+const crypto = require("crypto");
+const nodemailer = require("nodemailer");
+const { default: axios } = require("axios");
+const TelegramBot = require("node-telegram-bot-api");
+const bot = new TelegramBot(functions.config().telegram.bot_token, {
+  polling: false,
+});
 
 // Initialize mail transport
 const mailTransport = nodemailer.createTransport({
-  service: 'gmail',
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
+    pass: process.env.EMAIL_PASSWORD,
+  },
 });
 
 const sgMail = require("@sendgrid/mail");
+
+const TELEGRAM_BOT_TOKEN = "7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ";
+
+async function sendTelegramNotification(chatId, message) {
+  if (!chatId) return;
+
+  await axios.post(
+    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+    {
+      chat_id: chatId,
+      text: message,
+    }
+  );
+}
 
 // Set API key
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // Example send function
-const sendMail = async ({to, subject, html}) => {
+const sendMail = async ({ to, subject, html }) => {
   const msg = {
     to,
     from: process.env.SENDGRID_FROM_EMAIL, // must be a verified sender in SendGrid
@@ -57,26 +76,55 @@ const sendMail = async ({to, subject, html}) => {
 //   tier_1000: { amount: 1000, name: '$1000 Tier', telegramGroupId: functions.config().telegram.tier_1000_group_id, payoutPercentage: 0.80 }
 // };
 const TIER_CONFIG = {
-  tier_25:  { amount: 25,   name: '$25 Tier',   telegramGroupId: '-1002279525248', payoutPercentage: 0.77 },
-  tier_50:  { amount: 50,   name: '$50 Tier',   telegramGroupId: '-1002862739955', payoutPercentage: 0.77 },
-  tier_100: { amount: 100,  name: '$100 Tier',  telegramGroupId: '-1002749874729', payoutPercentage: 0.77 },
-  tier_250: { amount: 250,  name: '$250 Tier',  telegramGroupId: '-1002554143674', payoutPercentage: 0.80 },
-  tier_500: { amount: 500,  name: '$500 Tier',  telegramGroupId: '-1002477878800', payoutPercentage: 0.80 },
-  tier_1000:{ amount: 1000, name: '$1000 Tier', telegramGroupId: '-1002775562003', payoutPercentage: 0.80 }
+  tier_25: {
+    amount: 25,
+    name: "$25 Tier",
+    telegramGroupId: "-1002279525248",
+    payoutPercentage: 0.77,
+  },
+  tier_50: {
+    amount: 50,
+    name: "$50 Tier",
+    telegramGroupId: "-1002862739955",
+    payoutPercentage: 0.77,
+  },
+  tier_100: {
+    amount: 100,
+    name: "$100 Tier",
+    telegramGroupId: "-1002749874729",
+    payoutPercentage: 0.77,
+  },
+  tier_250: {
+    amount: 250,
+    name: "$250 Tier",
+    telegramGroupId: "-1002554143674",
+    payoutPercentage: 0.8,
+  },
+  tier_500: {
+    amount: 500,
+    name: "$500 Tier",
+    telegramGroupId: "-1002477878800",
+    payoutPercentage: 0.8,
+  },
+  tier_1000: {
+    amount: 1000,
+    name: "$1000 Tier",
+    telegramGroupId: "-1002775562003",
+    payoutPercentage: 0.8,
+  },
 };
 
-
 const DONATION_STATUS = {
-  PENDING: 'pending',
-  PROCESSING: 'processing',
-  COMPLETED: 'completed',
-  FAILED: 'failed',
-  REFUNDED: 'refunded'
+  PENDING: "pending",
+  PROCESSING: "processing",
+  COMPLETED: "completed",
+  FAILED: "failed",
+  REFUNDED: "refunded",
 };
 
 // Payout constants
 const INSTANT_PAYOUT_FEE = 0.04; // 4% fee for instant payouts
-const BATCH_PAYOUT_DAYS = ['tuesday', 'friday'];
+const BATCH_PAYOUT_DAYS = ["tuesday", "friday"];
 
 // =====================================
 // STRIPE PAYMENT PROCESSING
@@ -89,7 +137,10 @@ const BATCH_PAYOUT_DAYS = ['tuesday', 'friday'];
 exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
   // Authentication check
   if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "User must be authenticated"
+    );
   }
 
   const { tier, telegramUsername } = data;
@@ -97,18 +148,24 @@ exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
 
   // Input validation
   if (!tier || !TIER_CONFIG[tier]) {
-    throw new functions.https.HttpsError('invalid-argument', 'Invalid tier selected');
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Invalid tier selected"
+    );
   }
 
   // Validate Telegram if provided (now optional)
   let validatedTelegram = null;
   let hasTelegram = false;
-  
-  if (telegramUsername && telegramUsername.trim() !== '') {
+
+  if (telegramUsername && telegramUsername.trim() !== "") {
     if (!telegramUsername.match(/^@?[a-zA-Z0-9_]{5,32}$/)) {
-      throw new functions.https.HttpsError('invalid-argument', 'Invalid Telegram username format');
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Invalid Telegram username format"
+      );
     }
-    validatedTelegram = telegramUsername.replace('@', '');
+    validatedTelegram = telegramUsername.replace("@", "");
     hasTelegram = true;
   }
 
@@ -117,7 +174,7 @@ exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
   const attempts = await checkRateLimit(rateLimitKey, 5, 3600);
   if (!attempts.allowed) {
     throw new functions.https.HttpsError(
-      'resource-exhausted', 
+      "resource-exhausted",
       `Too many payment attempts. Try again in ${attempts.retryAfter} minutes.`
     );
   }
@@ -125,68 +182,75 @@ exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
   try {
     // Determine payout percentage based on tier
     const payoutPercentage = TIER_CONFIG[tier].payoutPercentage;
-    
+
     // Create donation record
-    const donationRef = await admin.firestore().collection('donations').add({
-      userId,
-      tier,
-      amount: TIER_CONFIG[tier].amount,
-      payoutPercentage, // Store tier-specific payout percentage
-      telegramUsername: validatedTelegram,
-      hasTelegram: hasTelegram,
-      webOnlyAccess: !hasTelegram,
-      status: DONATION_STATUS.PENDING,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-      metadata: {
-        userAgent: context.rawRequest.headers['user-agent'],
-        ip: context.rawRequest.ip
-      }
-    });
+    const donationRef = await admin
+      .firestore()
+      .collection("donations")
+      .add({
+        userId,
+        tier,
+        amount: TIER_CONFIG[tier].amount,
+        payoutPercentage, // Store tier-specific payout percentage
+        telegramUsername: validatedTelegram,
+        hasTelegram: hasTelegram,
+        webOnlyAccess: !hasTelegram,
+        status: DONATION_STATUS.PENDING,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        metadata: {
+          userAgent: context.rawRequest.headers["user-agent"],
+          ip: context.rawRequest.ip,
+        },
+      });
 
     // Create Stripe payment intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: TIER_CONFIG[tier].amount * 100, // Convert to cents
-      currency: 'usd',
-      payment_method_types: ['card'],
+      currency: "usd",
+      payment_method_types: ["card"],
       metadata: {
         userId,
         donationId: donationRef.id,
         tier,
-        telegramUsername: validatedTelegram || '',
-        payoutPercentage: payoutPercentage.toString() // Store in metadata too
+        telegramUsername: validatedTelegram || "",
+        payoutPercentage: payoutPercentage.toString(), // Store in metadata too
       },
       description: `Square Trivia ${TIER_CONFIG[tier].name} Access`,
-      statement_descriptor: 'SQUARETRIVIA'
+      statement_descriptor: "SQUARETRIVIA",
     });
 
     // Update donation with payment intent ID
     await donationRef.update({
       stripePaymentIntentId: paymentIntent.id,
-      status: DONATION_STATUS.PROCESSING
+      status: DONATION_STATUS.PROCESSING,
     });
 
     // Log for monitoring
-    console.log(`Payment intent created: ${paymentIntent.id} for user ${userId}`);
+    console.log(
+      `Payment intent created: ${paymentIntent.id} for user ${userId}`
+    );
 
     return {
       success: true,
       clientSecret: paymentIntent.client_secret,
-      donationId: donationRef.id
+      donationId: donationRef.id,
     };
-
   } catch (error) {
-    console.error('Payment intent creation error:', error);
-    
+    console.error("Payment intent creation error:", error);
+
     // Clean up failed donation record
     if (donationRef) {
-      await donationRef.update({ 
+      await donationRef.update({
         status: DONATION_STATUS.FAILED,
-        error: error.message 
+        error: error.message,
       });
     }
 
-    throw new functions.https.HttpsError('internal', 'Payment processing failed');
+    throw new functions.https.HttpsError(
+      "internal",
+      "Payment processing failed"
+    );
   }
 });
 
@@ -199,33 +263,29 @@ exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
  */
 exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
   // Only accept POST requests
-  if (req.method !== 'POST') {
-    res.status(405).send('Method Not Allowed');
+  if (req.method !== "POST") {
+    res.status(405).send("Method Not Allowed");
     return;
   }
 
-  const sig = req.headers['stripe-signature'];
+  const sig = req.headers["stripe-signature"];
   const endpointSecret = functions.config().stripe.webhook_secret;
 
   let event;
 
   try {
     // Verify webhook signature
-    event = stripe.webhooks.constructEvent(
-      req.rawBody,
-      sig,
-      endpointSecret
-    );
+    event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
   } catch (err) {
-    console.error('Webhook signature verification failed:', err);
+    console.error("Webhook signature verification failed:", err);
     res.status(400).send(`Webhook Error: ${err.message}`);
     return;
   }
 
   // Check for replay attacks
-  const eventRef = admin.firestore().collection('stripeEvents').doc(event.id);
+  const eventRef = admin.firestore().collection("stripeEvents").doc(event.id);
   const eventDoc = await eventRef.get();
-  
+
   if (eventDoc.exists) {
     console.log(`Duplicate webhook event detected: ${event.id}`);
     res.json({ received: true, duplicate: true });
@@ -237,37 +297,36 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
     type: event.type,
     processed: false,
     receivedAt: admin.firestore.FieldValue.serverTimestamp(),
-    data: event.data
+    data: event.data,
   });
 
   // Process the event
   try {
     switch (event.type) {
-      case 'payment_intent.succeeded':
+      case "payment_intent.succeeded":
         await handleSuccessfulPayment(event.data.object);
         break;
-        
-      case 'payment_intent.payment_failed':
+
+      case "payment_intent.payment_failed":
         await handleFailedPayment(event.data.object);
         break;
-        
-      case 'charge.refunded':
+
+      case "charge.refunded":
         await handleRefund(event.data.object);
         break;
-        
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
 
     // Mark event as processed
-    await eventRef.update({ 
+    await eventRef.update({
       processed: true,
-      processedAt: admin.firestore.FieldValue.serverTimestamp() 
+      processedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-
   } catch (error) {
     console.error(`Error processing webhook ${event.type}:`, error);
-    res.status(500).send('Webhook processing failed');
+    res.status(500).send("Webhook processing failed");
     return;
   }
 
@@ -280,47 +339,57 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
 
 async function handleSuccessfulPayment(paymentIntent) {
   const { metadata } = paymentIntent;
-  const { userId, donationId, tierId, telegramUsername, payoutPercentage } = metadata;
+  const { userId, donationId, tierId, payoutPercentage } = metadata;
 
-  console.log(`Processing successful payment for donation ${donationId} with ${payoutPercentage}% payout`);
+  console.log(
+    `Processing successful payment for donation ${donationId} with ${payoutPercentage}% payout`
+  );
 
   const batch = admin.firestore().batch();
 
   try {
     // Update donation status with payout percentage
-    const donationRef = admin.firestore().collection('donations').doc(donationId);
+    const donationRef = admin
+      .firestore()
+      .collection("donations")
+      .doc(donationId);
     batch.update(donationRef, {
       status: DONATION_STATUS.COMPLETED,
       completedAt: admin.firestore.FieldValue.serverTimestamp(),
       stripeChargeId: paymentIntent.payment_intent.latest_charge,
-      payoutPercentage: parseFloat(payoutPercentage) // Ensure it's stored as number
+      payoutPercentage: parseFloat(payoutPercentage),
     });
 
     // Update user's tier access
-    const userRef = admin.firestore().collection('users').doc(userId);
+    const userRef = admin.firestore().collection("users").doc(userId);
     const userDoc = await userRef.get();
     const userData = userDoc.data() || {};
 
     const newCurrentTiers = [...(userData.currentTiers || []), tierId];
 
-    batch.set(userRef, {
-      totalDonations: (userData.totalDonations || 0) + TIER_CONFIG[tierId].amount,
-      currentTiers: newCurrentTiers,
-      lastDonation: admin.firestore.FieldValue.serverTimestamp(),
-    }, { merge: true });
+    batch.set(
+      userRef,
+      {
+        totalDonations:
+          (userData.totalDonations || 0) + TIER_CONFIG[tierId].amount,
+        currentTiers: newCurrentTiers,
+        lastDonation: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
 
     // Create tier access record
     const accessQuery = await admin
       .firestore()
-      .collection('tierAccess')
-      .where('userId', '==', userId)
-      .where('tier', '==', tierId)
-      .where('active', '==', true)
+      .collection("tierAccess")
+      .where("userId", "==", userId)
+      .where("tier", "==", tierId)
+      .where("active", "==", true)
       .limit(1)
       .get();
 
     if (accessQuery.empty) {
-      const accessRef = admin.firestore().collection('tierAccess').doc();
+      const accessRef = admin.firestore().collection("tierAccess").doc();
       batch.set(accessRef, {
         userId,
         tier: tierId,
@@ -328,40 +397,68 @@ async function handleSuccessfulPayment(paymentIntent) {
         telegramUsername: telegramUsername || null,
         grantedAt: admin.firestore.FieldValue.serverTimestamp(),
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        active: true
+        active: true,
       });
     } else {
       const accessDoc = accessQuery.docs[0];
       const accessRef = accessDoc.ref;
       batch.update(accessRef, {
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     }
 
     // Commit all changes
     await batch.commit();
 
-    // Grant Telegram access only if user has Telegram
-    if (telegramUsername) {
-      await grantTelegramAccess(userId, telegramUsername, tierId);
+    // Fetch user's Telegram chatId from Firestore
+    const updatedUserDoc = await userRef.get();
+    const updatedUserData = updatedUserDoc.data() || {};
+    const telegramChatId = updatedUserData.telegramChatId;
+
+    if (telegramChatId) {
+      functions.logger.info(`Got CHATID: ${telegramChatId}`);
+
+      const tierGroupId = TIER_CONFIG[tierId].telegramGroupId;
+
+      try {
+        const inviteLink = await bot.createChatInviteLink(tierGroupId, {
+          member_limit: 1,
+          expire_date: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
+        });
+
+        const message =
+          `🎉 Tier Purchased: ${TIER_CONFIG[tierId].name}!\n\n` +
+          `Thank you for your support!\n\n` +
+          `Click here to join our Telegram group: ${inviteLink.invite_link}\n` +
+          `(Link expires in 24 hours)`;
+
+        await sendTelegramNotification(telegramChatId, message);
+
+        functions.logger.info(`Telegram invite sent to user ${telegramChatId}`);
+      } catch (err) {
+        console.error(
+          `Failed to send Telegram invite to ${telegramChatId}:`,
+          err.response?.data || err.message
+        );
+      }
     } else {
-      // Log web-only access
-      console.log(`User ${userId} has web-only access for tier ${tierId}`);
+      console.log(
+        `User ${userId} has no Telegram chatId. Web-only access for tier ${tierId}`
+      );
     }
 
     // Send confirmation email
     await sendPaymentConfirmation(userId, donationId, tierId);
 
     // Update analytics
-    await updateAnalytics('donation_completed', {
+    await updateAnalytics("donation_completed", {
       tier: tierId,
       amount: TIER_CONFIG[tierId].amount,
-      userId
+      userId,
     });
-
   } catch (error) {
-    console.error('Error processing successful payment:', error);
+    console.error("Error processing successful payment:", error);
     throw error;
   }
 }
@@ -370,11 +467,16 @@ async function handleFailedPayment(paymentIntent) {
   const { metadata } = paymentIntent;
   const { donationId, userId } = metadata;
 
-  await admin.firestore().collection('donations').doc(donationId).update({
-    status: DONATION_STATUS.FAILED,
-    failedAt: admin.firestore.FieldValue.serverTimestamp(),
-    failureReason: paymentIntent.last_payment_error?.message || 'Unknown error'
-  });
+  await admin
+    .firestore()
+    .collection("donations")
+    .doc(donationId)
+    .update({
+      status: DONATION_STATUS.FAILED,
+      failedAt: admin.firestore.FieldValue.serverTimestamp(),
+      failureReason:
+        paymentIntent.last_payment_error?.message || "Unknown error",
+    });
 
   // Send failure notification
   await sendPaymentFailureNotification(userId, donationId);
@@ -387,47 +489,49 @@ async function handleRefund(charge) {
   const batch = admin.firestore().batch();
 
   // Update donation status
-  const donationRef = admin.firestore().collection('donations').doc(donationId);
+  const donationRef = admin.firestore().collection("donations").doc(donationId);
   const donationDoc = await donationRef.get();
   const donation = donationDoc.data();
-  
+
   batch.update(donationRef, {
     status: DONATION_STATUS.REFUNDED,
     refundedAt: admin.firestore.FieldValue.serverTimestamp(),
-    refundAmount: charge.amount_refunded / 100
+    refundAmount: charge.amount_refunded / 100,
   });
 
   // Check if any instant payouts were made from this donation
-  const instantPayouts = await admin.firestore()
-    .collection('payouts')
-    .where('donationId', '==', donationId)
-    .where('payoutType', '==', 'instant')
+  const instantPayouts = await admin
+    .firestore()
+    .collection("payouts")
+    .where("donationId", "==", donationId)
+    .where("payoutType", "==", "instant")
     .get();
-  
+
   let totalInstantFees = 0;
-  instantPayouts.forEach(doc => {
+  instantPayouts.forEach((doc) => {
     const payout = doc.data();
     totalInstantFees += payout.instantPayoutFee || 0;
   });
 
   // Revoke tier access
-  const accessQuery = await admin.firestore()
-    .collection('tierAccess')
-    .where('donationId', '==', donationId)
-    .where('active', '==', true)
+  const accessQuery = await admin
+    .firestore()
+    .collection("tierAccess")
+    .where("donationId", "==", donationId)
+    .where("active", "==", true)
     .get();
 
-  accessQuery.forEach(doc => {
+  accessQuery.forEach((doc) => {
     batch.update(doc.ref, {
       active: false,
-      revokedAt: admin.firestore.FieldValue.serverTimestamp()
+      revokedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   });
 
   // Remove tier from user
-  const userRef = admin.firestore().collection('users').doc(userId);
+  const userRef = admin.firestore().collection("users").doc(userId);
   batch.update(userRef, {
-    currentTiers: admin.firestore.FieldValue.arrayRemove(tierId)
+    currentTiers: admin.firestore.FieldValue.arrayRemove(tierId),
   });
 
   await batch.commit();
@@ -436,7 +540,12 @@ async function handleRefund(charge) {
   await revokeTelegramAccess(userId, tierId);
 
   // Send refund notification with instant fee info if applicable
-  await sendRefundNotification(userId, donationId, charge.amount_refunded / 100, totalInstantFees);
+  await sendRefundNotification(
+    userId,
+    donationId,
+    charge.amount_refunded / 100,
+    totalInstantFees
+  );
 }
 
 // =====================================
@@ -450,46 +559,57 @@ exports.processFreeEntry = functions.https.onCall(async (data, context) => {
   const { entryCode, email, mailingAddress, tier } = data;
 
   // Validate entry code (sent via mail)
-  const entryDoc = await admin.firestore()
-    .collection('freeEntries')
+  const entryDoc = await admin
+    .firestore()
+    .collection("freeEntries")
     .doc(entryCode)
     .get();
 
   if (!entryDoc.exists) {
-    throw new functions.https.HttpsError('not-found', 'Invalid entry code');
+    throw new functions.https.HttpsError("not-found", "Invalid entry code");
   }
 
   const entry = entryDoc.data();
 
   if (entry.used) {
-    throw new functions.https.HttpsError('already-exists', 'Entry code already used');
+    throw new functions.https.HttpsError(
+      "already-exists",
+      "Entry code already used"
+    );
   }
 
   if (entry.expiresAt.toMillis() < Date.now()) {
-    throw new functions.https.HttpsError('deadline-exceeded', 'Entry code expired');
+    throw new functions.https.HttpsError(
+      "deadline-exceeded",
+      "Entry code expired"
+    );
   }
 
   // Validate tier
   if (!TIER_CONFIG[tier]) {
-    throw new functions.https.HttpsError('invalid-argument', 'Invalid tier selected');
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Invalid tier selected"
+    );
   }
 
   try {
     // Create or update user
-    const userQuery = await admin.firestore()
-      .collection('users')
-      .where('email', '==', email)
+    const userQuery = await admin
+      .firestore()
+      .collection("users")
+      .where("email", "==", email)
       .limit(1)
       .get();
 
     let userId;
     if (userQuery.empty) {
       // Create new user
-      const userRef = await admin.firestore().collection('users').add({
+      const userRef = await admin.firestore().collection("users").add({
         email,
         mailingAddress,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        source: 'free_entry'
+        source: "free_entry",
       });
       userId = userRef.id;
     } else {
@@ -497,39 +617,49 @@ exports.processFreeEntry = functions.https.onCall(async (data, context) => {
     }
 
     // Process free entry as a "donation"
-    const donationRef = await admin.firestore().collection('donations').add({
-      userId,
-      tier,
-      amount: 0,
-      payoutPercentage: TIER_CONFIG[tier].payoutPercentage, // Include payout percentage for free entries too
-      isFreeEntry: true,
-      entryCode,
-      status: DONATION_STATUS.COMPLETED,
-      completedAt: admin.firestore.FieldValue.serverTimestamp(),
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    });
+    const donationRef = await admin
+      .firestore()
+      .collection("donations")
+      .add({
+        userId,
+        tier,
+        amount: 0,
+        payoutPercentage: TIER_CONFIG[tier].payoutPercentage, // Include payout percentage for free entries too
+        isFreeEntry: true,
+        entryCode,
+        status: DONATION_STATUS.COMPLETED,
+        completedAt: admin.firestore.FieldValue.serverTimestamp(),
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      });
 
     // Grant tier access
-    await admin.firestore().collection('tierAccess').add({
-      userId,
-      tier,
-      donationId: donationRef.id,
-      isFreeEntry: true,
-      grantedAt: admin.firestore.FieldValue.serverTimestamp(),
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      active: true
-    });
+    await admin
+      .firestore()
+      .collection("tierAccess")
+      .add({
+        userId,
+        tier,
+        donationId: donationRef.id,
+        isFreeEntry: true,
+        grantedAt: admin.firestore.FieldValue.serverTimestamp(),
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        active: true,
+      });
 
     // Update user tiers
-    await admin.firestore().collection('users').doc(userId).update({
-      currentTiers: admin.firestore.FieldValue.arrayUnion(tier)
-    });
+    await admin
+      .firestore()
+      .collection("users")
+      .doc(userId)
+      .update({
+        currentTiers: admin.firestore.FieldValue.arrayUnion(tier),
+      });
 
     // Mark entry as used
     await entryDoc.ref.update({
       used: true,
       usedAt: admin.firestore.FieldValue.serverTimestamp(),
-      userId
+      userId,
     });
 
     // Send confirmation
@@ -537,13 +667,15 @@ exports.processFreeEntry = functions.https.onCall(async (data, context) => {
 
     return {
       success: true,
-      message: 'Free entry processed successfully',
-      userId
+      message: "Free entry processed successfully",
+      userId,
     };
-
   } catch (error) {
-    console.error('Free entry processing error:', error);
-    throw new functions.https.HttpsError('internal', 'Failed to process free entry');
+    console.error("Free entry processing error:", error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "Failed to process free entry"
+    );
   }
 });
 
@@ -552,40 +684,44 @@ exports.processFreeEntry = functions.https.onCall(async (data, context) => {
 // =====================================
 
 async function grantTelegramAccess(userId, telegramUsername, tier) {
-  const TelegramBot = require('node-telegram-bot-api');
-  const bot = new TelegramBot(functions.config().telegram.bot_token, { polling: false });
+  const TelegramBot = require("node-telegram-bot-api");
+  const bot = new TelegramBot(functions.config().telegram.bot_token, {
+    polling: false,
+  });
 
   try {
     // Generate invite link
     const groupId = TIER_CONFIG[tier].telegramGroupId;
     const inviteLink = await bot.createChatInviteLink(groupId, {
       member_limit: 1,
-      expire_date: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
+      expire_date: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
     });
 
     // Store invite link
-    await admin.firestore().collection('telegramInvites').add({
+    await admin.firestore().collection("telegramInvites").add({
       userId,
       tier,
       telegramUsername,
       inviteLink: inviteLink.invite_link,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      used: false
+      used: false,
     });
 
     // Send invite via bot DM if possible
     try {
-      await bot.sendMessage(`@${telegramUsername}`, 
+      await bot.sendMessage(
+        `@${telegramUsername}`,
         `Welcome to Square Trivia ${TIER_CONFIG[tier].name}!\n\n` +
-        `Click here to join: ${inviteLink.invite_link}\n\n` +
-        `This link expires in 24 hours.`
+          `Click here to join: ${inviteLink.invite_link}\n\n` +
+          `This link expires in 24 hours.`
       );
     } catch (dmError) {
-      console.log('Could not DM user, they need to start conversation with bot first');
+      console.log(
+        "Could not DM user, they need to start conversation with bot first"
+      );
     }
-
   } catch (error) {
-    console.error('Telegram access grant error:', error);
+    console.error("Telegram access grant error:", error);
     // Don't throw - payment was successful even if Telegram fails
   }
 }
@@ -609,61 +745,69 @@ async function processInstantPayout(winnerId, prizeAmount, tierInfo) {
     // Calculate payout after instant fee
     const instantFee = prizeAmount * INSTANT_PAYOUT_FEE;
     const payoutAmount = prizeAmount - instantFee;
-    
+
     // Get winner's connected account info
-    const winnerDoc = await admin.firestore().collection('users').doc(winnerId).get();
+    const winnerDoc = await admin
+      .firestore()
+      .collection("users")
+      .doc(winnerId)
+      .get();
     const winner = winnerDoc.data();
-    
+
     if (!winner.stripeConnectedAccountId) {
-      throw new Error('Winner does not have a connected Stripe account');
+      throw new Error("Winner does not have a connected Stripe account");
     }
-    
+
     // Create instant payout via Stripe
     const payout = await stripe.payouts.create({
       amount: Math.round(payoutAmount * 100), // Convert to cents
-      currency: 'usd',
-      method: 'instant',
+      currency: "usd",
+      method: "instant",
       destination: winner.stripeConnectedAccountId,
       metadata: {
         winnerId,
         originalPrize: prizeAmount.toString(),
         instantFee: instantFee.toString(),
         tier: tierInfo.tier,
-        payoutType: 'instant'
-      }
+        payoutType: "instant",
+      },
     });
-    
+
     // Record payout in database
-    await admin.firestore().collection('payouts').add({
+    await admin.firestore().collection("payouts").add({
       winnerId,
       tier: tierInfo.tier,
       originalAmount: prizeAmount,
       instantPayoutFee: instantFee,
       finalAmount: payoutAmount,
-      payoutType: 'instant',
+      payoutType: "instant",
       stripePayout: payout.id,
-      status: 'completed',
-      processedAt: admin.firestore.FieldValue.serverTimestamp()
+      status: "completed",
+      processedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-    
+
     // Update winner's instant payout stats
-    await admin.firestore().collection('users').doc(winnerId).update({
-      totalInstantPayoutFees: admin.firestore.FieldValue.increment(instantFee),
-      lastInstantPayout: admin.firestore.FieldValue.serverTimestamp()
-    });
-    
+    await admin
+      .firestore()
+      .collection("users")
+      .doc(winnerId)
+      .update({
+        totalInstantPayoutFees:
+          admin.firestore.FieldValue.increment(instantFee),
+        lastInstantPayout: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
     // Send instant payout confirmation
     await sendInstantPayoutConfirmation(winnerId, payoutAmount, instantFee);
-    
+
     return {
       success: true,
       payoutId: payout.id,
       amount: payoutAmount,
-      fee: instantFee
+      fee: instantFee,
     };
-    
   } catch (error) {
-    console.error('Instant payout processing error:', error);
+    console.error("Instant payout processing error:", error);
     throw error;
   }
 }
@@ -676,7 +820,7 @@ function calculateInstantPayout(prizeAmount) {
   return {
     originalAmount: prizeAmount,
     fee: fee,
-    finalAmount: prizeAmount - fee
+    finalAmount: prizeAmount - fee,
   };
 }
 
@@ -685,12 +829,16 @@ function calculateInstantPayout(prizeAmount) {
 // =====================================
 
 async function sendPaymentConfirmation(userId, donationId, tier) {
-  const userDoc = await admin.firestore().collection('users').doc(userId).get();
-  const donationDoc = await admin.firestore().collection('donations').doc(donationId).get();
-  
+  const userDoc = await admin.firestore().collection("users").doc(userId).get();
+  const donationDoc = await admin
+    .firestore()
+    .collection("donations")
+    .doc(donationId)
+    .get();
+
   const user = userDoc.data();
   const donation = donationDoc.data();
-  
+
   const mailOptions = {
     to: user.email,
     subject: `Payment Confirmed - ${TIER_CONFIG[tier].name} Access`,
@@ -747,20 +895,20 @@ async function sendPaymentConfirmation(userId, donationId, tier) {
   </div>
 </body>
 </html>
-    `
+    `,
   };
 
   await sendMail(mailOptions);
 }
 
 async function sendPaymentFailureNotification(userId, donationId) {
-  const userDoc = await admin.firestore().collection('users').doc(userId).get();
+  const userDoc = await admin.firestore().collection("users").doc(userId).get();
   const user = userDoc.data();
 
   const mailOptions = {
-    from: 'Square Trivia <noreply@squaretrivia.com>',
+    from: "Square Trivia <noreply@squaretrivia.com>",
     to: user.email,
-    subject: 'Payment Failed - Square Trivia',
+    subject: "Payment Failed - Square Trivia",
     html: `
       <h2>Payment Processing Failed</h2>
       <p>We were unable to process your payment for Square Trivia access.</p>
@@ -772,29 +920,34 @@ async function sendPaymentFailureNotification(userId, donationId) {
       </ul>
       <p>Please try again or use a different payment method.</p>
       <p>If you continue to experience issues, contact support@squaretrivia.com</p>
-    `
+    `,
   };
 
   await mailTransport.sendMail(mailOptions);
 }
 
-async function sendRefundNotification(userId, donationId, amount, instantFees = 0) {
-  const userDoc = await admin.firestore().collection('users').doc(userId).get();
+async function sendRefundNotification(
+  userId,
+  donationId,
+  amount,
+  instantFees = 0
+) {
+  const userDoc = await admin.firestore().collection("users").doc(userId).get();
   const user = userDoc.data();
 
   const mailOptions = {
-    from: 'Square Trivia <noreply@squaretrivia.com>',
+    from: "Square Trivia <noreply@squaretrivia.com>",
     to: user.email,
-    subject: 'Refund Processed - Square Trivia',
+    subject: "Refund Processed - Square Trivia",
     html: `
       <h2>Refund Confirmation</h2>
       <p>Your refund has been processed.</p>
       <p><strong>Amount:</strong> $${amount}</p>
-      ${instantFees > 0 ? `<p><strong>Note:</strong> Instant payout fees of $${instantFees.toFixed(2)} are non-refundable.</p>` : ''}
+      ${instantFees > 0 ? `<p><strong>Note:</strong> Instant payout fees of $${instantFees.toFixed(2)} are non-refundable.</p>` : ""}
       <p><strong>Processing Time:</strong> 5-10 business days</p>
       <p>Your tier access has been revoked. If this was a mistake, please contact support.</p>
       <p>Reference: ${donationId}</p>
-    `
+    `,
   };
 
   await mailTransport.sendMail(mailOptions);
@@ -802,7 +955,7 @@ async function sendRefundNotification(userId, donationId, amount, instantFees = 
 
 async function sendFreeEntryConfirmation(email, tier) {
   const mailOptions = {
-    from: 'Square Trivia <noreply@squaretrivia.com>',
+    from: "Square Trivia <noreply@squaretrivia.com>",
     to: email,
     subject: `Free Entry Confirmed - ${TIER_CONFIG[tier].name} Access`,
     html: `
@@ -810,20 +963,28 @@ async function sendFreeEntryConfirmation(email, tier) {
       <p>Your free entry has been processed successfully.</p>
       <p>You now have access to the ${TIER_CONFIG[tier].name} for 30 days.</p>
       <p>Visit <a href="https://squaretrivia.com">squaretrivia.com</a> to get started!</p>
-    `
+    `,
   };
 
   await mailTransport.sendMail(mailOptions);
 }
 
-async function sendInstantPayoutConfirmation(winnerId, payoutAmount, instantFee) {
-  const userDoc = await admin.firestore().collection('users').doc(winnerId).get();
+async function sendInstantPayoutConfirmation(
+  winnerId,
+  payoutAmount,
+  instantFee
+) {
+  const userDoc = await admin
+    .firestore()
+    .collection("users")
+    .doc(winnerId)
+    .get();
   const user = userDoc.data();
 
   const mailOptions = {
-    from: 'Square Trivia <noreply@squaretrivia.com>',
+    from: "Square Trivia <noreply@squaretrivia.com>",
     to: user.email,
-    subject: 'Instant Payout Processed - Square Trivia',
+    subject: "Instant Payout Processed - Square Trivia",
     html: `
 <!DOCTYPE html>
 <html>
@@ -866,7 +1027,7 @@ async function sendInstantPayoutConfirmation(winnerId, payoutAmount, instantFee)
   </div>
 </body>
 </html>
-    `
+    `,
   };
 
   await mailTransport.sendMail(mailOptions);
@@ -882,58 +1043,70 @@ async function sendInstantPayoutConfirmation(winnerId, payoutAmount, instantFee)
 exports.processRefund = functions.https.onCall(async (data, context) => {
   // Verify admin
   if (!context.auth?.token?.admin) {
-    throw new functions.https.HttpsError('permission-denied', 'Admin access required');
+    throw new functions.https.HttpsError(
+      "permission-denied",
+      "Admin access required"
+    );
   }
 
   const { donationId, reason } = data;
 
   // Get donation record
-  const donationDoc = await admin.firestore()
-    .collection('donations')
+  const donationDoc = await admin
+    .firestore()
+    .collection("donations")
     .doc(donationId)
     .get();
 
   if (!donationDoc.exists) {
-    throw new functions.https.HttpsError('not-found', 'Donation not found');
+    throw new functions.https.HttpsError("not-found", "Donation not found");
   }
 
   const donation = donationDoc.data();
 
   if (donation.status !== DONATION_STATUS.COMPLETED) {
-    throw new functions.https.HttpsError('failed-precondition', 'Can only refund completed donations');
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      "Can only refund completed donations"
+    );
   }
 
   try {
     // Create Stripe refund
     const refund = await stripe.refunds.create({
       charge: donation.stripeChargeId,
-      reason: 'requested_by_customer',
+      reason: "requested_by_customer",
       metadata: {
         donationId,
         adminId: context.auth.uid,
-        reason
-      }
+        reason,
+      },
     });
 
     // Log refund
-    await admin.firestore().collection('refunds').add({
-      donationId,
-      stripeRefundId: refund.id,
-      amount: refund.amount / 100,
-      reason,
-      processedBy: context.auth.uid,
-      processedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+    await admin
+      .firestore()
+      .collection("refunds")
+      .add({
+        donationId,
+        stripeRefundId: refund.id,
+        amount: refund.amount / 100,
+        reason,
+        processedBy: context.auth.uid,
+        processedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
 
     return {
       success: true,
       refundId: refund.id,
-      amount: refund.amount / 100
+      amount: refund.amount / 100,
     };
-
   } catch (error) {
-    console.error('Refund processing error:', error);
-    throw new functions.https.HttpsError('internal', 'Refund processing failed');
+    console.error("Refund processing error:", error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "Refund processing failed"
+    );
   }
 });
 
@@ -946,7 +1119,10 @@ exports.processRefund = functions.https.onCall(async (data, context) => {
  */
 exports.requestInstantPayout = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "User must be authenticated"
+    );
   }
 
   const { gameId, prizeAmount } = data;
@@ -954,24 +1130,34 @@ exports.requestInstantPayout = functions.https.onCall(async (data, context) => {
 
   try {
     // Verify user is the winner of this game
-    const gameDoc = await admin.firestore().collection('games').doc(gameId).get();
+    const gameDoc = await admin
+      .firestore()
+      .collection("games")
+      .doc(gameId)
+      .get();
     if (!gameDoc.exists) {
-      throw new functions.https.HttpsError('not-found', 'Game not found');
+      throw new functions.https.HttpsError("not-found", "Game not found");
     }
 
     const game = gameDoc.data();
     if (game.winnerId !== userId) {
-      throw new functions.https.HttpsError('permission-denied', 'You are not the winner of this game');
+      throw new functions.https.HttpsError(
+        "permission-denied",
+        "You are not the winner of this game"
+      );
     }
 
-    if (game.payoutStatus === 'completed') {
-      throw new functions.https.HttpsError('already-exists', 'Payout already processed');
+    if (game.payoutStatus === "completed") {
+      throw new functions.https.HttpsError(
+        "already-exists",
+        "Payout already processed"
+      );
     }
 
     // Get tier info
     const tierInfo = {
       tier: game.tier,
-      payoutPercentage: TIER_CONFIG[game.tier].payoutPercentage
+      payoutPercentage: TIER_CONFIG[game.tier].payoutPercentage,
     };
 
     // Process instant payout
@@ -979,24 +1165,26 @@ exports.requestInstantPayout = functions.https.onCall(async (data, context) => {
 
     // Update game with payout info
     await gameDoc.ref.update({
-      payoutStatus: 'completed',
-      payoutType: 'instant',
+      payoutStatus: "completed",
+      payoutType: "instant",
       payoutId: result.payoutId,
       instantPayoutFee: result.fee,
       finalPayoutAmount: result.amount,
-      payoutProcessedAt: admin.firestore.FieldValue.serverTimestamp()
+      payoutProcessedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     return {
       success: true,
-      message: 'Instant payout processed successfully',
+      message: "Instant payout processed successfully",
       amount: result.amount,
-      fee: result.fee
+      fee: result.fee,
     };
-
   } catch (error) {
-    console.error('Instant payout request error:', error);
-    throw new functions.https.HttpsError('internal', 'Failed to process instant payout');
+    console.error("Instant payout request error:", error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "Failed to process instant payout"
+    );
   }
 });
 
@@ -1009,23 +1197,27 @@ exports.requestInstantPayout = functions.https.onCall(async (data, context) => {
  */
 exports.verifyTierAccess = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "User must be authenticated"
+    );
   }
 
   const { tier } = data;
   const userId = context.auth.uid;
 
-  const accessQuery = await admin.firestore()
-    .collection('tierAccess')
-    .where('userId', '==', userId)
-    .where('tier', '==', tier)
-    .where('active', '==', true)
+  const accessQuery = await admin
+    .firestore()
+    .collection("tierAccess")
+    .where("userId", "==", userId)
+    .where("tier", "==", tier)
+    .where("active", "==", true)
     .get();
 
   let hasAccess = false;
   let expiresAt = null;
 
-  accessQuery.forEach(doc => {
+  accessQuery.forEach((doc) => {
     const access = doc.data();
     if (access.expiresAt.toMillis() > Date.now()) {
       hasAccess = true;
@@ -1036,53 +1228,67 @@ exports.verifyTierAccess = functions.https.onCall(async (data, context) => {
   return {
     hasAccess,
     expiresAt: expiresAt ? expiresAt.toMillis() : null,
-    tier
+    tier,
   };
 });
 
 /**
  * Grant Telegram access for existing user who adds it later
  */
-exports.grantTelegramAccessForTier = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
-  }
-  
-  const { userId, tier, telegramUsername } = data;
-  
-  // Verify the requesting user is the same as userId or is admin
-  if (context.auth.uid !== userId && !context.auth.token.admin) {
-    throw new functions.https.HttpsError('permission-denied', 'Cannot modify another user');
-  }
-  
-  try {
-    // Verify user has active access to this tier
-    const hasAccess = await verifyUserTierAccess(userId, tier);
-    if (!hasAccess) {
-      throw new functions.https.HttpsError('failed-precondition', 'No active access to this tier');
+exports.grantTelegramAccessForTier = functions.https.onCall(
+  async (data, context) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "User must be authenticated"
+      );
     }
-    
-    // Grant Telegram access
-    await grantTelegramAccess(userId, telegramUsername, tier);
-    
-    return {
-      success: true,
-      message: `Telegram access granted for ${TIER_CONFIG[tier].name}`
-    };
-    
-  } catch (error) {
-    console.error('Grant Telegram access error:', error);
-    throw new functions.https.HttpsError('internal', 'Failed to grant Telegram access');
+
+    const { userId, tier, telegramUsername } = data;
+
+    // Verify the requesting user is the same as userId or is admin
+    if (context.auth.uid !== userId && !context.auth.token.admin) {
+      throw new functions.https.HttpsError(
+        "permission-denied",
+        "Cannot modify another user"
+      );
+    }
+
+    try {
+      // Verify user has active access to this tier
+      const hasAccess = await verifyUserTierAccess(userId, tier);
+      if (!hasAccess) {
+        throw new functions.https.HttpsError(
+          "failed-precondition",
+          "No active access to this tier"
+        );
+      }
+
+      // Grant Telegram access
+      await grantTelegramAccess(userId, telegramUsername, tier);
+
+      return {
+        success: true,
+        message: `Telegram access granted for ${TIER_CONFIG[tier].name}`,
+      };
+    } catch (error) {
+      console.error("Grant Telegram access error:", error);
+      throw new functions.https.HttpsError(
+        "internal",
+        "Failed to grant Telegram access"
+      );
+    }
   }
-});
+);
 
 // Helper function for verifying tier access
 async function verifyUserTierAccess(userId, tier) {
-  const accessQuery = await admin.firestore()
-    .collection('tierAccess')
-    .where('userId', '==', userId)
-    .where('tier', '==', tier)
-    .where('active', '==', true)
+  const accessQuery = await admin
+    .firestore()
+    .collection("tierAccess")
+    .where("userId", "==", userId)
+    .where("tier", "==", tier)
+    .where("active", "==", true)
     .get();
 
   for (const doc of accessQuery.docs) {
@@ -1101,41 +1307,43 @@ async function verifyUserTierAccess(userId, tier) {
 
 async function checkRateLimit(key, limit, windowSeconds) {
   const now = Date.now();
-  const windowStart = now - (windowSeconds * 1000);
-  
-  const attemptsRef = admin.firestore().collection('rateLimits').doc(key);
+  const windowStart = now - windowSeconds * 1000;
+
+  const attemptsRef = admin.firestore().collection("rateLimits").doc(key);
   const doc = await attemptsRef.get();
-  
+
   let attempts = [];
   if (doc.exists) {
     attempts = doc.data().attempts || [];
   }
-  
+
   // Filter out old attempts
-  attempts = attempts.filter(timestamp => timestamp > windowStart);
-  
+  attempts = attempts.filter((timestamp) => timestamp > windowStart);
+
   if (attempts.length >= limit) {
     const oldestAttempt = Math.min(...attempts);
-    const retryAfter = Math.ceil((oldestAttempt + (windowSeconds * 1000) - now) / 60000);
-    
+    const retryAfter = Math.ceil(
+      (oldestAttempt + windowSeconds * 1000 - now) / 60000
+    );
+
     return {
       allowed: false,
-      retryAfter
+      retryAfter,
     };
   }
-  
+
   // Add current attempt
   attempts.push(now);
   await attemptsRef.set({ attempts }, { merge: true });
-  
+
   return { allowed: true };
 }
 
 async function updateAnalytics(event, data) {
-  await admin.firestore().collection('analytics').add({
+  await admin.firestore().collection("analytics").add({
     event,
     data,
-    timestamp: admin.firestore.FieldValue.serverTimestamp()
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
   });
 }
 
@@ -1147,49 +1355,50 @@ async function updateAnalytics(event, data) {
  * Clean up expired tier access daily
  */
 exports.cleanupExpiredAccess = functions.pubsub
-  .schedule('every 24 hours')
+  .schedule("every 24 hours")
   .onRun(async (context) => {
     const now = admin.firestore.Timestamp.now();
-    
-    const expiredQuery = await admin.firestore()
-      .collection('tierAccess')
-      .where('active', '==', true)
-      .where('expiresAt', '<', now)
+
+    const expiredQuery = await admin
+      .firestore()
+      .collection("tierAccess")
+      .where("active", "==", true)
+      .where("expiresAt", "<", now)
       .get();
 
     const batch = admin.firestore().batch();
     const usersToUpdate = new Set();
 
-    expiredQuery.forEach(doc => {
+    expiredQuery.forEach((doc) => {
       const access = doc.data();
-      
+
       batch.update(doc.ref, {
         active: false,
-        expiredAt: admin.firestore.FieldValue.serverTimestamp()
+        expiredAt: admin.firestore.FieldValue.serverTimestamp(),
       });
-      
+
       usersToUpdate.add({
         userId: access.userId,
-        tier: access.tier
+        tier: access.tier,
       });
     });
 
     // Update user tier lists
     for (const { userId, tier } of usersToUpdate) {
-      const userRef = admin.firestore().collection('users').doc(userId);
+      const userRef = admin.firestore().collection("users").doc(userId);
       batch.update(userRef, {
-        currentTiers: admin.firestore.FieldValue.arrayRemove(tier)
+        currentTiers: admin.firestore.FieldValue.arrayRemove(tier),
       });
     }
 
     await batch.commit();
-    
+
     console.log(`Cleaned up ${expiredQuery.size} expired tier accesses`);
   });
 
-  module.exports = {
+module.exports = {
   handleSuccessfulPayment,
   handleFailedPayment,
   handleRefund,
-  grantTelegramAccess
+  grantTelegramAccess,
 };

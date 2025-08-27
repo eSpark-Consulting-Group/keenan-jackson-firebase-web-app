@@ -12,6 +12,8 @@ import {
 import { callFunction } from "../../firebase/config";
 import toast from "react-hot-toast";
 import Confetti from "react-confetti";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/authcontext";
 
 const TRIVIA_TIME_LIMIT = 30; // seconds
 
@@ -34,6 +36,8 @@ export default function TriviaModal({
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState(null);
   const [showCelebration, setShowCelebration] = useState(false);
+  const navigate = useNavigate();
+  const { refreshUserData } = useAuth();
 
   const timerRef = useRef(null);
   const intervalRef = useRef(null);
@@ -130,31 +134,43 @@ export default function TriviaModal({
       if (response.success) {
         setResult({
           correct: response.correct,
-          correctAnswer: response.correctAnswer,
+          correctAnswer: response.correctAnswerIndex,
           answerTime: response.answerTime,
           token: response.tokenId,
         });
 
         if (response.correct) {
           setShowCelebration(true);
-          setTimeout(() => setShowCelebration(false), 3000);
+          setTimeout(() => {
+            setShowCelebration(false);
+            onClose();
+            refreshUserData();
+            navigate("/games");
+          }, 3000);
         }
 
         // Wait a bit to show result, then complete
         setTimeout(
           () => {
             onComplete(response.correct, response.answerTime, response.tokenId);
+            onClose();
+            refreshUserData();
+            navigate("/games");
           },
           response.correct ? 3000 : 2000
         );
       } else {
         toast.error(response.error || "Failed to submit answer");
         onClose();
+        refreshUserData();
+        navigate("/games");
       }
     } catch (error) {
       console.error("Error submitting answer:", error);
       toast.error("Failed to submit answer");
       onClose();
+      refreshUserData();
+      navigate("/games");
     }
   };
 
@@ -194,7 +210,7 @@ export default function TriviaModal({
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="relative bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+          className="relative bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto overflow-x-hidden"
         >
           {/* Celebration confetti */}
           {showCelebration && (
@@ -281,15 +297,15 @@ export default function TriviaModal({
                           w-full text-left p-4 rounded-lg border-2 transition-all
                           ${
                             !submitted && isSelected
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-200 hover:border-gray-300"
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 hover:border-gray-300"
                           }
                           ${isCorrect ? "border-green-500 bg-green-50" : ""}
                           ${isWrong ? "border-red-500 bg-red-50" : ""}
                           ${
                             submitted && !isCorrect && !isWrong
-                            ? "opacity-50"
-                            : ""
+                              ? "opacity-50"
+                              : ""
                           }
                         `}
                       >
@@ -320,9 +336,10 @@ export default function TriviaModal({
                     animate={{ opacity: 1, y: 0 }}
                     className={`
                       p-4 rounded-lg mb-6 text-center
-                      ${result.correct
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
+                      ${
+                        result.correct
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
                       }
                     `}
                   >
@@ -359,8 +376,8 @@ export default function TriviaModal({
                       w-full py-3 px-4 rounded-lg font-medium transition-all
                       ${
                         selectedAnswer !== null
-                        ? "bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
-                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                          ? "bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
+                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
                       }
                     `}
                   >

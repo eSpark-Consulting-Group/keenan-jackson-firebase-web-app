@@ -295,9 +295,9 @@ export default function GameBoard() {
     }
   };
 
-const total = userData.hasTelegram ? 10 : 5;
-const remaining = Math.min(Math.max(userData.dailyTriviaAttempts, 0), total);
-const percentRemaining = total === 0 ? 0 : (remaining / total) * 100;
+  const total = userData.hasTelegram ? 10 : 5;
+  const remaining = Math.min(Math.max(userData.dailyTriviaAttempts, 0), total);
+  const percentRemaining = total === 0 ? 0 : (remaining / total) * 100;
 
   if (loading) {
     return (
@@ -410,10 +410,7 @@ const percentRemaining = total === 0 ? 0 : (remaining / total) * 100;
               winningSquares={winningSquares}
               revealedSquares={revealedSquares}
               onRevealSquare={handleRevealSquare}
-              allowSelection={
-                isGameActive &&
-                userData.dailyTriviaAttempts > 0
-              }
+              allowSelection={isGameActive && userData.dailyTriviaAttempts > 0}
             />
           </motion.div>
 
@@ -519,8 +516,9 @@ const percentRemaining = total === 0 ? 0 : (remaining / total) * 100;
                 <div className="flex justify-between text-sm text-gray-600 mb-2">
                   <span>Remaining today</span>
                   <span>
-                    {userData.hasTelegram ? 10 : 5} -
-                      {userData.dailyTriviaAttempts}
+                    {userData.hasTelegram
+                      ? `${userData.dailyTriviaAttempts} / 10`
+                      : `${userData.dailyTriviaAttempts} / 5`}
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">

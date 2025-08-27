@@ -152,8 +152,345 @@ async function handleGrantTelegramAccess(userId, telegramUsername, tier) {
   }
 }
 
+async function handleGameCommand(chatId) {
+  const gamesSnapshot = await admin.firestore().collection("games").get();
+
+  if (gamesSnapshot.empty) {
+    await sendTelegramNotification(chatId, "No games available at the moment.");
+    return;
+  }
+
+  const promises = [];
+
+  gamesSnapshot.forEach((doc) => {
+    const game = doc.data();
+
+    let formattedDate = "";
+    if (game.gameDate && game.gameDate.toDate) {
+      formattedDate = game.gameDate.toDate().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    }
+
+    const message =
+      `📅 Game Date: ${formattedDate}\n` +
+      `🏟 Sports: ${game.sport}\n` +
+      `🏠 Home Team: ${game.teams.home}\n` +
+      `🛫 Away Team: ${game.teams.away}`;
+
+    promises.push(sendTelegramNotification(chatId, message));
+  });
+
+  await Promise.all(promises);
+}
+
+async function handleWinCommand(chatId) {
+  const userSnapshot = await admin
+    .firestore()
+    .collection("users")
+    .where("telegramChatId", "==", chatId)
+    .limit(1)
+    .get();
+
+  if (userSnapshot.empty) {
+    await sendTelegramNotification(
+      chatId,
+      "⚠️ User not linked. Please start again with /start <userId>."
+    );
+    return;
+  }
+
+  const userId = userSnapshot.docs[0].id;
+
+  const winsSnapshot = await admin
+    .firestore()
+    .collection("winners")
+    .where("userId", "==", userId)
+    .get();
+
+  if (winsSnapshot.empty) {
+    await sendTelegramNotification(chatId, "❌ You don’t have any wins yet.");
+    return;
+  }
+
+  const messages = [];
+
+  for (const doc of winsSnapshot.docs) {
+    const win = doc.data();
+
+    let formattedDate = "";
+    if (win.createdAt?.toDate) {
+      formattedDate = win.createdAt.toDate().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    }
+
+    // 🔍 Fetch related game from "games" collection
+    let gameInfo = "";
+    if (win.gameId) {
+      const gameDoc = await admin
+        .firestore()
+        .collection("games")
+        .doc(win.gameId)
+        .get();
+
+      if (gameDoc.exists) {
+        const gameData = gameDoc.data();
+        gameInfo = `${gameData?.teams?.home} 🆚 ${gameData?.teams?.away}`;
+      } else {
+        gameInfo = `Unknown Game (${win.gameId})`;
+      }
+    }
+
+    const msg =
+      `🏆 Win Details\n` +
+      `📅 Date: ${formattedDate}\n` +
+      `🎮 Game: ${gameInfo}\n` + // ✅ show teams instead of boardId
+      `🎯 Position: ${win.position}\n` +
+      `👤 Solo Win: ${win.isSoloWin ? "Yes" : "No"}\n` +
+      `📌 Status: ${win.status}`;
+
+    messages.push(msg);
+  }
+
+  await sendTelegramNotification(chatId, messages.join("\n\n"));
+}
+
+async function handleStatusCommand(chatId) {
+  const userSnapshot = await admin
+    .firestore()
+    .collection("users")
+    .where("telegramChatId", "==", chatId)
+    .limit(1)
+    .get();
+
+  if (userSnapshot.empty) {
+    await sendTelegramNotification(
+      chatId,
+      "⚠️ User not linked. Please start again with /start <userId>."
+    );
+    return;
+  }
+
+  const userData = userSnapshot.docs[0].data();
+  const tiers = userData.currentTiers || [];
+
+  if (tiers.length === 0) {
+    await sendTelegramNotification(
+      chatId,
+      "ℹ️ You are not subscribed to any tier."
+    );
+    return;
+  }
+
+  // Format tiers nicely (convert "tier_100" → "Tier 100")
+  const tierList = tiers
+    .map((t, i) => `#${i + 1}: ${t.replace("tier_", "Tier ")}`)
+    .join("\n");
+
+  const message =
+    `📊 Your Current Tiers:\n\n${tierList}\n\n` +
+    `Keep playing and climbing up the tiers! 🚀`;
+
+  await sendTelegramNotification(chatId, message);
+}
+
+async function handleSquaresCommand(chatId) {
+  const userSnapshot = await admin
+    .firestore()
+    .collection("users")
+    .where("telegramChatId", "==", chatId)
+    .limit(1)
+    .get();
+
+  if (userSnapshot.empty) {
+    await sendTelegramNotification(
+      chatId,
+      "⚠️ User not linked. Please start again with /start <userId>."
+    );
+    return;
+  }
+
+  const userId = userSnapshot.docs[0].id;
+
+  // Get all boards
+  const boardsSnapshot = await admin.firestore().collection("boards").get();
+
+  let userSquares = [];
+
+  boardsSnapshot.forEach((boardDoc) => {
+    const boardData = boardDoc.data();
+    const squares = boardData.squares || {};
+
+    // squares is a map (keys: "0", "1", ...)
+    Object.values(squares).forEach((square) => {
+      const claims = square.claims || [];
+      claims.forEach((claim) => {
+        if (claim.userId === userId) {
+          let claimedAtFormatted = "";
+          if (claim.claimedAt?.toDate) {
+            claimedAtFormatted = claim.claimedAt
+              .toDate()
+              .toLocaleString("en-US");
+          }
+
+          userSquares.push(
+            `🟩 Square Claim\n` +
+              `🆔 Token: ${claim.tokenId}\n` +
+              `⏱️ Answer Time: ${Number(claim.answerTime || 0).toFixed(3)}ms\n` +
+              `📅 Claimed At: ${claimedAtFormatted}\n` +
+              `🏟 Sports: ${boardData?.gameInfo?.sport}\n` +
+              `🏠 Home Team: ${boardData?.gameInfo?.teams?.home}\n` +
+              `🛫 Away Team: ${boardData?.gameInfo?.teams?.away}\n`
+          );
+        }
+      });
+    });
+  });
+
+  if (userSquares.length === 0) {
+    await sendTelegramNotification(
+      chatId,
+      "❌ You have not claimed any squares yet."
+    );
+    return;
+  }
+
+  // Combine all found squares into one message
+  await sendTelegramNotification(chatId, userSquares.join("\n\n"));
+}
+
+async function handleReferCommand(chatId) {
+  const userSnapshot = await admin
+    .firestore()
+    .collection("users")
+    .where("telegramChatId", "==", chatId)
+    .limit(1)
+    .get();
+
+  if (userSnapshot.empty) {
+    await sendTelegramNotification(
+      chatId,
+      "⚠️ User not linked. Please start again with /start <userId>."
+    );
+    return;
+  }
+
+  const userData = userSnapshot.docs[0].data();
+  const referralCode = userData.referralCode || "❌ Not available";
+
+  await sendTelegramNotification(
+    chatId,
+    `🎉 *Your Referral Code*\n\n🔑 Code: ${referralCode}\n\n📢 Share this code with friends and earn exciting rewards when they join!`
+  );
+}
+
+async function handleHelpCommand(chatId) {
+  const userSnapshot = await admin
+    .firestore()
+    .collection("users")
+    .where("telegramChatId", "==", chatId)
+    .limit(1)
+    .get();
+
+  if (userSnapshot.empty) {
+    await sendTelegramNotification(
+      chatId,
+      "⚠️ User not linked. Please start again with /start <userId>."
+    );
+    return;
+  }
+
+  await sendTelegramNotification(
+    chatId,
+    `📌 *SquareTrivia Support*\n\n` +
+      `📧 Email: support@squaretrivia.com\n` +
+      `💬 Telegram: @SquareTriviaSupport\n` +
+      `📖 Documentation: [docs.squaretrivia.com](https://docs.squaretrivia.com)\n\n` +
+      `If you need any assistance, feel free to reach out to us through the above channels. We’re here to help! 🤝`
+  );
+}
+
+async function handlePayoutCommand(chatId) {
+  const userSnapshot = await admin
+    .firestore()
+    .collection("users")
+    .where("telegramChatId", "==", chatId)
+    .limit(1)
+    .get();
+
+  if (userSnapshot.empty) {
+    await sendTelegramNotification(
+      chatId,
+      "⚠️ User not linked. Please start again with /start <userId>."
+    );
+    return;
+  }
+
+  const userId = userSnapshot.docs[0].id;
+
+  const winsSnapshot = await admin
+    .firestore()
+    .collection("winners")
+    .where("userId", "==", userId)
+    .get();
+
+  if (winsSnapshot.empty) {
+    await sendTelegramNotification(
+      chatId,
+      "❌ You don’t have any payouts yet."
+    );
+    return;
+  }
+
+  const messages = [];
+
+  for (const doc of winsSnapshot.docs) {
+    const win = doc.data();
+
+    let formattedDate = "";
+    if (win.createdAt?.toDate) {
+      formattedDate = win.createdAt.toDate().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    }
+
+    // 🔍 Fetch related game from "games" collection
+    let gameInfo = "";
+    if (win.gameId) {
+      const gameDoc = await admin
+        .firestore()
+        .collection("games")
+        .doc(win.gameId)
+        .get();
+
+      if (gameDoc.exists) {
+        const gameData = gameDoc.data();
+        gameInfo = `${gameData?.teams?.home} 🆚 ${gameData?.teams?.away}`;
+      } else {
+        gameInfo = `Unknown Game (${win.gameId})`;
+      }
+    }
+
+    const msg =
+      `💸 Payout Details\n` +
+      `📅 Date: ${formattedDate}\n` +
+      `🎮 Game: ${gameInfo}\n` +
+      `📌 Status: ${win.status}`;
+
+    messages.push(msg);
+  }
+
+  await sendTelegramNotification(chatId, messages.join("\n\n"));
+}
+
 exports.addTelegramToAccount = functions.https.onCall(async (data, context) => {
-  // data comes from frontend
   console.log(data, "dataCcQCCCAQ   ");
   const { userId, telegramUsername } = data;
 
@@ -268,25 +605,66 @@ exports.telegramWebhook = functions.https.onRequest(async (req, res) => {
   logger.debug("Chat ID extracted", { chatId });
   logger.debug("MESSAGE", { msg });
 
-  // User typed /start <firebaseUserId>
   if (text && text.startsWith("/start")) {
     const parts = text.split(" ");
-    const userId = parts[1]; // you pass this in link
+    const userId = parts[1];
 
     if (userId) {
-      await admin.firestore().collection("users").doc(userId).update({
-        telegramChatId: chatId,
-      });
+      // Case 1: /start <userId>
+      try {
+        await admin.firestore().collection("users").doc(userId).update({
+          telegramChatId: chatId,
+        });
 
-      // send confirmation
-      // await axios.post(
-      //   `https://api.telegram.org/bot7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ/sendMessage`,
-      //   {
-      //     chat_id: chatId,
-      //     text: "✅ Telegram connected successfully!",
-      //   }
-      // );
+        await sendTelegramNotification(
+          chatId,
+          "✅ Bot Connected Successfully!"
+        );
+      } catch (error) {
+        await sendTelegramNotification(
+          chatId,
+          "⚠️ Failed to connect bot. Please try again."
+        );
+      }
+    } else {
+      // Case 2: just /start
+      const usersRef = admin.firestore().collection("users");
+      const snap = await usersRef
+        .where("telegramChatId", "==", chatId)
+        .limit(1)
+        .get();
+
+      if (!snap.empty) {
+        await sendTelegramNotification(chatId, "👋 Hello, how can I help you?");
+      } else {
+        await sendTelegramNotification(
+          chatId,
+          "⚠️ Hello! Please register on our website to connect your account."
+        );
+      }
     }
+  }
+
+  if (text && text.startsWith("/games")) {
+    await handleGameCommand(chatId);
+  }
+  if (text && text.startsWith("/wins")) {
+    await handleWinCommand(chatId);
+  }
+  if (text && text.startsWith("/status")) {
+    await handleStatusCommand(chatId);
+  }
+  if (text && text.startsWith("/squares")) {
+    await handleSquaresCommand(chatId);
+  }
+  if (text && text.startsWith("/refer")) {
+    await handleReferCommand(chatId);
+  }
+  if (text && text.startsWith("/help")) {
+    await handleHelpCommand(chatId);
+  }
+  if (text && text.startsWith("/payout")) {
+    await handlePayoutCommand(chatId);
   }
 
   res.send("ok");
@@ -294,7 +672,7 @@ exports.telegramWebhook = functions.https.onRequest(async (req, res) => {
 
 // Cloud function triggered every 3 hours (Alert for trivia question availability)
 exports.sendTriviaAttemptNotifications = functions.pubsub
-  .schedule("every 5 minutes") // or "every 5 minutes" for testing
+  .schedule("every 3 hours")
   .timeZone("UTC")
   .onRun(async () => {
     const usersSnapshot = await admin.firestore().collection("users").get();
@@ -307,7 +685,7 @@ exports.sendTriviaAttemptNotifications = functions.pubsub
       const chatId = user.telegramChatId;
 
       // ✅ Only send if user has telegramChatId
-      if (chatId) {
+      if (chatId && user?.notifications?.telegram) {
         let message = "";
         if (attempts > 0) {
           message = `You have ${attempts} daily trivia attempts left. 🎯`;
@@ -324,6 +702,70 @@ exports.sendTriviaAttemptNotifications = functions.pubsub
     console.log(
       "Trivia attempt notifications sent to all users with Telegram."
     );
+  });
+
+// Cloud function triggered every 3 hours (Alert for Game start Reminders)
+exports.sendGameReminders = functions.pubsub
+  .schedule("every 3 hours")
+  .timeZone("UTC")
+  .onRun(async () => {
+    const now = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(now.getDate() + 1);
+
+    const gamesSnapshot = await admin.firestore().collection("games").get();
+
+    const promises = [];
+
+    gamesSnapshot.forEach((doc) => {
+      const game = doc.data();
+
+      // Ensure gameDate exists
+      if (!game.gameDate) return;
+
+      const gameDate = game.gameDate.toDate
+        ? game.gameDate.toDate()
+        : new Date(game.gameDate);
+
+      if (
+        gameDate.toDateString() !== now.toDateString() &&
+        gameDate.toDateString() !== tomorrow.toDateString()
+      ) {
+        return;
+      }
+
+      const message =
+        `📢 Game Reminder!\n` +
+        `📅 Date: ${gameDate.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })}\n` +
+        `🏟 Sport: ${game.sport}\n` +
+        `🏠 Home: ${game.teams?.home}\n` +
+        `🛫 Away: ${game.teams?.away}`;
+
+      // Send to all users with Telegram
+      promises.push(
+        admin
+          .firestore()
+          .collection("users")
+          .where("telegramChatId", "!=", null)
+          .get()
+          .then((usersSnapshot) => {
+            const userPromises = [];
+            usersSnapshot.forEach((userDoc) => {
+              const chatId = userDoc.data().telegramChatId;
+              if (chatId && userDoc.data()?.notifications?.telegram) {
+                userPromises.push(sendTelegramNotification(chatId, message));
+              }
+            });
+            return Promise.all(userPromises);
+          })
+      );
+    });
+
+    await Promise.all(promises);
   });
 
 exports.setAdminClaim = functions.https.onCall(async (data, context) => {
@@ -895,3 +1337,48 @@ function calculateValueScore(user) {
 
   return score;
 }
+
+exports.savePayoutDetails = functions.https.onCall(async (data, context) => {
+  try {
+    // Ensure user is logged in
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "You must be logged in to save payout details."
+      );
+    }
+
+    const userId = context.auth.uid;
+    const { method, ...details } = data;
+
+    if (!method) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Payout method is required."
+      );
+    }
+
+    // Save to Firestore under user doc
+    await db
+      .collection("users")
+      .doc(userId)
+      .set(
+        {
+          payoutDetails: {
+            method,
+            ...details,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+        },
+        { merge: true } // don’t overwrite whole doc
+      );
+
+    return { success: true, message: "Payout details saved successfully" };
+  } catch (error) {
+    console.error("Error saving payout details:", error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "Something went wrong while saving payout details."
+    );
+  }
+});

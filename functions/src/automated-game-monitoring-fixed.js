@@ -5,8 +5,8 @@ require("dotenv").config();
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
+const { logger } = require("firebase-functions");
 // const db = admin.firestore();
-
 
 const {
   SPORTS_CONFIG,
@@ -35,7 +35,8 @@ const { processQuarterWinners } = require("./grid-system-complete.js");
 
 class ApiSportsService {
   constructor() {
-    this.apiKey = functions.config()?.apisports?.key || process.env.APISPORTS_KEY;
+    this.apiKey =
+      functions.config()?.apisports?.key || process.env.APISPORTS_KEY;
     this.requestCount = 0;
     this.lastRequestTime = null;
   }
@@ -95,6 +96,8 @@ class ApiSportsService {
       throw new Error("No API Sports ID provided");
     }
 
+    logger.info("FETCH FUNC: IN FETCH FUNC");
+
     // Use mock data in test mode
     if (FEATURE_FLAGS.MOCK_API_SPORTS) {
       return this.getMockGameData(apiSportsId, sport);
@@ -106,10 +109,14 @@ class ApiSportsService {
     }
 
     const url = `https://${config.apiHost}${config.endpoint}?id=${apiSportsId}`;
+    logger.info("FETCH FUNC: IN TRY");
+
     const headers = this.getHeaders(sport);
 
     try {
+      logger.info("FETCH FUNC: IN TRY");
       const data = await this.makeRequest(url, headers);
+      logger.info("FETCH FUNC: IN TRY", data);
 
       if (!data.response || data.response.length === 0) {
         throw new Error("Game not found in API response");
@@ -131,32 +138,48 @@ class ApiSportsService {
    */
   parseGameData(apiGame, sport) {
     const isBasketball = sport === "NBA" || sport === "NCAA_BB";
-
+    logger.info(`Incoming update: ${apiGame}`);
     // Extract quarter scores
-    const quarterScores = {
-      q1: {
-        home: apiGame.scores?.home?.quarter_1 || null,
-        away: apiGame.scores?.away?.quarter_1 || null,
-      },
-      q2: {
-        home: apiGame.scores?.home?.quarter_2 || null,
-        away: apiGame.scores?.away?.quarter_2 || null,
-      },
-      q3: {
-        home: apiGame.scores?.home?.quarter_3 || null,
-        away: apiGame.scores?.away?.quarter_3 || null,
-      },
-      q4: {
-        home: apiGame.scores?.home?.quarter_4 || null,
-        away: apiGame.scores?.away?.quarter_4 || null,
-      },
-    };
+    let quarterScores = {};
+
+    // Case 1: NFL style (flat fields)
+    if (apiGame?.HomeScoreQuarter1 !== undefined) {
+      quarterScores = {
+        q1: {
+          home: apiGame.HomeScoreQuarter1 ?? null,
+          away: apiGame.AwayScoreQuarter1 ?? null,
+        },
+        q2: {
+          home: apiGame.HomeScoreQuarter2 ?? null,
+          away: apiGame.AwayScoreQuarter2 ?? null,
+        },
+        q3: {
+          home: apiGame.HomeScoreQuarter3 ?? null,
+          away: apiGame.AwayScoreQuarter3 ?? null,
+        },
+        q4: {
+          home: apiGame.HomeScoreQuarter4 ?? null,
+          away: apiGame.AwayScoreQuarter4 ?? null,
+        },
+      };
+    }
+
+    // Case 2: NCAA style (Periods array)
+    else if (apiGame?.Periods?.length) {
+      quarterScores = apiGame.Periods.reduce((acc, p, idx) => {
+        acc[`q${idx + 1}`] = {
+          home: p.HomeScore ?? null,
+          away: p.AwayScore ?? null,
+        };
+        return acc;
+      }, {});
+    }
 
     // Check for overtime
-    if (apiGame.scores?.home?.over_time) {
+    if (apiGame?.IsOvertime) {
       quarterScores.ot = {
-        home: apiGame.scores.home.over_time,
-        away: apiGame.scores.away.over_time,
+        home: apiGame?.HomeScoreOvertime,
+        away: apiGame?.AwayScoreOvertime,
       };
     }
 
@@ -185,12 +208,12 @@ class ApiSportsService {
       currentPeriod: apiGame.periods?.current || 0,
       quarterScores,
       totalScore: {
-        home: apiGame.scores?.home?.total || 0,
-        away: apiGame.scores?.away?.total || 0,
+        home: apiGame?.HomeScore ?? apiGame?.HomeTeamScore ?? 0,
+        away: apiGame?.AwayScore ?? apiGame?.AwayTeamScore ?? 0,
       },
       teams: {
-        home: apiGame.teams?.home?.name || "",
-        away: apiGame.teams?.away?.name || "",
+        home: apiGame?.HomeTeam || "",
+        away: apiGame?.AwayTeam || "",
       },
       startTime: apiGame.date ? new Date(apiGame.date) : null,
       lastUpdate: new Date().toISOString(),
@@ -332,11 +355,13 @@ async function monitorSingleGame(db, gameDoc) {
   const gameId = gameDoc.id;
   const game = gameDoc.data();
 
+  logger.info("Game data:", JSON.stringify(game, null, 2));
+
   console.log(
     `Monitoring game ${gameId}: ${game.teams.away} @ ${game.teams.home}`
   );
 
-  if (!game.apiSportsId) {
+  if (!game.externalGameId) {
     console.warn(`Game ${gameId} missing apiSportsId - skipping`);
     return { success: false, reason: "missing_api_id" };
   }
@@ -344,7 +369,7 @@ async function monitorSingleGame(db, gameDoc) {
   try {
     // Fetch current scores with performance tracking
     const fetchScores = measurePerformance(
-      () => apiSportsService.fetchGameScore(game.apiSportsId, game.sport),
+      () => apiSportsService.fetchGameScore(game.externalGameId, game.sport),
       "fetchGameScore"
     );
 
@@ -410,8 +435,11 @@ async function monitorSingleGame(db, gameDoc) {
         );
 
         // Mark quarter as processed
-        updates[`processedQuarters.${quarter}`] = true;
-        updates[`scores.${quarter}`] = quarterScore;
+        // updates[`processedQuarters.${quarter}`] = true;
+        // updates[`scores.${quarter}`] = quarterScore;
+        updates[`quarterScores.${quarter}.processed`] = true;
+        updates[`quarterScores.${quarter}.home`] = quarterScore.home;
+        updates[`quarterScores.${quarter}.away`] = quarterScore.away;
 
         winnersProcessed += winners.length;
 
@@ -447,7 +475,7 @@ async function monitorSingleGame(db, gameDoc) {
     logError(error, {
       context: "monitorSingleGame",
       gameId,
-      apiSportsId: game.apiSportsId,
+      apiSportsId: game.externalGameId,
     });
 
     // Update game with error status
@@ -791,24 +819,23 @@ const testApiConnection = functions.https.onCall(async (data, context) => {
 
 function validateTelegramUsername(username) {
   // Allow empty/null values
-  if (!username || username === '' || username.trim() === '') {
+  if (!username || username === "" || username.trim() === "") {
     return { valid: true, value: null, isEmpty: true };
   }
-  
-  if (typeof username !== 'string') {
-    return { valid: false, error: ERROR_MESSAGES.INVALID_TELEGRAM };
-  }
-  
-  // Remove @ if present and trim
-  const cleaned = username.trim().replace(/^@/, '');
-  
-  if (!VALIDATION_RULES.TELEGRAM_USERNAME.test('@' + cleaned)) {
-    return { valid: false, error: ERROR_MESSAGES.INVALID_TELEGRAM };
-  }
-  
-  return { valid: true, value: '@' + cleaned, isEmpty: false };
-}
 
+  if (typeof username !== "string") {
+    return { valid: false, error: ERROR_MESSAGES.INVALID_TELEGRAM };
+  }
+
+  // Remove @ if present and trim
+  const cleaned = username.trim().replace(/^@/, "");
+
+  if (!VALIDATION_RULES.TELEGRAM_USERNAME.test("@" + cleaned)) {
+    return { valid: false, error: ERROR_MESSAGES.INVALID_TELEGRAM };
+  }
+
+  return { valid: true, value: "@" + cleaned, isEmpty: false };
+}
 
 /**
  * Force game monitoring for specific game
@@ -892,7 +919,6 @@ const forceMonitorGame = functions.https.onCall(async (data, context) => {
 //     throw new functions.https.HttpsError("internal", error.message);
 //   }
 // });
-
 
 // =====================================
 // EXPORTS

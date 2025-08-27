@@ -18,6 +18,7 @@ import {
 import { useAuth } from "../contexts/authcontext";
 import { formatCurrency } from "../firebase/config";
 import toast from "react-hot-toast";
+import PayoutModal from "../components/Auth/payout-modal";
 
 export default function Profile() {
   const {
@@ -32,6 +33,7 @@ export default function Profile() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [addingTelegram, setAddingTelegram] = useState(false);
+  const [payoutModal, setPayoutModal] = useState(false);
 
   const [formData, setFormData] = useState({
     displayName: userData?.displayName || "",
@@ -350,6 +352,21 @@ export default function Profile() {
                       Add Telegram to get 10 daily attempts instead of 5!
                     </p>
                   )}
+                  {userData?.hasTelegram && !userData?.telegramChatId && (
+                    <a
+                      className="text-xs text-blue-600 mt-1"
+                      href={`https://t.me/${process.env.REACT_APP_TELEGRAM_BOT_USERNAME}?start=${userData?.id}`}
+                      target="_blank"
+                    >
+                      Connect Telegram
+                    </a>
+                  )}
+                  <p
+                    className="text-xs text-blue-600 mt-6 cursor-pointer"
+                    onClick={() => setPayoutModal(true)}
+                  >
+                    Add Payout Method
+                  </p>
                 </div>
               </div>
             </div>
@@ -586,6 +603,7 @@ export default function Profile() {
           </motion.div>
         </div>
       </div>
+      <PayoutModal isOpen={payoutModal} onClose={() => setPayoutModal(false)} />
     </div>
   );
 }

@@ -400,10 +400,7 @@ export default function GameBoard() {
               winningSquares={winningSquares}
               revealedSquares={revealedSquares}
               onRevealSquare={handleRevealSquare}
-              allowSelection={
-                isGameActive &&
-                userData.dailyTriviaAttempts > 0
-              }
+              allowSelection={isGameActive && userData.dailyTriviaAttempts > 0}
             />
           </motion.div>
 
@@ -434,8 +431,8 @@ export default function GameBoard() {
                           p-3 rounded-lg border-2 transition-all cursor-pointer
                           ${
                             isWinning
-                            ? "border-yellow-400 bg-yellow-50"
-                            : "border-gray-200 bg-gray-50"
+                              ? "border-yellow-400 bg-yellow-50"
+                              : "border-gray-200 bg-gray-50"
                           }
                         `}
                         onClick={() =>

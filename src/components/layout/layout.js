@@ -151,7 +151,9 @@ export default function Layout({ children }) {
                               </p>
                               {userData?.hasTelegram && (
                                 <p className="text-xs text-gray-500">
-                                  @{userData.telegramUsername}
+                                  {userData.telegramUsername?.startsWith("@")
+                                    ? userData.telegramUsername
+                                    : `@${userData.telegramUsername}`}
                                 </p>
                               )}
                             </div>

@@ -80,6 +80,9 @@ export const collections = {
   notifications: "notifications",
   payouts: "payouts",
   referrals: "referrals",
+  trivia: "trivia",
+  triviaAttempts: "triviaAttempts",
+  boards: "boards",
 };
 
 // Tier configuration (matches backend)
