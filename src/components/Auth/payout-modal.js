@@ -5,6 +5,7 @@ import { httpsCallable } from "firebase/functions";
 import { functions } from "../../firebase/config";
 import toast from "react-hot-toast";
 import { useAuth } from "../../contexts/authcontext";
+import { data } from "autoprefixer";
 
 const payoutFields = {
   paypal: [{ name: "email", label: "PayPal Email", type: "email" }],
@@ -35,7 +36,15 @@ const PayoutModal = ({ isOpen, onClose }) => {
   const [method, setMethod] = useState("");
   const [formData, setFormData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const { refreshUserData } = useAuth();
+  const { refreshUserData, userData } = useAuth();
+  const [dropdownOptions, setDropDownOptions] = useState([
+    { label: "PayPal", value: "paypal" },
+    { label: "Venmo", value: "venmo" },
+    { label: "Zelle", value: "zelle" },
+    { label: "ACH (Bank)", value: "ach" },
+    { label: "Check", value: "check" },
+    { label: "Crypto", value: "crypto" },
+  ]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -68,6 +77,16 @@ const PayoutModal = ({ isOpen, onClose }) => {
       toast.error("Failed to save payout. Please try again.");
     }
   };
+
+  useEffect(() => {
+    const currentChoice = userData?.payoutDetails?.method;
+    if (currentChoice) {
+      const data = dropdownOptions?.filter(
+        (item) => item?.value !== currentChoice
+      );
+      setDropDownOptions(data);
+    }
+  }, [userData]);
 
   return (
     <AnimatePresence>
@@ -112,12 +131,9 @@ const PayoutModal = ({ isOpen, onClose }) => {
                   required
                 >
                   <option value="">-- Choose --</option>
-                  <option value="paypal">PayPal</option>
-                  <option value="venmo">Venmo</option>
-                  <option value="zelle">Zelle</option>
-                  <option value="ach">ACH (Bank)</option>
-                  <option value="check">Check</option>
-                  <option value="crypto">Crypto</option>
+                  {dropdownOptions?.map((item) => (
+                    <option value={item?.value}>{item?.label}</option>
+                  ))}
                 </select>
               </div>
 
