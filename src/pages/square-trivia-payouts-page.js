@@ -16,7 +16,7 @@ import {
   Info,
   ChevronRight,
   ExternalLink,
-  // XCircle,
+  XCircle,
   Settings,
   Building2,
   Mail,
@@ -46,6 +46,7 @@ import PaymentMethods from "../components/Payouts/payment-methods";
 export default function Payouts() {
   const { user, userData } = useAuth();
   const [payouts, setPayouts] = useState([]);
+  console.log("payouts:", payouts);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all"); // all, pending, completed
   const [selectedPayout, setSelectedPayout] = useState(null);
@@ -90,7 +91,7 @@ export default function Payouts() {
 
       // Load user's payouts
       const payoutsQuery = query(
-        collection(db, collections.payouts),
+        collection(db, collections.winners),
         where("userId", "==", user.uid),
         orderBy("createdAt", "desc")
       );
@@ -108,9 +109,9 @@ export default function Payouts() {
 
         // Calculate stats
         totalWinnings += data.amount;
-        if (data.status === "pending") {
+        if (data.payoutStatus === "pending") {
           pendingAmount += data.amount;
-        } else if (data.status === "completed") {
+        } else if (data.payoutStatus === "completed") {
           completedAmount += data.amount;
           if (data.isInstant) {
             instantPayouts++;
@@ -205,8 +206,8 @@ export default function Payouts() {
         );
       case "completed":
         return <CheckCircle className="h-5 w-5 text-green-500" />;
-      //   case "failed":
-      //     return <XCircle className="h-5 w-5 text-red-500" />;
+      case "failed":
+          return <XCircle className="h-5 w-5 text-red-500" />;
       default:
         return <AlertCircle className="h-5 w-5 text-gray-500" />;
     }
@@ -229,8 +230,9 @@ export default function Payouts() {
 
   const filteredPayouts = payouts.filter((payout) => {
     if (filter === "all") return true;
-    if (filter === "pending") return payout.status === "pending";
-    if (filter === "completed") return payout.status === "completed";
+    if (filter === "pending") return payout.payoutStatus === "pending";
+    if (filter === "completed") return payout.payoutStatus === "completed";
+    if (filter === "failed") return payout.payoutStatus === "failed";
     return true;
   });
 
@@ -398,7 +400,18 @@ export default function Payouts() {
                   }`}
                 >
                   Pending (
-                  {payouts.filter((p) => p.status === "pending").length})
+                  {payouts.filter((p) => p.payoutStatus === "pending").length})
+                </button>
+                <button
+                  onClick={() => setFilter("failed")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    filter === "failed"
+                      ? "bg-red-100 text-red-700"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  Failed (
+                  {payouts.filter((p) => p.payoutStatus === "failed").length})
                 </button>
                 <button
                   onClick={() => setFilter("completed")}
@@ -409,7 +422,7 @@ export default function Payouts() {
                   }`}
                 >
                   Completed (
-                  {payouts.filter((p) => p.status === "completed").length})
+                  {payouts.filter((p) => p.payoutStatus === "completed").length})
                 </button>
               </div>
             </div>
@@ -443,7 +456,7 @@ export default function Payouts() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center mb-2">
-                      {getStatusIcon(payout.status)}
+                      {getStatusIcon(payout.payoutStatus)}
                       <h3 className="ml-3 text-lg font-semibold text-gray-900">
                         {payout.gameInfo?.teams
                           ? `${payout.gameInfo.teams.away} @ ${payout.gameInfo.teams.home}`
@@ -454,10 +467,10 @@ export default function Payouts() {
                     <div className="ml-8 space-y-1">
                       <p className="text-sm text-gray-600">
                         <span className="font-medium">Prize Amount:</span>{" "}
-                        {formatCurrency(payout.amount)}
+                        {formatCurrency(payout.prizeAmount)}
                         {payout.isInstant && (
                           <span className="text-xs text-gray-500 ml-2">
-                            (Instant: {formatCurrency(payout.amount * 0.96)}{" "}
+                            (Instant: {formatCurrency(payout.prizeAmount * 0.96)}{" "}
                             after 4% fee)
                           </span>
                         )}
@@ -467,8 +480,8 @@ export default function Payouts() {
                         {formatDate(payout.createdAt)}
                       </p>
                       <p className="text-sm text-gray-600">
-                        <span className="font-medium">Quarter:</span> Q
-                        {payout.quarter || "N/A"}
+                        <span className="font-medium">Quarter:</span>
+                        {payout.quarter.toUpperCase() || "N/A"}
                         {" • "}
                         <span className="font-medium">Square:</span> (
                         {payout.square?.row || 0},{payout.square?.col || 0})
@@ -503,12 +516,12 @@ export default function Payouts() {
 
                     <div className="mt-3 ml-8">
                       <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(payout.status)}`}
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(payout.payoutStatus)}`}
                       >
-                        {payout.status.charAt(0).toUpperCase() +
-                          payout.status.slice(1)}
+                        {payout.payoutStatus.charAt(0).toUpperCase() +
+                          payout.payoutStatus.slice(1)}
                       </span>
-                      {payout.status === "completed" && payout.completedAt && (
+                      {payout.payoutStatus === "completed" && payout.completedAt && (
                         <span className="ml-2 text-sm text-gray-500">
                           Paid on {formatDate(payout.completedAt)}
                         </span>
@@ -518,7 +531,7 @@ export default function Payouts() {
 
                   {/* Actions */}
                   <div className="ml-4">
-                    {payout.status === "pending" && !payout.isInstant && (
+                    {payout.payoutStatus === "pending" && !payout.isInstant && (
                       <button
                         onClick={() => handleInstantPayout(payout)}
                         className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
@@ -528,7 +541,7 @@ export default function Payouts() {
                       </button>
                     )}
 
-                    {payout.status === "completed" && (
+                    {payout.payoutStatus === "completed" && (
                       <button className="text-gray-400 hover:text-gray-600">
                         <Download className="h-5 w-5" />
                       </button>
