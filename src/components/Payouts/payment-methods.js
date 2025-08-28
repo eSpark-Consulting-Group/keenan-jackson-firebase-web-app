@@ -33,6 +33,8 @@ const PAYMENT_METHODS = {
         label: "Account Holder Name",
         type: "text",
         required: true,
+        autoComplete: "name",
+        placeholder: "e.g. John Doe",
       },
       {
         name: "routingNumber",
@@ -40,18 +42,24 @@ const PAYMENT_METHODS = {
         type: "text",
         required: true,
         pattern: "[0-9]{9}",
+        autoComplete: "routing",
+        placeholder: "e.g. 021000021",
       },
       {
         name: "accountNumber",
         label: "Account Number",
         type: "text",
         required: true,
+        autoComplete: "account",
+        placeholder: "e.g. 123456789",
       },
       {
         name: "accountType",
         label: "Account Type",
         type: "select",
         required: true,
+        autoComplete: "account-type",
+        placeholder: "Select account type",
         options: ["checking", "savings"],
       },
     ],
@@ -64,7 +72,14 @@ const PAYMENT_METHODS = {
     processingTime: "1-2 hours",
     fee: "No fee",
     fields: [
-      { name: "email", label: "PayPal Email", type: "email", required: true },
+      {
+        name: "email",
+        label: "PayPal Email",
+        type: "email",
+        required: true,
+        autoComplete: "email",
+        placeholder: "e.g. abc@example.com",
+      },
     ],
   },
   check: {
@@ -80,33 +95,51 @@ const PAYMENT_METHODS = {
         label: "Check Payee Name",
         type: "text",
         required: true,
+        autoComplete: "full-name",
+        placeholder: "e.g. John Doe",
       },
       {
         name: "address1",
         label: "Address Line 1",
         type: "text",
         required: true,
+        autoComplete: "address-line1",
+        placeholder: "Street address, P.O. box, etc.",
       },
       {
         name: "address2",
         label: "Address Line 2",
         type: "text",
         required: false,
+        autoComplete: "address-line2",
+        placeholder: "Apt, Suite, etc. (optional)",
       },
-      { name: "city", label: "City", type: "text", required: true },
+      {
+        name: "city",
+        label: "City",
+        type: "text",
+        required: true,
+        autoComplete: "address-level2",
+
+        placeholder: "e.g. San Francisco",
+      },
       {
         name: "state",
         label: "State",
         type: "text",
         required: true,
         maxLength: 2,
+        autoComplete: "address-level1",
+        placeholder: "e.g. CA",
       },
       {
         name: "zipCode",
         label: "ZIP Code",
         type: "text",
         required: true,
+        autoComplete: "postal-code",
         pattern: "[0-9]{5}(-[0-9]{4})?",
+        placeholder: "e.g. 94103",
       },
     ],
   },
@@ -488,6 +521,8 @@ export default function PaymentMethods({
                             <input
                               type="radio"
                               name="paymentType"
+                              autoComplete="payment-method"
+                              placeholder="Select payment method"
                               value={method.id}
                               checked={selectedType === method.id}
                               onChange={(e) => {
@@ -542,6 +577,8 @@ export default function PaymentMethods({
                               [field.name]: e.target.value,
                             })
                           }
+                          autoComplete={field.autoComplete || "off"}
+                          placeholder={field.placeholder || ""}
                           className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                             errors[field.name]
                               ? "border-red-500"
@@ -565,6 +602,9 @@ export default function PaymentMethods({
                               [field.name]: e.target.value,
                             })
                           }
+                          autoComplete={field.autoComplete || 'off'}
+                          placeholder={field.placeholder || ""}
+                          pattern={field.pattern || undefined}
                           maxLength={field.maxLength}
                           className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                             errors[field.name]

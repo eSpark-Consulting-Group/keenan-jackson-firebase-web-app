@@ -9,7 +9,8 @@ import {
   Zap,
   Download,
   Filter,
-  Calendar,
+  ChevronUp,
+  ChevronDown,
   TrendingUp,
   CreditCard,
   FileText,
@@ -39,9 +40,9 @@ import {
   getDoc,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
-// import PaymentMethods from "../components/PaymentMethods";
+// import PayoutMethods from "../components/PayoutMethods";
 import { useAuth } from "../contexts/authcontext";
-import PaymentMethods from "../components/Payouts/payment-methods";
+import PayoutMethods from "../components/Payouts/payment-methods";
 
 export default function Payouts() {
   const { user, userData } = useAuth();
@@ -52,10 +53,15 @@ export default function Payouts() {
   const [selectedPayout, setSelectedPayout] = useState(null);
   const [showInstantPayoutModal, setShowInstantPayoutModal] = useState(false);
   const [processingInstant, setProcessingInstant] = useState(false);
-  const [showPaymentMethods, setShowPaymentMethods] = useState(false);
-  const [paymentMethods, setPaymentMethods] = useState([]);
-  const [defaultPaymentMethod, setDefaultPaymentMethod] = useState(null);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
+  const [showPayoutMethods, setShowPayoutMethods] = useState(false);
+  const [payoutMethods, setPayoutMethods] = useState([]);
+  const [defaultPayoutMethod, setDefaultPayoutMethod] = useState(null);
+  const [selectedPayoutMethod, setSelectedPayoutMethod] = useState(null);
+    const [expandedId, setExpandedId] = useState(null);
+
+  const toggleExpand = (id) => {
+    setExpandedId(expandedId === id ? null : id);
+  };
   const [stats, setStats] = useState({
     totalWinnings: 0,
     pendingAmount: 0,
@@ -66,19 +72,19 @@ export default function Payouts() {
   useEffect(() => {
     if (user) {
       loadPayouts();
-      loadPaymentMethods();
+      loadPayoutMethods();
     }
   }, [user]);
 
-  const loadPaymentMethods = async () => {
+  const loadPayoutMethods = async () => {
     try {
       const userDoc = await getDoc(doc(db, "users", user.uid));
       const userData = userDoc.data();
 
-      if (userData?.paymentMethods) {
-        setPaymentMethods(userData.paymentMethods);
-        setDefaultPaymentMethod(userData.defaultPaymentMethod);
-        setSelectedPaymentMethod(userData.defaultPaymentMethod);
+      if (userData?.payoutMethods) {
+        setPayoutMethods(userData.payoutMethods);
+        setDefaultPayoutMethod(userData.defaultPayoutMethod);
+        setSelectedPayoutMethod(userData.defaultPayoutMethod);
       }
     } catch (error) {
       console.error("Error loading payment methods:", error);
@@ -136,9 +142,9 @@ export default function Payouts() {
 
   const handleInstantPayout = async (payout) => {
     // Check if user has payment methods
-    if (!paymentMethods || paymentMethods.length === 0) {
+    if (!payoutMethods || payoutMethods.length === 0) {
       toast.error("Please add a payment method first");
-      setShowPaymentMethods(true);
+      setShowPayoutMethods(true);
       return;
     }
 
@@ -147,7 +153,7 @@ export default function Payouts() {
   };
 
   const confirmInstantPayout = async () => {
-    if (!selectedPayout || !selectedPaymentMethod) {
+    if (!selectedPayout || !selectedPayoutMethod) {
       toast.error("Please select a payment method");
       return;
     }
@@ -159,7 +165,7 @@ export default function Payouts() {
       const response = await callFunction("processInstantPayout", {
         payoutId: selectedPayout.id,
         userId: user.uid,
-        paymentMethodId: selectedPaymentMethod,
+        payoutMethodId: selectedPayoutMethod,
       });
 
       if (response.data.success) {
@@ -175,7 +181,7 @@ export default function Payouts() {
                 status: "processing",
                 isInstant: true,
                 instantFee: response.data.fee,
-                paymentMethodId: selectedPaymentMethod,
+                payoutMethodId: selectedPayoutMethod,
               }
             : p
         );
@@ -236,7 +242,7 @@ export default function Payouts() {
     return true;
   });
 
-  const getPaymentMethodIcon = (type) => {
+  const getPayoutMethodIcon = (type) => {
     switch (type) {
       case "ach":
         return Building2;
@@ -249,7 +255,7 @@ export default function Payouts() {
     }
   };
 
-  const getPaymentMethodName = (type) => {
+  const getPayoutMethodName = (type) => {
     switch (type) {
       case "ach":
         return "Bank Transfer";
@@ -301,7 +307,7 @@ export default function Payouts() {
               </p>
             </div>
             <button
-              onClick={() => setShowPaymentMethods(true)}
+              onClick={() => setShowPayoutMethods(true)}
               className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Settings className="h-5 w-5 mr-2 text-gray-500" />
@@ -446,109 +452,164 @@ export default function Payouts() {
             className="space-y-4"
           >
             {filteredPayouts.map((payout, index) => (
-              <motion.div
-                key={payout.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 + index * 0.05 }}
-                className="bg-white rounded-lg shadow-md p-6"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center mb-2">
-                      {getStatusIcon(payout.payoutStatus)}
-                      <h3 className="ml-3 text-lg font-semibold text-gray-900">
-                        {payout.gameInfo?.teams
-                          ? `${payout.gameInfo.teams.away} @ ${payout.gameInfo.teams.home}`
-                          : "Game Winnings"}
-                      </h3>
-                    </div>
+         <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 }}
+      className="space-y-6"
+    >
+      {payouts.map((payout, index) => (
+        <motion.div
+          key={payout.id}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 + index * 0.05 }}
+          className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all"
+        >
+          <div className="flex items-start justify-between">
+            {/* LEFT SIDE INFO */}
+            <div className="flex-1">
+              <div className="flex items-center mb-3">
+                {getStatusIcon(payout.payoutStatus)}
+                <h3 className="ml-3 text-lg font-bold text-gray-900">
+                  {payout.gameInfo?.teams
+                    ? `${payout.gameInfo.teams.away || "TBD"} @ ${
+                        payout.gameInfo.teams.home || "TBD"
+                      }`
+                    : "Game Winnings"}
+                </h3>
+              </div>
 
-                    <div className="ml-8 space-y-1">
-                      <p className="text-sm text-gray-600">
-                        <span className="font-medium">Prize Amount:</span>{" "}
-                        {formatCurrency(payout.prizeAmount)}
-                        {payout.isInstant && (
-                          <span className="text-xs text-gray-500 ml-2">
-                            (Instant: {formatCurrency(payout.prizeAmount * 0.96)}{" "}
-                            after 4% fee)
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        <span className="font-medium">Won on:</span>{" "}
-                        {formatDate(payout.createdAt)}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        <span className="font-medium">Quarter:</span>
-                        {payout.quarter.toUpperCase() || "N/A"}
-                        {" • "}
-                        <span className="font-medium">Square:</span> (
-                        {payout.square?.row || 0},{payout.square?.col || 0})
-                      </p>
-                      {payout.answerTime && (
-                        <p className="text-sm text-gray-600">
-                          <span className="font-medium">Winning Time:</span>{" "}
-                          {payout.answerTime}s
-                        </p>
-                      )}
-                      {payout.paymentMethod && (
-                        <p className="text-sm text-gray-600">
-                          <span className="font-medium">Payment Method:</span>{" "}
-                          {(() => {
-                            const Icon = getPaymentMethodIcon(
-                              payout.paymentMethod.type
-                            );
-                            return (
-                              <>
-                                <Icon className="inline h-4 w-4 mr-1" />
-                                {getPaymentMethodName(
-                                  payout.paymentMethod.type
-                                )}
-                                {payout.paymentMethod.displayInfo &&
-                                  ` (${payout.paymentMethod.displayInfo})`}
-                              </>
-                            );
-                          })()}
-                        </p>
-                      )}
-                    </div>
+              <div className="ml-8 space-y-1">
+                <p className="text-sm text-gray-700">
+                  <span className="font-semibold">Game ID:</span>{" "}
+                  {payout.gameId || "N/A"}
+                </p>
+                <p className="text-sm text-gray-700">
+                  <span className="font-semibold">Tier:</span>{" "}
+                  {payout.tierId?.split("_")[1] || "N/A"}
+                </p>
+                <p className="text-sm text-gray-700">
+                  <span className="font-semibold">Prize:</span>{" "}
+                  {formatCurrency(payout.prizeAmount || 0)}
+                </p>
+                <p className="text-sm">
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusColor(
+                      payout.payoutStatus
+                    )}`}
+                  >
+                    {payout.payoutStatus
+                      ? payout.payoutStatus.charAt(0).toUpperCase() +
+                        payout.payoutStatus.slice(1)
+                      : "Unknown"}
+                  </span>
+                </p>
+              </div>
 
-                    <div className="mt-3 ml-8">
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(payout.payoutStatus)}`}
-                      >
-                        {payout.payoutStatus.charAt(0).toUpperCase() +
-                          payout.payoutStatus.slice(1)}
-                      </span>
-                      {payout.payoutStatus === "completed" && payout.completedAt && (
-                        <span className="ml-2 text-sm text-gray-500">
-                          Paid on {formatDate(payout.completedAt)}
+              {/* Expand/Collapse Button */}
+              <div className="mt-3 ml-8">
+                <button
+                  onClick={() => toggleExpand(payout.id)}
+                  className="flex items-center text-sm text-purple-600 hover:text-purple-800 font-medium"
+                >
+                  {expandedId === payout.id ? (
+                    <>
+                      Hide Details <ChevronUp className="ml-1 h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      More Details <ChevronDown className="ml-1 h-4 w-4" />
+                    </>
+                  )}
+                </button>
+
+                {/* Collapsible Content */}
+                {expandedId === payout.id && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    transition={{ duration: 0.35 }}
+                    className="mt-3 pl-3 border-l-2 border-gray-200 space-y-2"
+                  >
+                    <p className="text-sm text-gray-700">
+                      <span className="font-semibold">User ID:</span>{" "}
+                      {payout.userId}
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      <span className="font-semibold">Email:</span>{" "}
+                      {payout.userInfo?.email || "N/A"}
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      <span className="font-semibold">Telegram:</span>{" "}
+                      {payout.userInfo?.telegramUsername || "N/A"}
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      <span className="font-semibold">Solo Win:</span>{" "}
+                      {payout.isSoloWin ? "Yes ✅" : "No"}
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      <span className="font-semibold">Notification Status:</span>{" "}
+                      {payout.notificationStatus || "N/A"}
+                    </p>
+
+                    {/* Error handling */}
+                    {payout.notificationErrors?.length > 0 && (
+                      <div className="flex items-start bg-red-50 text-red-700 border border-red-200 rounded-lg p-2">
+                        <AlertCircle className="h-4 w-4 mr-2 mt-0.5" />
+                        <span className="text-sm">
+                          {payout.notificationErrors.join(", ")}
                         </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="ml-4">
-                    {payout.payoutStatus === "pending" && !payout.isInstant && (
-                      <button
-                        onClick={() => handleInstantPayout(payout)}
-                        className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                      >
-                        <Zap className="h-4 w-4 mr-2" />
-                        Get Instant
-                      </button>
+                      </div>
                     )}
 
-                    {payout.payoutStatus === "completed" && (
-                      <button className="text-gray-400 hover:text-gray-600">
-                        <Download className="h-5 w-5" />
-                      </button>
+                    <p className="text-sm text-gray-700">
+                      <span className="font-semibold">Reported on 1099:</span>{" "}
+                      {payout.reportedOn1099 ? "Yes" : "No"}
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      <span className="font-semibold">Winner Answer Time:</span>{" "}
+                      {payout.winnerAnswerTimeMs} ms
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      <span className="font-semibold">Consolation Square:</span>{" "}
+                      {payout.consolationSquareGranted
+                        ? "Granted"
+                        : "Not Granted"}
+                    </p>
+                    {payout.processedBy && (
+                      <p className="text-sm text-gray-700">
+                        <span className="font-semibold">Processed By:</span>{" "}
+                        {payout.processedBy}
+                      </p>
                     )}
-                  </div>
-                </div>
-              </motion.div>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+
+            {/* RIGHT SIDE ACTIONS */}
+            <div className="ml-6 flex flex-col items-end gap-2">
+              {payout.payoutStatus === "pending" && !payout.isInstant && (
+                <button
+                  onClick={() => handleInstantPayout(payout)}
+                  className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-xl shadow hover:bg-purple-700 transition-colors"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  Get Instant
+                </button>
+              )}
+
+              {payout.payoutStatus === "completed" && (
+                <button className="text-gray-400 hover:text-gray-600">
+                  <Download className="h-5 w-5" />
+                </button>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      ))}
+    </motion.div>
             ))}
           </motion.div>
         ) : (
@@ -663,49 +724,50 @@ export default function Payouts() {
               </div>
 
               {/* Payment Method Selection */}
-              {paymentMethods.length > 0 && (
+              {payoutMethods.length > 0 && (
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Select Payment Method
                   </label>
                   <div className="space-y-2">
-                    {paymentMethods.map((method) => {
-                      const Icon = getPaymentMethodIcon(method.type);
+                    {payoutMethods.map((method) => {
+                      const Icon = getPayoutMethodIcon(method.type);
                       return (
                         <label
                           key={method.id}
                           className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
-                            selectedPaymentMethod === method.id
+                            selectedPayoutMethod === method.id
                               ? "border-blue-500 bg-blue-50"
                               : "border-gray-200 hover:border-gray-300"
                           }`}
                         >
                           <input
                             type="radio"
-                            name="paymentMethod"
+                            name="payoutMethod"
                             value={method.id}
-                            checked={selectedPaymentMethod === method.id}
+                            checked={selectedPayoutMethod === method.id}
                             onChange={(e) =>
-                              setSelectedPaymentMethod(e.target.value)
+                              setSelectedPayoutMethod(e.target.value)
                             }
                             className="sr-only"
+                            placeholder="Select payout method"
                           />
                           <Icon
                             className={`h-5 w-5 mr-3 ${
-                              selectedPaymentMethod === method.id
+                              selectedPayoutMethod === method.id
                                 ? "text-blue-600"
                                 : "text-gray-400"
                             }`}
                           />
                           <div className="flex-1">
                             <p className="font-medium text-gray-900">
-                              {getPaymentMethodName(method.type)}
+                              {getPayoutMethodName(method.type)}
                             </p>
                             <p className="text-sm text-gray-600">
                               {method.displayInfo}
                             </p>
                           </div>
-                          {method.id === defaultPaymentMethod && (
+                          {method.id === defaultPayoutMethod && (
                             <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">
                               Default
                             </span>
@@ -757,12 +819,12 @@ export default function Payouts() {
         )}
 
         {/* Payment Methods Modal */}
-        {showPaymentMethods && (
+        {showPayoutMethods && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowPaymentMethods(false)}
+            onClick={() => setShowPayoutMethods(false)}
           >
             <motion.div
               initial={{ scale: 0.9 }}
@@ -775,7 +837,7 @@ export default function Payouts() {
                   Payment Methods
                 </h3>
                 <button
-                  onClick={() => setShowPaymentMethods(false)}
+                  onClick={() => setShowPayoutMethods(false)}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   X{/* <X className="h-5 w-5" /> */}
@@ -783,10 +845,10 @@ export default function Payouts() {
               </div>
 
               <div className="p-6">
-                <PaymentMethods
+                <PayoutMethods
                   embedded={true}
                   onMethodSelect={() => {
-                    loadPaymentMethods();
+                    loadPayoutMethods();
                   }}
                 />
               </div>
