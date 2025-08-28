@@ -412,7 +412,6 @@ export default function Games() {
                   {filteredDateGames.map((game) => {
                     const userBoard = getUserBoardForGame(game);
                     const hasAccess = userBoard !== undefined;
-                    console.log(game, "GAME");
 
                     return (
                       <motion.div

@@ -59,6 +59,7 @@ export default function AdminGames() {
     apiGameId: "",
     selectedTiers: [],
     gameType: "",
+    week: "",
   });
 
   const [sportsForm, setSportsForm] = useState({
@@ -152,6 +153,7 @@ export default function AdminGames() {
         externalGameId: gameForm.apiGameId,
         enabledTiers: gameForm.selectedTiers,
         gameType: gameForm.gameType,
+        week: gameForm?.week,
       });
 
       if (result.success) {
@@ -164,6 +166,7 @@ export default function AdminGames() {
           startTime: "",
           apiGameId: "",
           selectedTiers: [],
+          week: "",
         });
         setTimeout(() => loadGames(), 500);
       } else {
@@ -240,8 +243,6 @@ export default function AdminGames() {
     }
   };
 
-  console.log(games);
-
   const filteredGames = games.filter((game) => {
     const matchesSearch =
       searchTerm === "" ||
@@ -273,6 +274,7 @@ export default function AdminGames() {
   };
 
   useEffect(() => {
+    console.log(selectedGame);
     if (selectedGame && Object.keys(selectedGame)?.length > 0) {
       setGameForm({
         ...gameForm,
@@ -282,6 +284,7 @@ export default function AdminGames() {
         startTime: selectedGame?.startTime,
         apiGameId: selectedGame?.apiGameId,
         gameType: selectedGame?.gameType,
+        week: selectedGame?.week,
       });
     }
   }, [selectedGame]);
@@ -318,6 +321,7 @@ export default function AdminGames() {
           startTime: game?.startTime,
           apiGameId: game?.apiSportsId,
           gameType: "regular",
+          week: game?.week,
         }));
         setSearchedGames(data);
       } catch (error) {
@@ -580,6 +584,7 @@ export default function AdminGames() {
                         apiGameId: "",
                         selectedTiers: [],
                         gameType: "",
+                        week: "",
                       });
                       setShowCreateModal(false);
                       setShowFetchModal(true);
@@ -777,6 +782,7 @@ export default function AdminGames() {
                           apiGameId: "",
                           selectedTiers: [],
                           gameType: "",
+                          week: "",
                         });
                       }}
                       className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
