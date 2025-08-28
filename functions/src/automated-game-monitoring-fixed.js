@@ -91,7 +91,7 @@ class ApiSportsService {
   /**
    * Fetch game score from API-Sports
    */
-  async fetchGameScore(gameKey, sport) {
+  async fetchGameScore(gameKey, sport, game) {
     logger.info(
       `[fetchGameScore] Called with gameKey=${gameKey}, sport=${sport}`
     );
@@ -109,14 +109,15 @@ class ApiSportsService {
       throw new Error(`Unknown sport: ${sport}`);
     }
     // Parse season year and game?.week from GameKey (SportsData.io encodes it)
-    const year = parseInt(gameKey.substring(0, 4), 10); // e.g. 2025
+    // const year = parseInt(gameKey.substring(0, 4), 10); // e.g. 2025
+        const year = new Date(new Date()).getFullYear();
     // const week = parseInt(gameKey.substring(4, 6), 10); // e.g. 10 (Week 10)
     logger.info(
       `[fetchGameScore] Parsed year=${year}, game?.week=${game?.week}`
     );
     // Build endpoint (NFL vs CFB differs slightly)
     // const url = `https://api.sportsdata.io${config.endpoint}/${year}/${game?.week}`;
-    const url = `https://api.sportsdata.io${config.endpoint}/${year}/${10}?key=${process.env.REACT_APP_APISPORTS_KEY}`;
+    const url = `https://api.sportsdata.io${config.endpoint}/${year}/${game?.week}?key=${process.env.REACT_APP_APISPORTS_KEY}`;
 
     logger.info(`[fetchGameScore] Built URL: ${url}`);
     try {
@@ -161,9 +162,9 @@ class ApiSportsService {
       logger.info(
         `[fetchGameScore] Found game: ${game.HomeTeam} vs ${game.AwayTeam}, status=${game.Status}`
       );
-      // const parsed = this.parseGameData(game, sport);
-      // logger.info("[fetchGameScore] Successfully parsed game data", parsed);
-      return {};
+      const parsed = this.parseGameData(game, sport);
+      logger.info("[fetchGameScore] Successfully parsed game data", parsed);
+      return parsed;
     } catch (error) {
       logger.error("[fetchGameScore] Error fetching game score", {
         error: error.message,
@@ -416,7 +417,7 @@ async function monitorSingleGame(db, gameDoc) {
       `[monitorSingleGame] Fetching scores for gameId=${gameId}, externalGameId=${game.externalGameId}, sport=${game.sport}`
     );
     const fetchScores = measurePerformance(
-      () => apiSportsService.fetchGameScore("202511013", "NFL"),
+      () => apiSportsService.fetchGameScore(game.externalGameId, "NFL", game),
       "fetchGameScore"
     );
     const liveData = await fetchScores();
