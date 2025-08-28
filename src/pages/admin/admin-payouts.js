@@ -286,7 +286,7 @@ export default function AdminPayouts() {
 
     return (
       <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${badge.color}`}
       >
         <Icon className="h-3 w-3 mr-1" />
         {status === "pending_payout" ? "pending" : status}
@@ -443,7 +443,7 @@ export default function AdminPayouts() {
             </select>
 
             <select
-              value={filterOptions.type}
+              value={filterOptions.payoutType}
               onChange={(e) =>
                 setFilterOptions({ ...filterOptions, type: e.target.value })
               }
@@ -591,7 +591,7 @@ export default function AdminPayouts() {
                           <div className="text-sm font-medium text-gray-900">
                             {formatCurrency(payout.prizeAmount)}
                           </div>
-                          {payout.type === "instant" && (
+                          {payout.payoutType === "instant" && (
                             <div className="text-xs text-gray-500">
                               Fee:{" "}
                               {formatCurrency(
@@ -602,7 +602,7 @@ export default function AdminPayouts() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getPayoutTypeBadge(payout.type)}
+                        {getPayoutTypeBadge(payout.payoutType)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(payout.status)}

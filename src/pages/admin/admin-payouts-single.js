@@ -106,7 +106,24 @@ export default function AdminPayoutSingle() {
       </span>
     );
   };
-
+ const getPayoutTypeIcon = (type) => {
+    return type === "instant" ? Zap : Clock;
+  };
+  const getPayoutTypeBadge = (type) => {
+    const Icon = getPayoutTypeIcon(type);
+    return (
+      <span
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          type === "instant"
+            ? "bg-yellow-100 text-yellow-800"
+            : "bg-blue-100 text-blue-800"
+        }`}
+      >
+        <Icon className="h-3 w-3 mr-1" />
+        {type === "instant" ? "Instant" : "Standard"}
+      </span>
+    );
+  };
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -152,7 +169,13 @@ export default function AdminPayoutSingle() {
             </h2>
             {getStatusBadge(payout.status)}
           </div>
-
+          {/* Status */}
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+              Payout Type
+            </h2>
+            {getPayoutTypeBadge(payout.payoutType)}
+          </div>
           {/* Amount & Type */}
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-2">
