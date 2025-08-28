@@ -593,10 +593,10 @@ export default function Payouts() {
               {payout.payoutStatus === "pending" && !payout.isInstant && (
                 <button
                   onClick={() => handleInstantPayout(payout)}
-                  className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-xl shadow hover:bg-purple-700 transition-colors"
+                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl shadow hover:bg-blue-700 transition-colors"
                 >
                   <Zap className="h-4 w-4 mr-2" />
-                  Get Instant
+                  Get Instant Paid
                 </button>
               )}
 
