@@ -12,6 +12,8 @@ import {
 import { callFunction } from "../../firebase/config";
 import toast from "react-hot-toast";
 import Confetti from "react-confetti";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/authcontext";
 
 const TRIVIA_TIME_LIMIT = 30; // seconds
 
@@ -34,6 +36,8 @@ export default function TriviaModal({
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState(null);
   const [showCelebration, setShowCelebration] = useState(false);
+  const navigate = useNavigate();
+  const { refreshUserData } = useAuth();
 
   const timerRef = useRef(null);
   const intervalRef = useRef(null);
@@ -86,7 +90,7 @@ export default function TriviaModal({
       }
     } catch (error) {
       console.error("Error starting trivia session:", error);
-      toast.error("Failed to load trivia question");
+      toast.error(error?.message);
       onClose();
     } finally {
       setLoading(false);
@@ -134,13 +138,14 @@ export default function TriviaModal({
           answerTime: response.answerTime,
           token: response.tokenId,
         });
-        console.log(response);
 
         if (response.correct) {
           setShowCelebration(true);
           setTimeout(() => {
             setShowCelebration(false);
             onClose();
+            refreshUserData();
+            navigate("/games");
           }, 3000);
         }
 
@@ -149,17 +154,23 @@ export default function TriviaModal({
           () => {
             onComplete(response.correct, response.answerTime, response.tokenId);
             onClose();
+            refreshUserData();
+            navigate("/games");
           },
           response.correct ? 3000 : 2000
         );
       } else {
         toast.error(response.error || "Failed to submit answer");
         onClose();
+        refreshUserData();
+        navigate("/games");
       }
     } catch (error) {
       console.error("Error submitting answer:", error);
       toast.error("Failed to submit answer");
       onClose();
+      refreshUserData();
+      navigate("/games");
     }
   };
 

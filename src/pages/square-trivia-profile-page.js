@@ -361,11 +361,23 @@ export default function Profile() {
                       Connect Telegram
                     </a>
                   )}
+                  {userData?.payoutDetails &&
+                    Object.keys(userData?.payoutDetails)?.length > 0 && (
+                      <p className="text-sm text-blue-600 mt-6">
+                        Current Payout Method:{" "}
+                        <span className="uppercase text-sm text-blue-600 mt-6 cursor-pointer">
+                          {userData?.payoutDetails?.method}
+                        </span>
+                      </p>
+                    )}
                   <p
                     className="text-xs text-blue-600 mt-6 cursor-pointer"
                     onClick={() => setPayoutModal(true)}
                   >
-                    Add Payout Method
+                    {userData?.payoutDetails &&
+                    Object.keys(userData?.payoutDetails)?.length > 0
+                      ? "Edit Payout"
+                      : "Add Payout Method"}
                   </p>
                 </div>
               </div>

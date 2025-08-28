@@ -41,12 +41,57 @@ export default function Games() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showTierSelection, setShowTierSelection] = useState(false);
   const [groupedGames, setGroupedGames] = useState({});
+  const [userTierAccess, setUserTierAccess] = useState([]); // store allowed tierIds
 
   useEffect(() => {
     loadGames();
     const unsubscribe = setupRealtimeListeners();
     return () => unsubscribe?.();
   }, [userData]);
+
+  useEffect(() => {
+    console.log(userData);
+    if (!userData?.id) return;
+
+    const loadPlayedTiers = async () => {
+      try {
+        // 1. Get all boards
+        const boardsSnap = await getDocs(collection(db, "boards"));
+
+        // 2. Extract tiers where this user has played
+        const playedTiers = new Set();
+
+        boardsSnap.forEach((boardDoc) => {
+          const boardData = { id: boardDoc.id, ...boardDoc.data() };
+
+          const squares = boardData.squares || {};
+
+          // loop through each square
+          Object.values(squares).forEach((square) => {
+            const claims = square.claims || [];
+
+            claims.forEach((claim) => {
+              if (claim.userId === userData.id) {
+                if (boardData?.id) {
+                  playedTiers.add(boardData?.id);
+                }
+              }
+            });
+          });
+        });
+
+        setUserTierAccess(Array.from(playedTiers));
+      } catch (err) {
+        console.error("Error loading played tiers:", err);
+      }
+    };
+
+    loadPlayedTiers();
+  }, [userData]);
+
+  useEffect(() => {
+    console.log(userTierAccess, "TIER ACCESS");
+  }, [userTierAccess]);
 
   const loadGames = async () => {
     try {
@@ -204,7 +249,7 @@ export default function Games() {
     // { value: "NCAAB", label: "College Basketball" },
   ];
 
-  if (loading) {
+  if (loading && Object.keys(groupedGames)?.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -367,6 +412,7 @@ export default function Games() {
                   {filteredDateGames.map((game) => {
                     const userBoard = getUserBoardForGame(game);
                     const hasAccess = userBoard !== undefined;
+                    console.log(game, "GAME");
 
                     return (
                       <motion.div
@@ -390,7 +436,6 @@ export default function Games() {
                               <h3 className="text-xl font-semibold text-gray-900 mb-1">
                                 {game?.teams?.away} @ {game.teams?.home}
                               </h3>
-
                               <p className="text-sm text-gray-600">
                                 {new Date(
                                   game.gameDate?.toDate?.() || game.gameDate
@@ -406,6 +451,9 @@ export default function Games() {
                                   userData?.currentTiers?.includes(
                                     board.tierId
                                   );
+                                const hasAccess = userTierAccess.includes(
+                                  board.id
+                                );
 
                                 return (
                                   <div
@@ -451,6 +499,13 @@ export default function Games() {
                                         className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
                                       >
                                         Play Now
+                                      </Link>
+                                    ) : hasAccess ? (
+                                      <Link
+                                        to={`/game/${board.id}`}
+                                        className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
+                                      >
+                                        View Board
                                       </Link>
                                     ) : (
                                       <button

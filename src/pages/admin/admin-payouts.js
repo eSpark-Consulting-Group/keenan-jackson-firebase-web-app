@@ -59,18 +59,13 @@ export default function AdminPayouts() {
     try {
       setLoading(true);
 
-      // Build query based on filters
+      // --- 1. Build query based on filters ---
       let constraints = [orderBy("createdAt", "desc"), limit(100)];
 
       if (filterOptions.status !== "all") {
         constraints.unshift(where("status", "==", filterOptions.status));
       }
 
-      // if (filterOptions.type !== "all") {
-      //   constraints.unshift(where("type", "==", filterOptions.type));
-      // }
-
-      // Date range filter
       if (filterOptions.dateRange !== "all") {
         const now = new Date();
         let startDate;
@@ -94,31 +89,40 @@ export default function AdminPayouts() {
         }
       }
 
+      // --- 2. Fetch payouts (winners collection) ---
       const q = query(collection(db, collections.winners), ...constraints);
       const snapshot = await getDocs(q);
-      const payoutsData = [];
-      for (const winnerDoc of snapshot.docs) {
-        const payoutData = { id: winnerDoc.id, ...winnerDoc.data() };
 
-        // Get user info
-        if (payoutData.userId) {
-          try {
-            const userRef = doc(db, collections.users, payoutData.userId);
-            const userDoc = await getDoc(userRef);
-            if (userDoc.exists()) {
-              payoutData.user = userDoc.data();
-            }
-          } catch (error) {
-            console.error("Error fetching user:", error);
-          }
+      let payoutsData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // --- 3. Collect unique userIds ---
+      const userIds = [
+        ...new Set(payoutsData.map((p) => p.userId).filter(Boolean)),
+      ];
+
+      // --- 4. Fetch all users in parallel ---
+      const userDocs = await Promise.all(
+        userIds.map((id) => getDoc(doc(db, collections.users, id)))
+      );
+
+      const userMap = {};
+      userDocs.forEach((userDoc, i) => {
+        if (userDoc.exists()) {
+          userMap[userIds[i]] = userDoc.data();
         }
+      });
 
-        payoutsData.push(payoutData);
-      }
+      // --- 5. Attach users to payouts ---
+      payoutsData = payoutsData.map((p) => ({
+        ...p,
+        user: p.userId ? userMap[p.userId] || null : null,
+      }));
 
+      // --- 6. Update state & stats ---
       setPayouts(payoutsData);
-
-      // Calculate stats
       calculateStats(payoutsData);
 
       setLoading(false);

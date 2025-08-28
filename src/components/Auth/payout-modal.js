@@ -4,6 +4,8 @@ import { Brain, X } from "lucide-react";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../../firebase/config";
 import toast from "react-hot-toast";
+import { useAuth } from "../../contexts/authcontext";
+import { data } from "autoprefixer";
 
 const payoutFields = {
   paypal: [{ name: "email", label: "PayPal Email", type: "email" }],
@@ -33,6 +35,16 @@ const payoutFields = {
 const PayoutModal = ({ isOpen, onClose }) => {
   const [method, setMethod] = useState("");
   const [formData, setFormData] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const { refreshUserData, userData } = useAuth();
+  const [dropdownOptions, setDropDownOptions] = useState([
+    { label: "PayPal", value: "paypal" },
+    { label: "Venmo", value: "venmo" },
+    { label: "Zelle", value: "zelle" },
+    { label: "ACH (Bank)", value: "ach" },
+    { label: "Check", value: "check" },
+    { label: "Crypto", value: "crypto" },
+  ]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -49,18 +61,32 @@ const PayoutModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
 
     try {
       const payload = { method, ...formData };
       const res = await savePayout(payload);
 
-      toast.success("✅ Payout saved");
+      toast.success("Payout saved");
+      setIsLoading(false);
+      refreshUserData();
       onClose();
     } catch (error) {
       console.error("❌ Error saving payout:", error);
+      setIsLoading(false);
       toast.error("Failed to save payout. Please try again.");
     }
   };
+
+  useEffect(() => {
+    const currentChoice = userData?.payoutDetails?.method;
+    if (currentChoice) {
+      const data = dropdownOptions?.filter(
+        (item) => item?.value !== currentChoice
+      );
+      setDropDownOptions(data);
+    }
+  }, [userData]);
 
   return (
     <AnimatePresence>
@@ -105,12 +131,9 @@ const PayoutModal = ({ isOpen, onClose }) => {
                   required
                 >
                   <option value="">-- Choose --</option>
-                  <option value="paypal">PayPal</option>
-                  <option value="venmo">Venmo</option>
-                  <option value="zelle">Zelle</option>
-                  <option value="ach">ACH (Bank)</option>
-                  <option value="check">Check</option>
-                  <option value="crypto">Crypto</option>
+                  {dropdownOptions?.map((item) => (
+                    <option value={item?.value}>{item?.label}</option>
+                  ))}
                 </select>
               </div>
 
@@ -134,9 +157,33 @@ const PayoutModal = ({ isOpen, onClose }) => {
               {method && (
                 <button
                   type="submit"
-                  className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+                  disabled={isLoading}
+                  className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center"
                 >
-                  Save Payout Method
+                  {isLoading ? (
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                      ></path>
+                    </svg>
+                  ) : (
+                    "Save Payout Method"
+                  )}
                 </button>
               )}
             </form>

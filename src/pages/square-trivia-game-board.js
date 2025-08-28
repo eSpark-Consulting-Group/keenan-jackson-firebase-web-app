@@ -68,11 +68,11 @@ export default function GameBoard() {
       setBoard(boardData);
 
       // Check if user has access to this tier
-      if (!userData?.currentTiers?.includes(boardData.tierId)) {
-        toast.error("You need access to this tier to view this board");
-        navigate("/games");
-        return;
-      }
+      // if (!userData?.currentTiers?.includes(boardData.tierId)) {
+      //   toast.error("You need access to this tier to view this board");
+      //   navigate("/games");
+      //   return;
+      // }
 
       // Load game data
       if (boardData.gameId) {
@@ -81,17 +81,29 @@ export default function GameBoard() {
         );
         if (gameDoc.exists()) {
           const gameData = { id: gameDoc.id, ...gameDoc.data() };
+          console.log(gameData);
           setGame(gameData);
 
           // Set current scores
-          if (gameData.scores) {
-            setScores({
-              home: gameData?.scores?.home || 0,
-              away: gameData?.scores?.away || 0,
-            });
+          if (gameData?.processedQuarters && gameData?.quarterScores) {
+            // Get quarters in order
+            const quarters = ["q1", "q2", "q3", "q4", "ot"];
 
-            // Calculate winning squares based on current scores
-            updateWinningSquares(gameData.scores);
+            // Find the last processed quarter that is true
+            const lastProcessed = quarters
+              .reverse()
+              .find((q) => gameData.processedQuarters[q]);
+
+            // Get score for that quarter (or default to 0,0)
+            const score = lastProcessed
+              ? gameData.quarterScores[lastProcessed] || { home: 0, away: 0 }
+              : { home: 0, away: 0 };
+
+            // Set scores
+            setScores(score);
+
+            // Update winning squares if needed
+            updateWinningSquares(score);
           }
         }
       }
