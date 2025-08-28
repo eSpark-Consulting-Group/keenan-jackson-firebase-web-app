@@ -507,17 +507,25 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
 
           const stillHasTier = currentTiers.includes(tier);
 
-          if (!stillHasTier) {
-            const accessQuery = await db
-              .collection("tierAccess")
-              .where("userId", "==", userId)
-              .where("tier", "==", tier)
-              .where("active", "==", true)
-              .limit(1)
-              .get();
+          const accessQuery = await db
+            .collection("tierAccess")
+            .where("userId", "==", userId)
+            .where("tier", "==", tier)
+            .where("active", "==", true)
+            .limit(1)
+            .get();
 
-            if (!accessQuery.empty) {
+          if (!accessQuery.empty) {
+            const accessDoc = accessQuery.docs[0];
+            const accessRef = accessDoc.ref;
+            const accessData = accessDoc.data();
+
+            if (accessData.questionLimit <= 1) {
               transaction.delete(accessQuery.docs[0].ref);
+            } else {
+              transaction.update(accessRef, {
+                questionLimit: admin.firestore.FieldValue.increment(-1),
+              });
             }
           }
 
@@ -645,17 +653,25 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
 
           const stillHasTier = currentTiers.includes(tier);
 
-          if (!stillHasTier) {
-            const accessQuery = await db
-              .collection("tierAccess")
-              .where("userId", "==", userId)
-              .where("tier", "==", tier)
-              .where("active", "==", true)
-              .limit(1)
-              .get();
+          const accessQuery = await db
+            .collection("tierAccess")
+            .where("userId", "==", userId)
+            .where("tier", "==", tier)
+            .where("active", "==", true)
+            .limit(1)
+            .get();
 
-            if (!accessQuery.empty) {
-              transaction.update(accessQuery.docs[0].ref, { active: false });
+          if (!accessQuery.empty) {
+            const accessDoc = accessQuery.docs[0];
+            const accessRef = accessDoc.ref;
+            const accessData = accessDoc.data();
+
+            if (accessData.questionLimit <= 1) {
+              transaction.update(accessRef, { active: false });
+            } else {
+              transaction.update(accessRef, {
+                questionLimit: admin.firestore.FieldValue.increment(-1),
+              });
             }
           }
 
@@ -710,17 +726,25 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
 
           const stillHasTier = currentTiers.includes(tier);
 
-          if (!stillHasTier) {
-            const accessQuery = await db
-              .collection("tierAccess")
-              .where("userId", "==", userId)
-              .where("tier", "==", tier)
-              .where("active", "==", true)
-              .limit(1)
-              .get();
+          const accessQuery = await db
+            .collection("tierAccess")
+            .where("userId", "==", userId)
+            .where("tier", "==", tier)
+            .where("active", "==", true)
+            .limit(1)
+            .get();
 
-            if (!accessQuery.empty) {
+          if (!accessQuery.empty) {
+            const accessDoc = accessQuery.docs[0];
+            const accessRef = accessDoc.ref;
+            const accessData = accessDoc.data();
+
+            if (accessData.questionLimit <= 1) {
               transaction.delete(accessQuery.docs[0].ref);
+            } else {
+              transaction.update(accessRef, {
+                questionLimit: admin.firestore.FieldValue.increment(-1),
+              });
             }
           }
 

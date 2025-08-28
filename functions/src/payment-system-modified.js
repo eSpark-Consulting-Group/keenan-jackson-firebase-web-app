@@ -396,6 +396,7 @@ async function handleSuccessfulPayment(paymentIntent) {
         grantedAt: admin.firestore.FieldValue.serverTimestamp(),
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
         active: true,
+        questionLimit: 1
       };
 
       // only set optional fields if they exist
@@ -413,6 +414,7 @@ async function handleSuccessfulPayment(paymentIntent) {
       batch.update(accessRef, {
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        questionLimit: admin.firestore.FieldValue.increment(1),
       });
     }
 

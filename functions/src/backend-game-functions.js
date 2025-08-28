@@ -669,6 +669,13 @@ async function processLoser(loserData) {
       tier_1000: 4,
     }[tierId] || 1;
 
+  const consolationQuery = await db
+    .collection("consolations")
+    .where("userId", "==", userId)
+    .where("tierId", "==", tierId)
+    .limit(1)
+    .get();
+
   // Create consolation record
   await db.collection("consolations").add({
     userId,
@@ -680,6 +687,25 @@ async function processLoser(loserData) {
     usedCount: 0,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
+
+  if (consolationQuery.empty) {
+    // 3️⃣ Also update tierAccess with consolationCount as questionLimit
+    const tierAccessQuery = await db
+      .collection("tierAccess")
+      .where("userId", "==", userId)
+      .where("tier", "==", tierId)
+      .limit(1)
+      .get();
+
+    if (!tierAccessQuery.empty) {
+      const tierAccessRef = tierAccessQuery.docs[0].ref;
+      await tierAccessRef.update({
+        questionLimit: consolationCount,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        active: true
+      });
+    }
+  }
 
   // Send strategic notification
   await sendLoserNotification(userId, position, winnerTime, consolationCount);
