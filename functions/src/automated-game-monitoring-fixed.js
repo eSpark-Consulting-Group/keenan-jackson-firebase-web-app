@@ -91,44 +91,88 @@ class ApiSportsService {
   /**
    * Fetch game score from API-Sports
    */
-  async fetchGameScore(apiSportsId, sport) {
-    if (!apiSportsId) {
-      throw new Error("No API Sports ID provided");
+  async fetchGameScore(gameKey, sport) {
+    logger.info(
+      `[fetchGameScore] Called with gameKey=${gameKey}, sport=${sport}`
+    );
+    if (!gameKey) {
+      logger.error("[fetchGameScore] No externalGameId provided");
+      throw new Error("No external GameKey provided");
     }
-
-    logger.info("FETCH FUNC: IN FETCH FUNC");
-
     // Use mock data in test mode
     if (FEATURE_FLAGS.MOCK_API_SPORTS) {
       return this.getMockGameData(apiSportsId, sport);
     }
-
     const config = SPORTS_CONFIG[sport];
     if (!config) {
+      logger.error(`[fetchGameScore] Unknown sport: ${sport}`);
       throw new Error(`Unknown sport: ${sport}`);
     }
+    // Parse season year and game?.week from GameKey (SportsData.io encodes it)
+    const year = parseInt(gameKey.substring(0, 4), 10); // e.g. 2025
+    // const week = parseInt(gameKey.substring(4, 6), 10); // e.g. 10 (Week 10)
+    logger.info(
+      `[fetchGameScore] Parsed year=${year}, game?.week=${game?.week}`
+    );
+    // Build endpoint (NFL vs CFB differs slightly)
+    // const url = `https://api.sportsdata.io${config.endpoint}/${year}/${game?.week}`;
+    const url = `https://api.sportsdata.io${config.endpoint}/${year}/${10}?key=${process.env.REACT_APP_APISPORTS_KEY}`;
 
-    const url = `https://${config.apiHost}${config.endpoint}?id=${apiSportsId}`;
-    logger.info("FETCH FUNC: IN TRY");
-
-    const headers = this.getHeaders(sport);
-
+    logger.info(`[fetchGameScore] Built URL: ${url}`);
     try {
-      logger.info("FETCH FUNC: IN TRY");
-      const data = await this.makeRequest(url, headers);
-      logger.info("FETCH FUNC: IN TRY", data);
+      logger.info(
+        "[fetchGameScore] Making API request...",
+        process.env.REACT_APP_APISPORTS_KEY
+      );
 
-      if (!data.response || data.response.length === 0) {
-        throw new Error("Game not found in API response");
+      // const games = await this.makeRequest(url, {
+      //   params: { key: process.env.REACT_APP_APISPORTS_KEY },
+      // });
+
+      // const games = await this.makeRequest(url);
+      const response = await axios.get(url);
+      logger.info("Response here", response);
+      const games = response?.data;
+      logger.info("games here", games);
+
+      if (!games || !Array.isArray(games)) {
+        logger.error("[fetchGameScore] Unexpected API response format", {
+          games,
+        });
+        throw new Error("Invalid response format from API");
       }
-
-      return this.parseGameData(data.response[0], sport);
-    } catch (error) {
-      logError(error, {
-        context: "fetchGameScore",
-        apiSportsId,
-        sport,
+      logger.info(
+        `[fetchGameScore] Received ${games.length} games for ${sport} ${year} game?.week ${game?.week}`
+      );
+      logger.info("[fetchGameScore] API returned games", {
+        gameKey,
+        gamesCount: games.length,
+        games, // full array
       });
+      const game = games.find((g) => g?.GameKey == gameKey);
+      if (!game) {
+        logger.warn(
+          `[fetchGameScore] Game not found: gameKey=${gameKey}, year=${year}, game?.week=${game?.week}`
+        );
+        throw new Error(
+          `Game ${gameKey} not found for ${sport} in ${year} game?.week ${game?.week}`
+        );
+      }
+      logger.info(
+        `[fetchGameScore] Found game: ${game.HomeTeam} vs ${game.AwayTeam}, status=${game.Status}`
+      );
+      // const parsed = this.parseGameData(game, sport);
+      // logger.info("[fetchGameScore] Successfully parsed game data", parsed);
+      return {};
+    } catch (error) {
+      logger.error("[fetchGameScore] Error fetching game score", {
+        error: error.message,
+        stack: error.stack,
+        gameKey,
+        sport,
+        url,
+      });
+      logError(error, { context: "fetchGameScore", gameKey, sport });
       throw error;
     }
   }
@@ -316,7 +360,6 @@ const monitorLiveGames = functions.pubsub
             return null;
           })
         );
-
         const results = await Promise.all(batchPromises);
         gamePromises.push(...results);
       }
@@ -354,78 +397,82 @@ const monitorLiveGames = functions.pubsub
 async function monitorSingleGame(db, gameDoc) {
   const gameId = gameDoc.id;
   const game = gameDoc.data();
-
-  logger.info("Game data:", JSON.stringify(game, null, 2));
-
+  logger.info(`[monitorSingleGame] Starting monitoring for gameId=${gameId}`);
+  logger.debug(
+    `[monitorSingleGame] Game doc snapshot: ${JSON.stringify(game, null, 2)}`
+  );
   console.log(
     `Monitoring game ${gameId}: ${game.teams.away} @ ${game.teams.home}`
   );
-
   if (!game.externalGameId) {
-    console.warn(`Game ${gameId} missing apiSportsId - skipping`);
+    logger.warn(
+      `[monitorSingleGame] Game ${gameId} missing externalGameId - skipping`
+    );
     return { success: false, reason: "missing_api_id" };
   }
-
   try {
     // Fetch current scores with performance tracking
+    logger.info(
+      `[monitorSingleGame] Fetching scores for gameId=${gameId}, externalGameId=${game.externalGameId}, sport=${game.sport}`
+    );
     const fetchScores = measurePerformance(
-      () => apiSportsService.fetchGameScore(game.externalGameId, game.sport),
+      () => apiSportsService.fetchGameScore("202511013", "NFL"),
       "fetchGameScore"
     );
-
     const liveData = await fetchScores();
-
+    logger.info(
+      `[monitorSingleGame] Received live data for gameId=${gameId}: status=${liveData.status}`
+    );
     // Update game with latest data
     const updates = {
       lastApiCheck: getTimestamp(),
       lastApiStatus: liveData.status,
       apiCheckCount: admin.firestore.FieldValue.increment(1),
     };
-
     // Check if game status changed
     if (liveData.status !== game.status) {
-      console.log(
-        `Game ${gameId} status changed: ${game.status} → ${liveData.status}`
+      logger.info(
+        `[monitorSingleGame] Game ${gameId} status changed: ${game.status} → ${liveData.status}`
       );
       updates.status = liveData.status;
-
       if (liveData.status === GAME_CONFIG.STATUS.COMPLETED) {
+        logger.info(
+          `[monitorSingleGame] Game ${gameId} completed. Final score: ${liveData.totalScore.home}-${liveData.totalScore.away}`
+        );
         updates.completedAt = getTimestamp();
         updates.finalScore = liveData.totalScore;
       }
     }
-
     // Process each quarter
     const quarters = ["q1", "q2", "q3", "q4"];
     if (liveData.quarterScores.ot) {
       quarters.push("ot");
     }
-
     let winnersProcessed = 0;
-
     for (const quarter of quarters) {
       const quarterScore = liveData.quarterScores[quarter];
-
       // Skip if no score yet
       if (
         !quarterScore ||
         quarterScore.home === null ||
         quarterScore.away === null
       ) {
+        logger.debug(
+          `[monitorSingleGame] Skipping ${quarter} for game ${gameId} - no score yet`
+        );
         continue;
       }
-
-      // Skip if already processed - FIXED: Complete the condition
+      // Skip if already processed
       if (game.processedQuarters?.[quarter]) {
+        logger.debug(
+          `[monitorSingleGame] Skipping ${quarter} for game ${gameId} - already processed`
+        );
         continue;
       }
-
-      console.log(
-        `Processing ${quarter} for game ${gameId}: ${quarterScore.home}-${quarterScore.away}`
+      logger.info(
+        `[monitorSingleGame] Processing ${quarter} for game ${gameId}: ${quarterScore.home}-${quarterScore.away}`
       );
-
       try {
-        // Process winners for this quarter
         const winners = await processQuarterWinners(
           db,
           gameId,
@@ -433,38 +480,36 @@ async function monitorSingleGame(db, gameDoc) {
           quarterScore,
           game
         );
-
         // Mark quarter as processed
-        // updates[`processedQuarters.${quarter}`] = true;
-        // updates[`scores.${quarter}`] = quarterScore;
         updates[`quarterScores.${quarter}.processed`] = true;
         updates[`quarterScores.${quarter}.home`] = quarterScore.home;
         updates[`quarterScores.${quarter}.away`] = quarterScore.away;
-
         winnersProcessed += winners.length;
-
+        logger.info(
+          `[monitorSingleGame] Processed ${quarter} for game ${gameId}, winners count=${winners.length}`
+        );
         // Send notifications (async - don't wait)
         notifyWinners(db, winners).catch((error) => {
-          logError(error, {
-            context: "notifyWinners",
-            gameId,
-            quarter,
-          });
+          logger.error(
+            `[monitorSingleGame] Error sending notifications for game ${gameId}, quarter=${quarter}`,
+            { error }
+          );
+          logError(error, { context: "notifyWinners", gameId, quarter });
         });
       } catch (error) {
-        logError(error, {
-          context: "processQuarterWinners",
-          gameId,
-          quarter,
-        });
-
-        // Continue with other quarters
+        logger.error(
+          `[monitorSingleGame] Error processing winners for game ${gameId}, quarter=${quarter}`,
+          { error }
+        );
+        logError(error, { context: "processQuarterWinners", gameId, quarter });
       }
     }
-
     // Save all updates
+    logger.info(
+      `[monitorSingleGame] Updating Firestore for gameId=${gameId}`,
+      updates
+    );
     await gameDoc.ref.update(updates);
-
     return {
       success: true,
       gameId,
@@ -472,19 +517,21 @@ async function monitorSingleGame(db, gameDoc) {
       status: liveData.status,
     };
   } catch (error) {
+    logger.error(`[monitorSingleGame] Error monitoring game ${gameId}`, {
+      error,
+      externalGameId: game.externalGameId,
+    });
     logError(error, {
       context: "monitorSingleGame",
       gameId,
       apiSportsId: game.externalGameId,
     });
-
     // Update game with error status
     await gameDoc.ref.update({
       lastApiCheck: getTimestamp(),
       lastApiError: error.message,
       apiErrorCount: admin.firestore.FieldValue.increment(1),
     });
-
     return {
       success: false,
       gameId,

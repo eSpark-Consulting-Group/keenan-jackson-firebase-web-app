@@ -5,7 +5,7 @@
 // TIER CONFIGURATION
 // =====================================
 // Standardized tier system - use these everywhere
- const TIERS = {
+const TIERS = {
   TIER_25: {
     id: "tier_25",
     amount: 25,
@@ -78,24 +78,24 @@
 };
 
 // Helper to get tier by ID
- function getTierById(tierId) {
+function getTierById(tierId) {
   return Object.values(TIERS).find((tier) => tier.id === tierId);
 }
 
 // Helper to get tier by amount
- function getTierByAmount(amount) {
+function getTierByAmount(amount) {
   return Object.values(TIERS).find((tier) => tier.amount === amount);
 }
 
 // Helper to get all tier IDs
- function getAllTierIds() {
+function getAllTierIds() {
   return Object.values(TIERS).map((tier) => tier.id);
 }
 
 // =====================================
 // GAME CONFIGURATION
 // =====================================
- const GAME_CONFIG = {
+const GAME_CONFIG = {
   SQUARES_PER_BOARD: 50,
   MAX_SQUARES_PER_USER_PER_BOARD: 3,
   PRIZE_POOL_PERCENTAGE: 0.75, // 75% to winners (deprecated - use tier-specific percentages)
@@ -193,7 +193,7 @@
 // =====================================
 // PRIZE CALCULATIONS
 // =====================================
- function calculatePrizes(tierAmount, gameType = "regular") {
+function calculatePrizes(tierAmount, gameType = "regular") {
   // Get tier-specific payout percentage
   const tier = getTierByAmount(tierAmount);
   if (!tier) {
@@ -229,7 +229,7 @@
 }
 
 // Helper function to calculate instant payout after fee
- function calculateInstantPayout(prizeAmount) {
+function calculateInstantPayout(prizeAmount) {
   const instantPayoutFee = prizeAmount * GAME_CONFIG.INSTANT_PAYOUT_FEE;
   const netPayout = prizeAmount - instantPayoutFee;
 
@@ -244,13 +244,14 @@
 // =====================================
 // SPORTS CONFIGURATION
 // =====================================
- const SPORTS_CONFIG = {
+const SPORTS_CONFIG = {
   NFL: {
     id: "NFL",
     name: "NFL Football",
     apiSportsId: 1,
     apiHost: "v1.american-football.api-sports.io",
-    endpoint: "/games",
+    endpoint: "/v3/nfl/scores/json/ScoresByWeek", // SportsData.io endpoint
+    // endpoint: "/games",
     hasQuarters: true,
     quarterCount: 4,
     seasonMonths: [9, 10, 11, 12, 1, 2], // Sep-Feb
@@ -270,7 +271,8 @@
     name: "College Football",
     apiSportsId: 2,
     apiHost: "v1.american-football.api-sports.io",
-    endpoint: "/games",
+    endpoint: "/v3/cfb/scores/json/GamesByWeek", // SportsData.io endpoint
+    // endpoint: "/games",
     hasQuarters: true,
     quarterCount: 4,
     seasonMonths: [8, 9, 10, 11, 12, 1], // Aug-Jan
@@ -290,7 +292,7 @@
 // =====================================
 // API CONFIGURATION
 // =====================================
- const API_CONFIG = {
+const API_CONFIG = {
   API_SPORTS: {
     BASE_URL: "https://{host}{endpoint}",
     RATE_LIMIT: {
@@ -315,7 +317,7 @@
 // =====================================
 // NOTIFICATION CONFIGURATION
 // =====================================
- const NOTIFICATION_CONFIG = {
+const NOTIFICATION_CONFIG = {
   EMAIL: {
     FROM_ADDRESS: "Square Trivia <noreply@squaretrivia.com>",
     SUPPORT_ADDRESS: "support@squaretrivia.com",
@@ -348,7 +350,7 @@
 // =====================================
 // RATE LIMITING CONFIGURATION
 // =====================================
- const RATE_LIMITS = {
+const RATE_LIMITS = {
   // Function name: { max attempts, window in ms }
   placeSquare: { max: 10, window: 300000 }, // 10 per 5 min
   answerTrivia: { max: 20, window: 300000 }, // 20 per 5 min
@@ -364,7 +366,7 @@
 // =====================================
 // VALIDATION RULES
 // =====================================
- const VALIDATION_RULES = {
+const VALIDATION_RULES = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   TELEGRAM_USERNAME: /^@?[a-zA-Z0-9_]{5,32}$/,
   PHONE: /^\+?1?\d{10}$/,
@@ -388,7 +390,7 @@
 // =====================================
 // FEATURE FLAGS
 // =====================================
- const FEATURE_FLAGS = {
+const FEATURE_FLAGS = {
   ENABLE_SMS: false,
   ENABLE_CRYPTO_PAYOUTS: false,
   ENABLE_REFERRAL_PROGRAM: true,
@@ -411,7 +413,7 @@
 // =====================================
 // ERROR MESSAGES
 // =====================================
- const ERROR_MESSAGES = {
+const ERROR_MESSAGES = {
   // Authentication
   AUTH_REQUIRED: "Authentication required",
   INVALID_CREDENTIALS: "Invalid email or password",
@@ -448,7 +450,7 @@
 // =====================================
 // SUCCESS MESSAGES
 // =====================================
- const SUCCESS_MESSAGES = {
+const SUCCESS_MESSAGES = {
   DONATION_COMPLETE:
     "Thank you for your donation! Check your email for confirmation.",
   SQUARE_PLACED: "Square placed successfully!",
@@ -461,7 +463,7 @@
 // =====================================
 // TIMEZONE CONFIGURATION
 // =====================================
- const TIMEZONE_CONFIG = {
+const TIMEZONE_CONFIG = {
   DEFAULT: "America/Denver",
   DISPLAY: "America/New_York", // For user display
   SUPPORTED: [
@@ -473,7 +475,7 @@
   ],
 };
 
- const TIER_CONFIG = {
+const TIER_CONFIG = {
   tier_25: { id: "tier_25", amount: 25, payoutPercentage: 0.77 },
   tier_50: { id: "tier_50", amount: 50, payoutPercentage: 0.77 },
   tier_100: { id: "tier_100", amount: 100, payoutPercentage: 0.77 },

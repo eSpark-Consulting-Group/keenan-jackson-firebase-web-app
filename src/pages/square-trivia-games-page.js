@@ -50,25 +50,48 @@ export default function Games() {
   }, [userData]);
 
   useEffect(() => {
+    console.log(userData);
     if (!userData?.id) return;
 
-    // Fetch user's active tierAccess once
-    const loadTierAccess = async () => {
+    const loadPlayedTiers = async () => {
       try {
-        const q = query(
-          collection(db, "tierAccess"),
-          where("userId", "==", userData.id),
-        );
-        const snapshot = await getDocs(q);
-        const tiers = snapshot.docs.map((doc) => doc.data().tier);
-        setUserTierAccess(tiers);
+        // 1. Get all boards
+        const boardsSnap = await getDocs(collection(db, "boards"));
+
+        // 2. Extract tiers where this user has played
+        const playedTiers = new Set();
+
+        boardsSnap.forEach((boardDoc) => {
+          const boardData = { id: boardDoc.id, ...boardDoc.data() };
+
+          const squares = boardData.squares || {};
+
+          // loop through each square
+          Object.values(squares).forEach((square) => {
+            const claims = square.claims || [];
+
+            claims.forEach((claim) => {
+              if (claim.userId === userData.id) {
+                if (boardData?.id) {
+                  playedTiers.add(boardData?.id);
+                }
+              }
+            });
+          });
+        });
+
+        setUserTierAccess(Array.from(playedTiers));
       } catch (err) {
-        console.error("Error loading tier access:", err);
+        console.error("Error loading played tiers:", err);
       }
     };
 
-    loadTierAccess();
+    loadPlayedTiers();
   }, [userData]);
+
+  useEffect(() => {
+    console.log(userTierAccess, "TIER ACCESS");
+  }, [userTierAccess]);
 
   const loadGames = async () => {
     try {
@@ -389,6 +412,7 @@ export default function Games() {
                   {filteredDateGames.map((game) => {
                     const userBoard = getUserBoardForGame(game);
                     const hasAccess = userBoard !== undefined;
+                    console.log(game, "GAME");
 
                     return (
                       <motion.div
@@ -423,9 +447,12 @@ export default function Games() {
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                               {game.boards.map((board) => {
                                 const tier = TIERS[board.tierId.toUpperCase()];
-                                const isUserTier = userData?.currentTiers?.includes(board.tierId)
+                                const isUserTier =
+                                  userData?.currentTiers?.includes(
+                                    board.tierId
+                                  );
                                 const hasAccess = userTierAccess.includes(
-                                  board.tierId
+                                  board.id
                                 );
 
                                 return (
@@ -473,23 +500,22 @@ export default function Games() {
                                       >
                                         Play Now
                                       </Link>
-                                    ) :
-                                      hasAccess ? (
-                                        <Link
-                                          to={`/game/${board.id}`}
-                                          className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
-                                        >
-                                          View Board
-                                        </Link>
-                                      ) : (
-                                        <button
-                                          disabled
-                                          className="block w-full bg-gray-300 text-gray-500 py-2 px-3 rounded text-sm font-medium cursor-not-allowed"
-                                        >
-                                          <Lock className="h-4 w-4 inline mr-1" />
-                                          Locked
-                                        </button>
-                                      )}
+                                    ) : hasAccess ? (
+                                      <Link
+                                        to={`/game/${board.id}`}
+                                        className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
+                                      >
+                                        View Board
+                                      </Link>
+                                    ) : (
+                                      <button
+                                        disabled
+                                        className="block w-full bg-gray-300 text-gray-500 py-2 px-3 rounded text-sm font-medium cursor-not-allowed"
+                                      >
+                                        <Lock className="h-4 w-4 inline mr-1" />
+                                        Locked
+                                      </button>
+                                    )}
                                   </div>
                                 );
                               })}

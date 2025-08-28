@@ -339,20 +339,19 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
 
 async function handleSuccessfulPayment(paymentIntent) {
   const { metadata } = paymentIntent;
-  const { userId, donationId, tierId, payoutPercentage } = metadata;
+  const { userId, donationId, tierId, payoutPercentage, telegramUsername } =
+    metadata;
 
   console.log(
     `Processing successful payment for donation ${donationId} with ${payoutPercentage}% payout`
   );
 
-  const batch = admin.firestore().batch();
+  const db = admin.firestore();
+  const batch = db.batch();
 
   try {
-    // Update donation status with payout percentage
-    const donationRef = admin
-      .firestore()
-      .collection("donations")
-      .doc(donationId);
+    // ✅ Update donation status
+    const donationRef = db.collection("donations").doc(donationId);
     batch.update(donationRef, {
       status: DONATION_STATUS.COMPLETED,
       completedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -360,8 +359,8 @@ async function handleSuccessfulPayment(paymentIntent) {
       payoutPercentage: parseFloat(payoutPercentage),
     });
 
-    // Update user's tier access
-    const userRef = admin.firestore().collection("users").doc(userId);
+    // ✅ Update user's record
+    const userRef = db.collection("users").doc(userId);
     const userDoc = await userRef.get();
     const userData = userDoc.data() || {};
 
@@ -378,9 +377,8 @@ async function handleSuccessfulPayment(paymentIntent) {
       { merge: true }
     );
 
-    // Create tier access record
-    const accessQuery = await admin
-      .firestore()
+    // ✅ Tier access: create or extend
+    const accessQuery = await db
       .collection("tierAccess")
       .where("userId", "==", userId)
       .where("tier", "==", tierId)
@@ -389,16 +387,26 @@ async function handleSuccessfulPayment(paymentIntent) {
       .get();
 
     if (accessQuery.empty) {
-      const accessRef = admin.firestore().collection("tierAccess").doc();
-      batch.set(accessRef, {
+      const accessRef = db.collection("tierAccess").doc();
+
+      const accessData = {
         userId,
         tier: tierId,
         donationId,
-        telegramUsername: telegramUsername || null,
         grantedAt: admin.firestore.FieldValue.serverTimestamp(),
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
         active: true,
-      });
+      };
+
+      // only set optional fields if they exist
+      if (telegramUsername) {
+        accessData.telegramUsername = telegramUsername;
+      }
+      if (userData.telegramUsername) {
+        accessData.telegramUsername = userData.telegramUsername;
+      }
+
+      batch.set(accessRef, accessData);
     } else {
       const accessDoc = accessQuery.docs[0];
       const accessRef = accessDoc.ref;
@@ -408,10 +416,10 @@ async function handleSuccessfulPayment(paymentIntent) {
       });
     }
 
-    // Commit all changes
+    // ✅ Commit batch
     await batch.commit();
 
-    // Fetch user's Telegram chatId from Firestore
+    // ✅ Send Telegram invite (only if chatId exists)
     const updatedUserDoc = await userRef.get();
     const updatedUserData = updatedUserDoc.data() || {};
     const telegramChatId = updatedUserData.telegramChatId;
@@ -424,7 +432,7 @@ async function handleSuccessfulPayment(paymentIntent) {
       try {
         const inviteLink = await bot.createChatInviteLink(tierGroupId, {
           member_limit: 1,
-          expire_date: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
+          expire_date: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
         });
 
         const message =
@@ -448,10 +456,10 @@ async function handleSuccessfulPayment(paymentIntent) {
       );
     }
 
-    // Send confirmation email
+    // ✅ Send email confirmation
     await sendPaymentConfirmation(userId, donationId, tierId);
 
-    // Update analytics
+    // ✅ Update analytics
     await updateAnalytics("donation_completed", {
       tier: tierId,
       amount: TIER_CONFIG[tierId].amount,

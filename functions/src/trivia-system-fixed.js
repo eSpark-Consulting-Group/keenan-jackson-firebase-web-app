@@ -409,7 +409,10 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
       "User must be authenticated"
     );
   }
+  const userId = context.auth.uid;
+  logger.info(`USER ID: ${userId}`);
   const userRef = admin.firestore().collection("users").doc(userId);
+  const db = admin.firestore();
 
   const { sessionId, answerIndex } = data;
   // Normalize answer index
@@ -417,8 +420,6 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
     answerIndex === null || answerIndex === undefined
       ? null
       : Number(answerIndex);
-
-  const userId = context.auth.uid;
 
   // Validate inputs
   if (!sessionId) {
@@ -448,6 +449,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
     }
 
     const session = sessionDoc.data();
+    logger.info(`SESSION: ${session}`);
 
     // Validate session ownership
     if (session.userId !== userId) {
@@ -481,49 +483,51 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
         closedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      const result = await admin.firestore().runTransaction(async (transaction) => {
-        const userSnap = await transaction.get(userRef);
+      const result = await admin
+        .firestore()
+        .runTransaction(async (transaction) => {
+          const userSnap = await transaction.get(userRef);
 
-        if (!userSnap.exists) {
-          throw new functions.https.HttpsError("not-found", "User not found");
-        }
-
-        const userData = userSnap.data();
-        const currentTiers = [...(userData.currentTiers || [])];
-
-        // 🔑 Remove only one occurrence of the tier
-        const index = currentTiers.indexOf(tier);
-        if (index === -1) {
-          throw new functions.https.HttpsError(
-            "failed-precondition",
-            "Tier not available in user’s currentTiers"
-          );
-        }
-        currentTiers.splice(index, 1);
-
-        const stillHasTier = currentTiers.includes(tier);
-
-        if (!stillHasTier) {
-          const accessQuery = await db
-            .collection("tierAccess")
-            .where("userId", "==", userId)
-            .where("tier", "==", tier)
-            .where("active", "==", true)
-            .limit(1)
-            .get();
-
-          if (!accessQuery.empty) {
-            transaction.delete(accessQuery.docs[0].ref);
+          if (!userSnap.exists) {
+            throw new functions.https.HttpsError("not-found", "User not found");
           }
-        }
 
-        // Update user's currentTiers
-        transaction.update(userRef, {
-          currentTiers: currentTiers,
+          const userData = userSnap.data();
+          const currentTiers = [...(userData.currentTiers || [])];
+
+          // 🔑 Remove only one occurrence of the tier
+          const index = currentTiers.indexOf(tier);
+          if (index === -1) {
+            throw new functions.https.HttpsError(
+              "failed-precondition",
+              "Tier not available in user’s currentTiers"
+            );
+          }
+          currentTiers.splice(index, 1);
+
+          const stillHasTier = currentTiers.includes(tier);
+
+          if (!stillHasTier) {
+            const accessQuery = await db
+              .collection("tierAccess")
+              .where("userId", "==", userId)
+              .where("tier", "==", tier)
+              .where("active", "==", true)
+              .limit(1)
+              .get();
+
+            if (!accessQuery.empty) {
+              transaction.delete(accessQuery.docs[0].ref);
+            }
+          }
+
+          // Update user's currentTiers
+          transaction.update(userRef, {
+            currentTiers: currentTiers,
+          });
+
+          return { currentTiers };
         });
-
-        return { currentTiers };
-      });
 
       return {
         success: true,
@@ -541,7 +545,6 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
     }
 
     const isCorrect = normalizedAnswerIndex === session.correctIndex;
-
 
     // Get the original question to check answer
     const questionDoc = await admin
@@ -617,49 +620,52 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
         answerTimeSeconds: answerTimeSeconds,
       });
 
-      const result = await admin.firestore().runTransaction(async (transaction) => {
-        const userSnap = await transaction.get(userRef);
+      const result = await admin
+        .firestore()
+        .runTransaction(async (transaction) => {
+          const userSnap = await transaction.get(userRef);
 
-        if (!userSnap.exists) {
-          throw new functions.https.HttpsError("not-found", "User not found");
-        }
-
-        const userData = userSnap.data();
-        const currentTiers = [...(userData.currentTiers || [])];
-
-        // 🔑 Remove only one occurrence of the tier
-        const index = currentTiers.indexOf(tier);
-        if (index === -1) {
-          throw new functions.https.HttpsError(
-            "failed-precondition",
-            "Tier not available in user’s currentTiers"
-          );
-        }
-        currentTiers.splice(index, 1);
-
-        const stillHasTier = currentTiers.includes(tier);
-
-        if (!stillHasTier) {
-          const accessQuery = await db
-            .collection("tierAccess")
-            .where("userId", "==", userId)
-            .where("tier", "==", tier)
-            .where("active", "==", true)
-            .limit(1)
-            .get();
-
-          if (!accessQuery.empty) {
-            transaction.update(accessQuery.docs[0].ref, { active: false });
+          if (!userSnap.exists) {
+            throw new functions.https.HttpsError("not-found", "User not found");
           }
-        }
 
-        // Update user's currentTiers
-        transaction.update(userRef, {
-          currentTiers: currentTiers,
+          const userData = userSnap.data();
+          const currentTiers = [...(userData.currentTiers || [])];
+          const tier = session.tier;
+
+          // 🔑 Remove only one occurrence of the tier
+          const index = currentTiers.indexOf(tier);
+          if (index === -1) {
+            throw new functions.https.HttpsError(
+              "failed-precondition",
+              "Tier not available in user’s currentTiers"
+            );
+          }
+          currentTiers.splice(index, 1);
+
+          const stillHasTier = currentTiers.includes(tier);
+
+          if (!stillHasTier) {
+            const accessQuery = await db
+              .collection("tierAccess")
+              .where("userId", "==", userId)
+              .where("tier", "==", tier)
+              .where("active", "==", true)
+              .limit(1)
+              .get();
+
+            if (!accessQuery.empty) {
+              transaction.update(accessQuery.docs[0].ref, { active: false });
+            }
+          }
+
+          // Update user's currentTiers
+          transaction.update(userRef, {
+            currentTiers: currentTiers,
+          });
+
+          return { currentTiers };
         });
-
-        return { currentTiers };
-      });
 
       return {
         success: true,
@@ -679,49 +685,52 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
         tier: session.tier,
       });
 
-      const result = await admin.firestore().runTransaction(async (transaction) => {
-        const userSnap = await transaction.get(userRef);
+      const result = await admin
+        .firestore()
+        .runTransaction(async (transaction) => {
+          const userSnap = await transaction.get(userRef);
 
-        if (!userSnap.exists) {
-          throw new functions.https.HttpsError("not-found", "User not found");
-        }
-
-        const userData = userSnap.data();
-        const currentTiers = [...(userData.currentTiers || [])];
-
-        // 🔑 Remove only one occurrence of the tier
-        const index = currentTiers.indexOf(tier);
-        if (index === -1) {
-          throw new functions.https.HttpsError(
-            "failed-precondition",
-            "Tier not available in user’s currentTiers"
-          );
-        }
-        currentTiers.splice(index, 1);
-
-        const stillHasTier = currentTiers.includes(tier);
-
-        if (!stillHasTier) {
-          const accessQuery = await db
-            .collection("tierAccess")
-            .where("userId", "==", userId)
-            .where("tier", "==", tier)
-            .where("active", "==", true)
-            .limit(1)
-            .get();
-
-          if (!accessQuery.empty) {
-            transaction.delete(accessQuery.docs[0].ref);
+          if (!userSnap.exists) {
+            throw new functions.https.HttpsError("not-found", "User not found");
           }
-        }
 
-        // Update user's currentTiers
-        transaction.update(userRef, {
-          currentTiers: currentTiers,
+          const userData = userSnap.data();
+          const currentTiers = [...(userData.currentTiers || [])];
+          const tier = session.tier;
+
+          // 🔑 Remove only one occurrence of the tier
+          const index = currentTiers.indexOf(tier);
+          if (index === -1) {
+            throw new functions.https.HttpsError(
+              "failed-precondition",
+              "Tier not available in user’s currentTiers"
+            );
+          }
+          currentTiers.splice(index, 1);
+
+          const stillHasTier = currentTiers.includes(tier);
+
+          if (!stillHasTier) {
+            const accessQuery = await db
+              .collection("tierAccess")
+              .where("userId", "==", userId)
+              .where("tier", "==", tier)
+              .where("active", "==", true)
+              .limit(1)
+              .get();
+
+            if (!accessQuery.empty) {
+              transaction.delete(accessQuery.docs[0].ref);
+            }
+          }
+
+          // Update user's currentTiers
+          transaction.update(userRef, {
+            currentTiers: currentTiers,
+          });
+
+          return { currentTiers };
         });
-
-        return { currentTiers };
-      });
 
       return {
         success: true,
@@ -1393,14 +1402,15 @@ async function getUserSquaresOnBoard(userId, boardId) {
  */
 async function getRandomTriviaQuestion(sport, tier) {
   try {
+    const db = admin.firestore();
+
     // Get questions for the sport
-    let query = admin
-      .firestore()
+    let query = db
       .collection("trivia")
       .where("sport", "==", sport)
       .where("isActive", "==", true);
 
-    // Higher tiers might get harder questions
+    // Tier -> difficulty mapping
     const tierDifficulty = {
       tier_25: ["easy", "medium"],
       tier_50: ["easy", "medium"],
@@ -1416,12 +1426,11 @@ async function getRandomTriviaQuestion(sport, tier) {
     const snapshot = await query.get();
 
     if (snapshot.empty) {
-      // Fallback to any question for the sport
-      const fallbackSnapshot = await admin
-        .firestore()
+      // Fallback: ANY active question for the sport
+      const fallbackSnapshot = await db
         .collection("trivia")
         .where("sport", "==", sport)
-        .where("active", "==", true)
+        .where("isActive", "==", true) // 🔑 fixed field name
         .get();
 
       if (fallbackSnapshot.empty) {
