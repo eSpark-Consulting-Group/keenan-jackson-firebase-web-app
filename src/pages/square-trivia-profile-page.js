@@ -21,6 +21,7 @@ import {
   Wallet,
   Send,
   Coins,
+  Plus,
 } from "lucide-react";
 import { useAuth } from "../contexts/authcontext";
 import { db, formatCurrency } from "../firebase/config";
@@ -59,19 +60,7 @@ export default function Profile() {
     loadUserStats();
   }, []);
 
-  const handleSetDefaultPayout = async (methodId) => {
-    try {
-      await updateDoc(doc(db, "users", user.uid), {
-        defaultPaymentMethod: methodId,
-      });
-      setDefaultMethod(methodId);
-      toast.success("Default payment method updated");
-      window.location.reload();
-    } catch (error) {
-      console.error("Error setting default method:", error);
-      toast.error("Failed to update default method");
-    }
-  };
+  
   const getPayoutMethodIcon = (type) => {
     switch (type) {
       case "ach":
@@ -191,32 +180,55 @@ export default function Profile() {
       method,
     });
   };
-
-  // Delete payout method
-  const handleDeleteMethod = async (methodId) => {
-    if (
-      !window.confirm("Are you sure you want to delete this payment method?")
-    ) {
-      return;
-    }
-
+  // Set default payout method
+const handleSetDefaultPayout = async (methodId) => {
     try {
-      // Assuming you have an updateUserProfile or another method in useAuth
-      const updatedMethods = userData.paymentMethods.filter(
-        (m) => m.id !== methodId
-      );
-
-      await updateUserProfile({
-        paymentMethods: updatedMethods,
+      await updateDoc(doc(db, "users", user.uid), {
+        defaultPaymentMethod: methodId,
       });
-
-      toast.success("Payment method deleted successfully!");
+      setDefaultMethod(methodId);
+      toast.success("Default payment method updated");
       window.location.reload();
     } catch (error) {
-      console.error("Error deleting payout method:", error);
-      toast.error("Failed to delete payment method");
+      console.error("Error setting default method:", error);
+      toast.error("Failed to update default method");
     }
   };
+  // Delete payout method
+  // Delete payout method
+const handleDeleteMethod = async (methodId) => {
+  if (!window.confirm("Are you sure you want to delete this payment method?")) {
+    return;
+  }
+
+  try {
+    const updatedMethods = userData.paymentMethods.filter(
+      (m) => m.id !== methodId
+    );
+
+    // Update payment methods first
+    await updateUserProfile({
+      paymentMethods: updatedMethods,
+    });
+
+    // If deleted method was the default, set the first available as new default
+    if (userData.defaultPaymentMethod === methodId && updatedMethods.length > 0) {
+      const newDefault = updatedMethods[0].id;
+      await updateDoc(doc(db, "users", user.uid), {
+        defaultPaymentMethod: newDefault,
+      });
+      setDefaultMethod(newDefault);
+      toast.success("Default method updated to first available one.");
+    }
+
+    toast.success("Payment method deleted successfully!");
+    window.location.reload();
+  } catch (error) {
+    console.error("Error deleting payout method:", error);
+    toast.error("Failed to delete payment method");
+  }
+};
+
   const handleAddTelegram = async () => {
     if (!formData.telegramUsername) {
       toast.error("Please enter your Telegram username");
@@ -467,15 +479,15 @@ export default function Profile() {
                     </p>
                   )}
                   {userData?.hasTelegram && !userData?.telegramChatId && (
-                    <a
+                    <a target="_blank"
                       className="text-xs text-blue-600 mt-1"
                       href={`https://t.me/${process.env.REACT_APP_TELEGRAM_BOT_USERNAME}?start=${userData?.id}`}
-                      target="_blank"
+                      rel="noreferrer"
                     >
                       Connect Telegram
                     </a>
                   )}
-                  {userData?.payoutDetails &&
+                  {/* {userData?.payoutDetails &&
                     Object.keys(userData?.payoutDetails)?.length > 0 && (
                       <p className="text-sm text-blue-600 mt-6">
                         Current Payout Method:{" "}
@@ -492,11 +504,14 @@ export default function Profile() {
                     Object.keys(userData?.payoutDetails)?.length > 0
                       ? "Edit Payout"
                       : "Add Payout Method"}
-                  </p>
-                  <div className="flex gap-x-3 items-center">
-                    <label className="block text-sm font-medium text-gray-700 mt-2">
+                  </p> */}
+                  <div className="flex gap-x-3 items-center justify-between  mt-2">
+                    <label className=" text-sm font-medium text-gray-700 mt-2 flex items-center justify-between">
                       Payouts Methods
                     </label>
+                    <div onClick={() => setPayoutModal(true)} className="flex items-center text-xs text-blue-600 mt-1 cursor-pointer">
+                     Add New <Plus/> 
+                    </div>
                   </div>
                   {userData?.paymentMethods?.length > 0 &&
                     userData.paymentMethods.map((method, index) => {
