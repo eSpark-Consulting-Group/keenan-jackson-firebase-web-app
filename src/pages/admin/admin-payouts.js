@@ -11,6 +11,7 @@ import {
   Search,
   RefreshCw,
   Zap,
+  Eye,
 } from "lucide-react";
 import {
   db,
@@ -289,7 +290,7 @@ export default function AdminPayouts() {
 
     return (
       <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${badge.color}`}
       >
         <Icon className="h-3 w-3 mr-1" />
         {status === "pending_payout" ? "pending" : status}
@@ -446,7 +447,7 @@ export default function AdminPayouts() {
             </select>
 
             <select
-              value={filterOptions.type}
+              value={filterOptions.payoutType}
               onChange={(e) =>
                 setFilterOptions({ ...filterOptions, type: e.target.value })
               }
@@ -581,7 +582,8 @@ export default function AdminPayouts() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {payout.user?.displayName || "Unknown User"}
+                            <a href={`/admin/users/${payout.userId}`}>
+                            {payout.user?.displayName || "Unknown User"}</a>
                           </div>
                           <div className="text-sm text-gray-500">
                             {payout.user?.email || payout.email}
@@ -593,7 +595,7 @@ export default function AdminPayouts() {
                           <div className="text-sm font-medium text-gray-900">
                             {formatCurrency(payout.prizeAmount)}
                           </div>
-                          {payout.type === "instant" && (
+                          {payout.payoutType === "instant" && (
                             <div className="text-xs text-gray-500">
                               Fee:{" "}
                               {formatCurrency(
@@ -604,7 +606,7 @@ export default function AdminPayouts() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getPayoutTypeBadge(payout.type)}
+                        {getPayoutTypeBadge(payout.payoutType)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(payout.status)}
@@ -642,6 +644,7 @@ export default function AdminPayouts() {
                             </>
                           )}
                           {payout.status === "processing" && (
+                            <>
                             <button
                               onClick={() =>
                                 updatePayoutStatus(payout.id, "completed")
@@ -651,7 +654,31 @@ export default function AdminPayouts() {
                             >
                               <CheckCircle className="h-4 w-4" />
                             </button>
+                            <button
+                                onClick={() =>
+                                  updatePayoutStatus(payout.id, "failed")
+                                }
+                                className="text-red-600 hover:text-red-900"
+                                title="Mark as Failed"
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </button>
+                            </>
+                            
                           )}
+                          {payout.status === "failed" && (
+                             <button
+                                onClick={() =>
+                                  updatePayoutStatus(payout.id, "processing")
+                                }
+                                className="text-blue-600 hover:text-blue-900"
+                                title="Start Processing Again"
+                              >
+                                <Send className="h-4 w-4" />
+                              </button>
+                          )}
+                            <a href={`/admin/payouts/${payout.id}`}>
+                              <Eye className="h-4 w-4" /></a>
                         </div>
                       </td>
                     </tr>

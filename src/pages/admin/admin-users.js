@@ -556,7 +556,8 @@ export default function AdminUsers() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {user.displayName || "Anonymous"}
+                            <a href={`/admin/users/${user.id}`} className="hover:underline">
+                            {user.displayName || "Anonymous"}</a>
                           </div>
                           <div className="text-sm text-gray-500">
                             {user.email}

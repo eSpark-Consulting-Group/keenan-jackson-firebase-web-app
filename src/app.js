@@ -42,10 +42,13 @@ import AdminUsers from "./pages/admin/admin-users";
 import AdminPayouts from "./pages/admin/admin-payouts";
 import AdminTrivia from "./pages/admin/admin-trivia";
 import AdminReports from "./pages/admin/admin-reports";
+import AdminUsersSingle from "./pages/admin/admin-users-single";
+import AdminPayoutsSingle from "./pages/admin/admin-payouts-single";
 
 // Styles
 import "./styles/index.css";
 import LandingPage from "./pages/LandingPage";
+import Payouts from "./pages/square-trivia-payouts-page";
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -229,6 +232,16 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
+                <Route
+                  path="/payouts"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <Payouts />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
 
                 {/* Admin Routes */}
                 <Route
@@ -262,11 +275,32 @@ function App() {
                   }
                 />
                 <Route
+                  path="/admin/users/:userId"
+                  element={
+                    <AdminRoute>
+                      <Layout>
+                        <AdminUsersSingle />
+                      </Layout>
+                    </AdminRoute>
+                  }
+                />
+                
+                <Route
                   path="/admin/payouts"
                   element={
                     <AdminRoute>
                       <Layout>
                         <AdminPayouts />
+                      </Layout>
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/admin/payouts/:payoutId"
+                  element={
+                    <AdminRoute>
+                      <Layout>
+                        <AdminPayoutsSingle />
                       </Layout>
                     </AdminRoute>
                   }

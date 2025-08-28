@@ -14,11 +14,20 @@ import {
   X,
   Gift,
   Info,
+  DollarSign,
+  CheckCircle,
+  CreditCard,
+  Building2,
+  Wallet,
+  Send,
+  Coins,
+  Plus,
 } from "lucide-react";
 import { useAuth } from "../contexts/authcontext";
-import { formatCurrency } from "../firebase/config";
+import { db, formatCurrency } from "../firebase/config";
 import toast from "react-hot-toast";
 import PayoutModal from "../components/Auth/payout-modal";
+import { doc, updateDoc } from "firebase/firestore";
 
 export default function Profile() {
   const {
@@ -33,8 +42,9 @@ export default function Profile() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [addingTelegram, setAddingTelegram] = useState(false);
+  const [defaultMethod, setDefaultMethod] = useState(false);
   const [payoutModal, setPayoutModal] = useState(false);
-
+  console.log("userData:", userData);
   const [formData, setFormData] = useState({
     displayName: userData?.displayName || "",
     phone: userData?.phone || "",
@@ -49,6 +59,66 @@ export default function Profile() {
   useEffect(() => {
     loadUserStats();
   }, []);
+
+  
+  const getPayoutMethodIcon = (type) => {
+    switch (type) {
+      case "ach":
+        return Building2;
+      case "paypal":
+        return DollarSign;
+      case "venmo":
+        return Wallet; // suggested icon
+      case "zelle":
+        return Send; // suggested icon
+      case "check":
+        return Mail;
+      case "crypto":
+        return Coins; // suggested icon
+      default:
+        return CreditCard;
+    }
+  };
+
+  const getPayoutMethodIdentifier = (method, data) => {
+    if (!data) return "";
+
+    switch (method) {
+      case "paypal":
+        return data.email || "";
+      case "venmo":
+        return data.username || "";
+      case "zelle":
+        return data.contact || "";
+      case "ach":
+        return data.account || ""; // could also show last 4 digits only
+      case "check":
+        return data.name || "";
+      case "crypto":
+        return data.wallet || "";
+      default:
+        return "";
+    }
+  };
+
+  const getPayoutMethodName = (type) => {
+    switch (type) {
+      case "ach":
+        return "Bank Transfer (ACH)";
+      case "paypal":
+        return "PayPal";
+      case "venmo":
+        return "Venmo";
+      case "zelle":
+        return "Zelle";
+      case "check":
+        return "Paper Check";
+      case "crypto":
+        return "Cryptocurrency";
+      default:
+        return "Payment Method";
+    }
+  };
 
   const loadUserStats = async () => {
     try {
@@ -102,6 +172,62 @@ export default function Profile() {
       setSavingProfile(false);
     }
   };
+  // Open the payout modal with pre-filled data
+  const handleEditMethod = (method) => {
+    setPayoutModal({
+      isOpen: true,
+      mode: "edit",
+      method,
+    });
+  };
+  // Set default payout method
+const handleSetDefaultPayout = async (methodId) => {
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        defaultPaymentMethod: methodId,
+      });
+      setDefaultMethod(methodId);
+      toast.success("Default payment method updated");
+      window.location.reload();
+    } catch (error) {
+      console.error("Error setting default method:", error);
+      toast.error("Failed to update default method");
+    }
+  };
+  // Delete payout method
+  // Delete payout method
+const handleDeleteMethod = async (methodId) => {
+  if (!window.confirm("Are you sure you want to delete this payment method?")) {
+    return;
+  }
+
+  try {
+    const updatedMethods = userData.paymentMethods.filter(
+      (m) => m.id !== methodId
+    );
+
+    // Update payment methods first
+    await updateUserProfile({
+      paymentMethods: updatedMethods,
+    });
+
+    // If deleted method was the default, set the first available as new default
+    if (userData.defaultPaymentMethod === methodId && updatedMethods.length > 0) {
+      const newDefault = updatedMethods[0].id;
+      await updateDoc(doc(db, "users", user.uid), {
+        defaultPaymentMethod: newDefault,
+      });
+      setDefaultMethod(newDefault);
+      toast.success("Default method updated to first available one.");
+    }
+
+    toast.success("Payment method deleted successfully!");
+    window.location.reload();
+  } catch (error) {
+    console.error("Error deleting payout method:", error);
+    toast.error("Failed to delete payment method");
+  }
+};
 
   const handleAddTelegram = async () => {
     if (!formData.telegramUsername) {
@@ -353,15 +479,15 @@ export default function Profile() {
                     </p>
                   )}
                   {userData?.hasTelegram && !userData?.telegramChatId && (
-                    <a
+                    <a target="_blank"
                       className="text-xs text-blue-600 mt-1"
                       href={`https://t.me/${process.env.REACT_APP_TELEGRAM_BOT_USERNAME}?start=${userData?.id}`}
-                      target="_blank"
+                      rel="noreferrer"
                     >
                       Connect Telegram
                     </a>
                   )}
-                  {userData?.payoutDetails &&
+                  {/* {userData?.payoutDetails &&
                     Object.keys(userData?.payoutDetails)?.length > 0 && (
                       <p className="text-sm text-blue-600 mt-6">
                         Current Payout Method:{" "}
@@ -378,7 +504,75 @@ export default function Profile() {
                     Object.keys(userData?.payoutDetails)?.length > 0
                       ? "Edit Payout"
                       : "Add Payout Method"}
-                  </p>
+                  </p> */}
+                  <div className="flex gap-x-3 items-center justify-between  mt-2">
+                    <label className=" text-sm font-medium text-gray-700 mt-2 flex items-center justify-between">
+                      Payouts Methods
+                    </label>
+                    <div onClick={() => setPayoutModal(true)} className="flex items-center text-xs text-blue-600 mt-1 cursor-pointer">
+                     Add New <Plus/> 
+                    </div>
+                  </div>
+                  {userData?.paymentMethods?.length > 0 &&
+                    userData.paymentMethods.map((method, index) => {
+                      const Icon = getPayoutMethodIcon(method.type);
+                      const isDefault =
+                        userData.defaultPaymentMethod === method.id;
+
+                      return (
+                        <div
+                          key={index}
+                          className="mt-4 p-4 border rounded-lg flex items-center justify-between"
+                        >
+                          {/* Left side info */}
+                          <div className="flex items-center space-x-3">
+                            <Icon className="h-5 w-5 text-gray-600" />
+                            <div>
+                              <p className="font-medium flex items-center">
+                                {getPayoutMethodName(method.type)}
+                                {isDefault && (
+                                  <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center">
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    Default
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {getPayoutMethodIdentifier(
+                                  method.type,
+                                  method
+                                ) || "No details available"}
+                              </p>
+                            </div>
+                          </div>  
+                          {/* Right side actions */}
+                          <div className="flex items-center space-x-3">
+                            {!isDefault && (
+                              <button
+                                onClick={() =>
+                                  handleSetDefaultPayout(method.id)
+                                }
+                                className="text-xs text-blue-600 hover:underline"
+                              >
+                                Set Default
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleEditMethod(method.id)}
+                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMethod(method.id)}
+                              className="text-red-600 hover:text-red-800 text-sm font-medium"
+                            >
+                               Delete
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
             </div>

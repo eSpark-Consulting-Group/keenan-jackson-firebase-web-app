@@ -17,6 +17,7 @@ import {
   Settings,
   BarChart3,
   Users,
+  CircleDollarSign,
 } from "lucide-react";
 import { useAuth } from "../../contexts/authcontext";
 import toast from "react-hot-toast";
@@ -47,17 +48,30 @@ export default function Layout({ children }) {
       icon: HelpCircle,
       public: true,
     },
+    {
+      name: "Payouts",
+      href: "/payouts",
+      icon: DollarSign,
+      public: true,
+    },
   ];
 
   const userNavigation = [
     { name: "Profile", href: "/profile", icon: User },
     { name: "Settings", href: "/settings", icon: Settings },
+    {
+      name: "Payouts",
+      href: "/payouts",
+      icon: DollarSign,
+      public: true,
+    },
   ];
 
   const adminNavigation = [
     { name: "Admin Dashboard", href: "/admin", icon: BarChart3 },
     { name: "Manage Users", href: "/admin/users", icon: Users },
     { name: "Manage Games", href: "/admin/games", icon: Grid3X3 },
+    { name: "Manage Payouts", href: "/admin/payouts", icon: CircleDollarSign },
   ];
 
   const isActive = (href) => location.pathname === href;
