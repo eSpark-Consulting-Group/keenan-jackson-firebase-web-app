@@ -57,7 +57,7 @@ export default function Payouts() {
   const [payoutMethods, setPayoutMethods] = useState([]);
   const [defaultPayoutMethod, setDefaultPayoutMethod] = useState(null);
   const [selectedPayoutMethod, setSelectedPayoutMethod] = useState(null);
-    const [expandedId, setExpandedId] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
 
   const toggleExpand = (id) => {
     setExpandedId(expandedId === id ? null : id);
@@ -213,7 +213,7 @@ export default function Payouts() {
       case "completed":
         return <CheckCircle className="h-5 w-5 text-green-500" />;
       case "failed":
-          return <XCircle className="h-5 w-5 text-red-500" />;
+        return <XCircle className="h-5 w-5 text-red-500" />;
       default:
         return <AlertCircle className="h-5 w-5 text-gray-500" />;
     }
@@ -428,7 +428,8 @@ export default function Payouts() {
                   }`}
                 >
                   Completed (
-                  {payouts.filter((p) => p.payoutStatus === "completed").length})
+                  {payouts.filter((p) => p.payoutStatus === "completed").length}
+                  )
                 </button>
               </div>
             </div>
@@ -452,164 +453,197 @@ export default function Payouts() {
             className="space-y-4"
           >
             {filteredPayouts.map((payout, index) => (
-         <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3 }}
-      className="space-y-6"
-    >
-      {payouts.map((payout, index) => (
-        <motion.div
-          key={payout.id}
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 + index * 0.05 }}
-          className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all"
-        >
-          <div className="flex items-start justify-between">
-            {/* LEFT SIDE INFO */}
-            <div className="flex-1">
-              <div className="flex items-center mb-3">
-                {getStatusIcon(payout.payoutStatus)}
-                <h3 className="ml-3 text-lg font-bold text-gray-900">
-                  {payout.gameInfo?.teams
-                    ? `${payout.gameInfo.teams.away || "TBD"} @ ${
-                        payout.gameInfo.teams.home || "TBD"
-                      }`
-                    : "Game Winnings"}
-                </h3>
-              </div>
-
-              <div className="ml-8 space-y-1">
-                <p className="text-sm text-gray-700">
-                  <span className="font-semibold">Game ID:</span>{" "}
-                  {payout.gameId || "N/A"}
-                </p>
-                <p className="text-sm text-gray-700">
-                  <span className="font-semibold">Tier:</span>{" "}
-                  {payout.tierId?.split("_")[1] || "N/A"}
-                </p>
-                <p className="text-sm text-gray-700">
-                  <span className="font-semibold">Prize:</span>{" "}
-                  {formatCurrency(payout.prizeAmount || 0)}
-                </p>
-                <p className="text-sm">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusColor(
-                      payout.payoutStatus
-                    )}`}
-                  >
-                    {payout.payoutStatus
-                      ? payout.payoutStatus.charAt(0).toUpperCase() +
-                        payout.payoutStatus.slice(1)
-                      : "Unknown"}
-                  </span>
-                </p>
-              </div>
-
-              {/* Expand/Collapse Button */}
-              <div className="mt-3 ml-8">
-                <button
-                  onClick={() => toggleExpand(payout.id)}
-                  className="flex items-center text-sm text-purple-600 hover:text-purple-800 font-medium"
-                >
-                  {expandedId === payout.id ? (
-                    <>
-                      Hide Details <ChevronUp className="ml-1 h-4 w-4" />
-                    </>
-                  ) : (
-                    <>
-                      More Details <ChevronDown className="ml-1 h-4 w-4" />
-                    </>
-                  )}
-                </button>
-
-                {/* Collapsible Content */}
-                {expandedId === payout.id && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="space-y-6"
+              >
+                {payouts.map((payout, index) => (
                   <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    transition={{ duration: 0.35 }}
-                    className="mt-3 pl-3 border-l-2 border-gray-200 space-y-2"
+                    key={payout.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 + index * 0.05 }}
+                    className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all"
                   >
-                    <p className="text-sm text-gray-700">
-                      <span className="font-semibold">User ID:</span>{" "}
-                      {payout.userId}
-                    </p>
-                    <p className="text-sm text-gray-700">
-                      <span className="font-semibold">Email:</span>{" "}
-                      {payout.userInfo?.email || "N/A"}
-                    </p>
-                    <p className="text-sm text-gray-700">
-                      <span className="font-semibold">Telegram:</span>{" "}
-                      {payout.userInfo?.telegramUsername || "N/A"}
-                    </p>
-                    <p className="text-sm text-gray-700">
-                      <span className="font-semibold">Solo Win:</span>{" "}
-                      {payout.isSoloWin ? "Yes ✅" : "No"}
-                    </p>
-                    <p className="text-sm text-gray-700">
-                      <span className="font-semibold">Notification Status:</span>{" "}
-                      {payout.notificationStatus || "N/A"}
-                    </p>
+                    <div className="flex items-start justify-between">
+                      {/* LEFT SIDE INFO */}
+                      <div className="flex-1">
+                        <div className="flex items-center mb-2">
+                          {getStatusIcon(payout.payoutStatus)}
+                          <h3 className="ml-3 text-xxl font-bold text-gray-900">
+                            {formatCurrency(payout.prizeAmount || 0)}
+                          </h3>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="ml-8 space-b-1">
+                            <p className="text-sm text-gray-700">
+                              <span className="font-bold text-lg">
+                                {payout.gameInfo?.teams
+                                  ? `${payout.gameInfo.teams.away || "TBD"} @ ${
+                                      payout.gameInfo.teams.home || "TBD"
+                                    }`
+                                  : "Game Winnings"}
+                              </span>
+                            </p>
+                            <p className="text-sm text-gray-700">
+                              <span className="font-semibold">Solo Win:</span>{" "}
+                              {payout.isSoloWin ? "Yes ✅" : "No"}
+                            </p>
+ <p className="text-sm text-gray-700">
+                              <span className="font-semibold">Tier:</span>{" "}
+                              {payout.tierId?.split("_")[1] || "N/A"}
+                            </p>
+                            <p className="text-sm text-gray-700">
+                              <span className="font-semibold">createdAt:</span>{" "}
+                              {dayjs.formatDate(payout.createdAt)}
+                            </p>
+                          </div>
+                          <div className="ml-8 space-b-1  items-start text-right">
+                            <p className="text-sm">
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs font-bold capitalize ${getStatusColor(
+                                  payout.payoutStatus
+                                )}`}
+                              >
+                                {payout.payoutStatus
+                                  ? payout.payoutStatus
+                                  : "Unknown"}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
 
-                    {/* Error handling */}
-                    {payout.notificationErrors?.length > 0 && (
-                      <div className="flex items-start bg-red-50 text-red-700 border border-red-200 rounded-lg p-2">
-                        <AlertCircle className="h-4 w-4 mr-2 mt-0.5" />
-                        <span className="text-sm">
-                          {payout.notificationErrors.join(", ")}
-                        </span>
+                        {/* Expand/Collapse Button */}
+                        <div className="mt-3 ml-8">
+                          <button
+                            onClick={() => toggleExpand(payout.id)}
+                            className="flex items-center text-sm text-purple-600 hover:text-purple-800 font-medium"
+                          >
+                            {expandedId === payout.id ? (
+                              <>
+                                Hide Details{" "}
+                                <ChevronUp className="ml-1 h-4 w-4" />
+                              </>
+                            ) : (
+                              <>
+                                More Details{" "}
+                                <ChevronDown className="ml-1 h-4 w-4" />
+                              </>
+                            )}
+                          </button>
+
+                          {/* Collapsible Content */}
+                          {expandedId === payout.id && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              transition={{ duration: 0.35 }}
+                              className="mt-3 pl-3 border-l-2 border-gray-200"
+                            >
+                              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                                <p className="text-sm text-gray-700">
+                                  <span className="font-semibold">
+                                    Game ID:
+                                  </span>{" "}
+                                  {payout.gameId || "N/A"}
+                                </p>
+                                <p className="text-sm text-gray-700">
+                                  <span className="font-semibold">
+                                    User ID:
+                                  </span>{" "}
+                                  {payout.userId}
+                                </p>
+                                <p className="text-sm text-gray-700">
+                                  <span className="font-semibold">
+                                    Claim ID:
+                                  </span>{" "}
+                                  {payout.claimId || "Not claimed yet"}
+                                </p>
+
+                                <p className="text-sm text-gray-700 col-span-2">
+                                  <span className="font-semibold">
+                                    Notification Status:
+                                  </span>{" "}
+                                  {payout.notificationStatus || "N/A"}
+                                </p>
+
+                                {payout.notificationErrors?.length > 0 && (
+                                  <div className="col-span-2 flex items-start bg-red-50 text-red-700 border border-red-200 rounded-lg p-2">
+                                    <AlertCircle className="h-4 w-4 mr-2 mt-0.5" />
+                                    <span className="text-sm">
+                                      {payout.notificationErrors.join(", ")}
+                                    </span>
+                                  </div>
+                                )}
+
+                                <p className="text-sm text-gray-700">
+                                  <span className="font-semibold">
+                                    Reported on 1099:
+                                  </span>{" "}
+                                  {payout.reportedOn1099 ? "Yes" : "No"}
+                                </p>
+                                <p className="text-sm text-gray-700">
+                                  <span className="font-semibold">
+                                    Winner Answer Time:
+                                  </span>{" "}
+                                  {payout.answerTime} ms
+                                </p>
+                                <p className="text-sm text-gray-700">
+                                  <span className="font-semibold">
+                                    Instant Payout Fee:
+                                  </span>{" "}
+                                  {payout.instantPayoutFee
+                                    ? "Granted"
+                                    : "Not Granted"}
+                                </p>
+                                <p className="text-sm text-gray-700">
+                                  <span className="font-semibold">
+                                    Consolation Square:
+                                  </span>{" "}
+                                  {payout.consolationSquareGranted
+                                    ? "Granted"
+                                    : "Not Granted"}
+                                </p>
+
+                                {payout.processedBy && (
+                                  <p className="text-sm text-gray-700">
+                                    <span className="font-semibold">
+                                      Processed By:
+                                    </span>{" "}
+                                    {payout.processedBy}
+                                  </p>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </div>
                       </div>
-                    )}
 
-                    <p className="text-sm text-gray-700">
-                      <span className="font-semibold">Reported on 1099:</span>{" "}
-                      {payout.reportedOn1099 ? "Yes" : "No"}
-                    </p>
-                    <p className="text-sm text-gray-700">
-                      <span className="font-semibold">Winner Answer Time:</span>{" "}
-                      {payout.winnerAnswerTimeMs} ms
-                    </p>
-                    <p className="text-sm text-gray-700">
-                      <span className="font-semibold">Consolation Square:</span>{" "}
-                      {payout.consolationSquareGranted
-                        ? "Granted"
-                        : "Not Granted"}
-                    </p>
-                    {payout.processedBy && (
-                      <p className="text-sm text-gray-700">
-                        <span className="font-semibold">Processed By:</span>{" "}
-                        {payout.processedBy}
-                      </p>
-                    )}
+                      {/* RIGHT SIDE ACTIONS */}
+                      <div className="ml-6 flex flex-col items-end gap-2">
+                        {payout.payoutStatus === "pending" &&
+                          !payout.isInstant && (
+                            <button
+                              onClick={() => handleInstantPayout(payout)}
+                              className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-xl shadow hover:bg-purple-700 transition-colors"
+                            >
+                              <Zap className="h-4 w-4 mr-2" />
+                              Get Instant Paid
+                            </button>
+                          )}
+
+                        {payout.payoutStatus === "completed" && (
+                          <button className="text-gray-400 hover:text-gray-600">
+                            <Download className="h-5 w-5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </motion.div>
-                )}
-              </div>
-            </div>
-
-            {/* RIGHT SIDE ACTIONS */}
-            <div className="ml-6 flex flex-col items-end gap-2">
-              {payout.payoutStatus === "pending" && !payout.isInstant && (
-                <button
-                  onClick={() => handleInstantPayout(payout)}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl shadow hover:bg-blue-700 transition-colors"
-                >
-                  <Zap className="h-4 w-4 mr-2" />
-                  Get Instant Paid
-                </button>
-              )}
-
-              {payout.payoutStatus === "completed" && (
-                <button className="text-gray-400 hover:text-gray-600">
-                  <Download className="h-5 w-5" />
-                </button>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      ))}
-    </motion.div>
+                ))}
+              </motion.div>
             ))}
           </motion.div>
         ) : (
