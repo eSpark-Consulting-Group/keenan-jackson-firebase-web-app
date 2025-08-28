@@ -11,6 +11,7 @@ const {
   handleRefund,
 } = require("./payment-system-modified");
 const { logger } = require("firebase-functions");
+const { default: axios } = require("axios");
 
 // Initialize admin if not already done
 if (!admin.apps.length) {
@@ -18,6 +19,20 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
+
+const TELEGRAM_BOT_TOKEN = "7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ";
+
+async function sendTelegramNotification(chatId, message) {
+  if (!chatId) return;
+
+  await axios.post(
+    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+    {
+      chat_id: chatId,
+      text: message,
+    }
+  );
+}
 
 // ==========================================
 // GAME CREATION & MANAGEMENT
@@ -380,6 +395,28 @@ exports.determineWinners = functions.pubsub
 
               // If only 1 claim → solo winner
               if (square.claims.length === 1) {
+                const winnerUserSnap = await db
+                  .collection("users")
+                  .doc(onlyClaim.userId)
+                  .get();
+                let winnerTelegramId = null;
+                if (winnerUserSnap.exists) {
+                  winnerTelegramId =
+                    winnerUserSnap.data().telegramChatId || null;
+                }
+
+                if (winnerTelegramId) {
+                  await sendTelegramNotification(
+                    winnerTelegramId,
+                    `
+🎉 Congratulations! 🎉
+
+You’ve won in *Quarter ${quarter.toUpperCase()}*
+
+Great job beating the competition! 🏆🔥
+`
+                  );
+                }
                 const onlyClaim = square.claims[0];
                 console.log("         🏆 Solo winner found", {
                   gameId,
@@ -418,6 +455,29 @@ exports.determineWinners = functions.pubsub
                 );
                 const winner = sorted[0];
                 const loser = sorted[1];
+
+                const winnerUserSnap = await db
+                  .collection("users")
+                  .doc(winner.userId)
+                  .get();
+                let winnerTelegramId = null;
+                if (winnerUserSnap.exists) {
+                  winnerTelegramId =
+                    winnerUserSnap.data().telegramChatId || null;
+                }
+
+                if (winnerTelegramId) {
+                  await sendTelegramNotification(
+                    winnerTelegramId,
+                    `
+🎉 Congratulations! 🎉
+
+You’ve won in *Quarter ${quarter.toUpperCase()}*
+
+Great job beating the competition! 🏆🔥
+`
+                  );
+                }
 
                 console.log("         🏆 Winner", {
                   gameId,
