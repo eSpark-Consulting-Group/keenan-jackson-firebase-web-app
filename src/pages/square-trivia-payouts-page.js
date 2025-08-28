@@ -21,6 +21,9 @@ import {
   Settings,
   Building2,
   Mail,
+  Wallet,
+  Send,
+  Coins,
 } from "lucide-react";
 // import { useAuth } from "../contexts/AuthContext";
 import {
@@ -58,7 +61,7 @@ export default function Payouts() {
   const [defaultPayoutMethod, setDefaultPayoutMethod] = useState(null);
   const [selectedPayoutMethod, setSelectedPayoutMethod] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
-
+  console.log("payoutMethods:", payoutMethods);
   const toggleExpand = (id) => {
     setExpandedId(expandedId === id ? null : id);
   };
@@ -68,7 +71,7 @@ export default function Payouts() {
     completedAmount: 0,
     instantPayouts: 0,
   });
-
+console.log("stats:", userData);
   useEffect(() => {
     if (user) {
       loadPayouts();
@@ -92,55 +95,55 @@ export default function Payouts() {
   };
 
   const loadPayouts = async () => {
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const payoutsQuery = query(
-      collection(db, collections.winners),
-      where("userId", "==", user.uid),
-      orderBy("createdAt", "desc")
-    );
+      const payoutsQuery = query(
+        collection(db, collections.winners),
+        where("userId", "==", user.uid),
+        orderBy("createdAt", "desc")
+      );
 
-    const snapshot = await getDocs(payoutsQuery);
-    const payoutsData = [];
-    let totalWinnings = 0;
-    let pendingAmount = 0;
-    let completedAmount = 0;
-    let instantAmount = 0; 
+      const snapshot = await getDocs(payoutsQuery);
+      const payoutsData = [];
+      let totalWinnings = 0;
+      let pendingAmount = 0;
+      let completedAmount = 0;
+      let instantAmount = 0;
 
-    snapshot.forEach((doc) => {
-      const data = { id: doc.id, ...doc.data() };
-      payoutsData.push(data);
+      snapshot.forEach((doc) => {
+        const data = { id: doc.id, ...doc.data() };
+        payoutsData.push(data);
 
-      const amount = data.prizeAmount || 0;
+        const amount = data.prizeAmount || 0;
 
-      // ✅ Totals based on prizeAmount
-      totalWinnings += amount;
+        // ✅ Totals based on prizeAmount
+        totalWinnings += amount;
 
-      if (data.payoutStatus === "pending") {
-        pendingAmount += amount;
-      } else if (data.payoutStatus === "completed") {
-        completedAmount += amount;
-        if (data.payoutType === "instant" || data.isInstant) {
-          instantAmount += amount;
+        if (data.payoutStatus === "pending") {
+          pendingAmount += amount;
+        } else if (data.payoutStatus === "completed") {
+          completedAmount += amount;
+          if (data.payoutType === "instant" || data.isInstant) {
+            instantAmount += amount;
+          }
         }
-      }
-    });
+      });
 
-    setPayouts(payoutsData);
-    setStats({
-      totalWinnings,
-      pendingAmount,
-      completedAmount,
-      instantPayouts: instantAmount,
-    });
-  } catch (error) {
-    console.error("Error loading payouts:", error);
-    toast.error("Failed to load payouts");
-  } finally {
-    setLoading(false);
-  }
-};
+      setPayouts(payoutsData);
+      setStats({
+        totalWinnings,
+        pendingAmount,
+        completedAmount,
+        instantPayouts: instantAmount,
+      });
+    } catch (error) {
+      console.error("Error loading payouts:", error);
+      toast.error("Failed to load payouts");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInstantPayout = async (payout) => {
     // Check if user has payment methods
@@ -235,11 +238,11 @@ export default function Payouts() {
         return "bg-gray-100 text-gray-800";
     }
   };
-   const getPayouttypeColor = (status) => {
+  const getPayouttypeColor = (status) => {
     switch (status) {
       case "instant":
         return "bg-yellow-100 text-yellow-800";
-     default:
+      default:
         return "bg-blue-100 text-blue-800";
     }
   };
@@ -258,21 +261,54 @@ export default function Payouts() {
         return Building2;
       case "paypal":
         return DollarSign;
+      case "venmo":
+        return Wallet; // suggested icon
+      case "zelle":
+        return Send; // suggested icon
       case "check":
         return Mail;
+      case "crypto":
+        return Coins; // suggested icon
       default:
         return CreditCard;
+    }
+  };
+
+  const getPayoutMethodIdentifier = (method, data) => {
+    if (!data) return "";
+
+    switch (method) {
+      case "paypal":
+        return data.email || "";
+      case "venmo":
+        return data.username || "";
+      case "zelle":
+        return data.contact || "";
+      case "ach":
+        return data.account || ""; // could also show last 4 digits only
+      case "check":
+        return data.name || "";
+      case "crypto":
+        return data.wallet || "";
+      default:
+        return "";
     }
   };
 
   const getPayoutMethodName = (type) => {
     switch (type) {
       case "ach":
-        return "Bank Transfer";
+        return "Bank Transfer (ACH)";
       case "paypal":
         return "PayPal";
+      case "venmo":
+        return "Venmo";
+      case "zelle":
+        return "Zelle";
       case "check":
         return "Paper Check";
+      case "crypto":
+        return "Cryptocurrency";
       default:
         return "Payment Method";
     }
@@ -524,7 +560,10 @@ export default function Payouts() {
                               </span>
                             </p>
                             <p className="text-sm mb-2">
-                              <span className="font-semibold"> Payout Type: </span>{" "}
+                              <span className="font-semibold">
+                                {" "}
+                                Payout Type:{" "}
+                              </span>{" "}
                               <span
                                 className={`px-2 py-1 rounded-full text-xs font-bold capitalize ${getPayouttypeColor(
                                   payout.payoutType
@@ -819,6 +858,10 @@ export default function Payouts() {
                           <div className="flex-1">
                             <p className="font-medium text-gray-900">
                               {getPayoutMethodName(method.type)}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {getPayoutMethodIdentifier(method.type, method) ||
+                                "No details available"}
                             </p>
                             <p className="text-sm text-gray-600">
                               {method.displayInfo}
