@@ -233,6 +233,14 @@ export default function Payouts() {
         return "bg-gray-100 text-gray-800";
     }
   };
+   const getPayouttypeColor = (status) => {
+    switch (status) {
+      case "instant":
+        return "bg-yellow-100 text-yellow-800";
+     default:
+        return "bg-blue-100 text-blue-800";
+    }
+  };
 
   const filteredPayouts = payouts.filter((payout) => {
     if (filter === "all") return true;
@@ -476,7 +484,7 @@ export default function Payouts() {
                             {formatCurrency(payout.prizeAmount || 0)}
                           </h3>
                         </div>
-                        <div className="flex items-center justify-between">
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-2">
                           <div className="ml-8 space-b-1">
                             <p className="text-sm text-gray-700">
                               <span className="font-bold text-lg">
@@ -491,17 +499,18 @@ export default function Payouts() {
                               <span className="font-semibold">Solo Win:</span>{" "}
                               {payout.isSoloWin ? "Yes ✅" : "No"}
                             </p>
- <p className="text-sm text-gray-700">
+                            <p className="text-sm text-gray-700">
                               <span className="font-semibold">Tier:</span>{" "}
                               {payout.tierId?.split("_")[1] || "N/A"}
                             </p>
                             <p className="text-sm text-gray-700">
-                              <span className="font-semibold">createdAt:</span>{" "}
-                              {dayjs.formatDate(payout.createdAt)}
+                              <span className="font-semibold">Dated:</span>{" "}
+                              {formatDate(payout.createdAt)}
                             </p>
                           </div>
-                          <div className="ml-8 space-b-1  items-start text-right">
-                            <p className="text-sm">
+                          <div className="ml-8 space-b-1  ">
+                            <p className="text-sm mb-3">
+                              <span className="font-semibold"> Status:</span>{" "}
                               <span
                                 className={`px-2 py-1 rounded-full text-xs font-bold capitalize ${getStatusColor(
                                   payout.payoutStatus
@@ -510,6 +519,18 @@ export default function Payouts() {
                                 {payout.payoutStatus
                                   ? payout.payoutStatus
                                   : "Unknown"}
+                              </span>
+                            </p>
+                            <p className="text-sm mb-2">
+                              <span className="font-semibold"> PayoutType: </span>{" "}
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs font-bold capitalize ${getPayouttypeColor(
+                                  payout.payoutType
+                                )}`}
+                              >
+                                {payout.payoutType
+                                  ? payout.payoutType
+                                  : "Standard"}
                               </span>
                             </p>
                           </div>
