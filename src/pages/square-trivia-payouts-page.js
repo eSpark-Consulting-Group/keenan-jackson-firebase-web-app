@@ -81,10 +81,10 @@ export default function Payouts() {
       const userDoc = await getDoc(doc(db, "users", user.uid));
       const userData = userDoc.data();
 
-      if (userData?.payoutMethods) {
-        setPayoutMethods(userData.payoutMethods);
-        setDefaultPayoutMethod(userData.defaultPayoutMethod);
-        setSelectedPayoutMethod(userData.defaultPayoutMethod);
+      if (userData?.paymentMethods) {
+        setPayoutMethods(userData.paymentMethods);
+        setDefaultPayoutMethod(userData.defaultPaymentMethod);
+        setSelectedPayoutMethod(userData.defaultPaymentMethod);
       }
     } catch (error) {
       console.error("Error loading payment methods:", error);
@@ -92,53 +92,55 @@ export default function Payouts() {
   };
 
   const loadPayouts = async () => {
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      // Load user's payouts
-      const payoutsQuery = query(
-        collection(db, collections.winners),
-        where("userId", "==", user.uid),
-        orderBy("createdAt", "desc")
-      );
+    const payoutsQuery = query(
+      collection(db, collections.winners),
+      where("userId", "==", user.uid),
+      orderBy("createdAt", "desc")
+    );
 
-      const snapshot = await getDocs(payoutsQuery);
-      const payoutsData = [];
-      let totalWinnings = 0;
-      let pendingAmount = 0;
-      let completedAmount = 0;
-      let instantPayouts = 0;
+    const snapshot = await getDocs(payoutsQuery);
+    const payoutsData = [];
+    let totalWinnings = 0;
+    let pendingAmount = 0;
+    let completedAmount = 0;
+    let instantAmount = 0; 
 
-      snapshot.forEach((doc) => {
-        const data = { id: doc.id, ...doc.data() };
-        payoutsData.push(data);
+    snapshot.forEach((doc) => {
+      const data = { id: doc.id, ...doc.data() };
+      payoutsData.push(data);
 
-        // Calculate stats
-        totalWinnings += data.amount;
-        if (data.payoutStatus === "pending") {
-          pendingAmount += data.amount;
-        } else if (data.payoutStatus === "completed") {
-          completedAmount += data.amount;
-          if (data.isInstant) {
-            instantPayouts++;
-          }
+      const amount = data.prizeAmount || 0;
+
+      // ✅ Totals based on prizeAmount
+      totalWinnings += amount;
+
+      if (data.payoutStatus === "pending") {
+        pendingAmount += amount;
+      } else if (data.payoutStatus === "completed") {
+        completedAmount += amount;
+        if (data.payoutType === "instant" || data.isInstant) {
+          instantAmount += amount;
         }
-      });
+      }
+    });
 
-      setPayouts(payoutsData);
-      setStats({
-        totalWinnings,
-        pendingAmount,
-        completedAmount,
-        instantPayouts,
-      });
-    } catch (error) {
-      console.error("Error loading payouts:", error);
-      toast.error("Failed to load payouts");
-    } finally {
-      setLoading(false);
-    }
-  };
+    setPayouts(payoutsData);
+    setStats({
+      totalWinnings,
+      pendingAmount,
+      completedAmount,
+      instantPayouts: instantAmount,
+    });
+  } catch (error) {
+    console.error("Error loading payouts:", error);
+    toast.error("Failed to load payouts");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleInstantPayout = async (payout) => {
     // Check if user has payment methods
@@ -522,7 +524,7 @@ export default function Payouts() {
                               </span>
                             </p>
                             <p className="text-sm mb-2">
-                              <span className="font-semibold"> PayoutType: </span>{" "}
+                              <span className="font-semibold"> Payout Type: </span>{" "}
                               <span
                                 className={`px-2 py-1 rounded-full text-xs font-bold capitalize ${getPayouttypeColor(
                                   payout.payoutType
