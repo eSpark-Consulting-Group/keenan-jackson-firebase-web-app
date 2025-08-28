@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Users, Zap, Trophy, EyeOff } from "lucide-react";
 import { useAuth } from "../../contexts/authcontext";
+import { Link, useSearchParams } from "react-router-dom";
 
 const SELF_PAIRS = new Set(["0-0", "1-1", "3-3", "4-4", "7-7"]);
 
@@ -34,6 +35,8 @@ export default function SquareGrid({
   const [hoveredSquare, setHoveredSquare] = useState(null);
   const [selectedInfo, setSelectedInfo] = useState(null);
   const { userData } = useAuth();
+  const [searchParams] = useSearchParams();
+  const view = searchParams.get("view");
 
   const getSquareStatus = (position) => {
     const squareData = board.squares?.[position];
@@ -184,6 +187,13 @@ export default function SquareGrid({
     <div className="bg-white rounded-lg shadow-lg p-6">
       {/* Header */}
       <div className="mb-4">
+        {view && (
+          <Link to={"/home#pricing"}>
+            <p className="text-sm text-blue-600 cursor-pointer">
+              Buy Additional Questions
+            </p>
+          </Link>
+        )}
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Game Board</h2>
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-600">

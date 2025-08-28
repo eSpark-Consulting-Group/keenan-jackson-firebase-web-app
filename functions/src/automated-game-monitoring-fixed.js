@@ -110,7 +110,7 @@ class ApiSportsService {
     }
     // Parse season year and game?.week from GameKey (SportsData.io encodes it)
     // const year = parseInt(gameKey.substring(0, 4), 10); // e.g. 2025
-        const year = new Date(new Date()).getFullYear();
+    const year = new Date(new Date()).getFullYear();
     // const week = parseInt(gameKey.substring(4, 6), 10); // e.g. 10 (Week 10)
     logger.info(
       `[fetchGameScore] Parsed year=${year}, game?.week=${game?.week}`
@@ -663,7 +663,7 @@ const activateUpcomingGames = functions.pubsub
       const upcomingGames = await db
         .collection("games")
         .where("status", "==", GAME_CONFIG.STATUS.UPCOMING)
-        .where("startTime", "<=", now)
+        .where("gameDate", "<=", now)
         .get();
 
       if (upcomingGames.empty) {
@@ -691,6 +691,55 @@ const activateUpcomingGames = functions.pubsub
       });
     } catch (error) {
       logError(error, { context: "activateUpcomingGames" });
+    }
+  });
+
+// Activate games 7 days earlier
+const activateNext7DaysGames = functions.pubsub
+  .schedule("every 5 minutes")
+  .timeZone("America/Denver")
+  .onRun(async (context) => {
+    const db = admin.firestore();
+    const now = getNow();
+
+    // 7 days ahead
+    const sevenDaysAhead = new Date(now.toDate()); // if getNow() returns Firestore.Timestamp
+    sevenDaysAhead.setDate(sevenDaysAhead.getDate() + 7);
+
+    try {
+      // Find upcoming games that start within the next 7 days
+      const upcomingGames = await db
+        .collection("games")
+        .where("status", "==", GAME_CONFIG.STATUS.UPCOMING)
+        .where("gameDate", ">=", now)
+        .where("gameDate", "<=", sevenDaysAhead)
+        .get();
+
+      if (upcomingGames.empty) {
+        return;
+      }
+
+      console.log(`Activating ${upcomingGames.size} games (within 7 days)`);
+
+      const batch = db.batch();
+
+      upcomingGames.forEach((doc) => {
+        batch.update(doc.ref, {
+          status: GAME_CONFIG.STATUS.ACTIVE,
+          scheduledActivationTime: getTimestamp(), // optional custom field
+        });
+      });
+
+      await batch.commit();
+
+      // Log activation
+      await db.collection("systemLogs").add({
+        type: "games_activated_7days",
+        count: upcomingGames.size,
+        timestamp: getTimestamp(),
+      });
+    } catch (error) {
+      logError(error, { context: "activateNext7DaysGames" });
     }
   });
 
@@ -986,5 +1035,6 @@ module.exports = {
   // Testing
   testApiConnection,
   forceMonitorGame,
+  activateNext7DaysGames,
   // addTelegramToAccount
 };

@@ -1,20 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { 
-  Trophy, 
-  Brain, 
-  DollarSign, 
-  Zap, 
-  Shield, 
-  Clock, 
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { motion, useScroll, useTransform } from "framer-motion";
+import {
+  Trophy,
+  Brain,
+  DollarSign,
+  Zap,
+  Shield,
+  Clock,
   Users,
   ChevronRight,
   Plus,
   Check,
   Grid3X3,
-  TrendingUp
-} from 'lucide-react';
+  TrendingUp,
+} from "lucide-react";
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -22,15 +22,26 @@ export default function LandingPage() {
   const [activeSquares, setActiveSquares] = useState(new Set());
   const boardRef = useRef(null);
   const { scrollYProgress } = useScroll();
-  
+
+  const { hash } = useLocation();
+
+  useEffect(() => {
+    if (hash) {
+      const el = document.querySelector(hash);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  }, [hash]);
+
   // Parallax effect for hero background
-  const y = useTransform(scrollYProgress, [0, 1], ['0%', '50%']);
+  const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
 
   // Animate random squares
   useEffect(() => {
     const interval = setInterval(() => {
       const randomSquare = Math.floor(Math.random() * 50);
-      setActiveSquares(prev => {
+      setActiveSquares((prev) => {
         const newSet = new Set(prev);
         if (newSet.has(randomSquare)) {
           newSet.delete(randomSquare);
@@ -49,32 +60,37 @@ export default function LandingPage() {
       number: 1,
       icon: <DollarSign className="w-8 h-8" />,
       title: "Choose Your Tier",
-      description: "Select from 6 tiers starting at just $25. Higher tiers mean bigger prizes!"
+      description:
+        "Select from 6 tiers starting at just $25. Higher tiers mean bigger prizes!",
     },
     {
       number: 2,
       icon: <Brain className="w-8 h-8" />,
       title: "Answer Trivia",
-      description: "Test your sports knowledge with quick trivia questions. Correct answers earn square tokens!"
+      description:
+        "Test your sports knowledge with quick trivia questions. Correct answers earn square tokens!",
     },
     {
       number: 3,
       icon: <Grid3X3 className="w-8 h-8" />,
       title: "Claim Your Square",
-      description: "Pick your lucky numbers on the game board. Each square holds up to 2 players."
+      description:
+        "Pick your lucky numbers on the game board. Each square holds up to 2 players.",
     },
     {
       number: 4,
       icon: <Zap className="w-8 h-8" />,
       title: "Win by Speed",
-      description: "When your square hits, the fastest trivia answer wins! No luck, just skill."
+      description:
+        "When your square hits, the fastest trivia answer wins! No luck, just skill.",
     },
     {
       number: 5,
       icon: <Trophy className="w-8 h-8" />,
       title: "Get Paid Fast",
-      description: "Choose instant payout (96%) or wait 2-3 days for 100%. No hidden fees!"
-    }
+      description:
+        "Choose instant payout (96%) or wait 2-3 days for 100%. No hidden fees!",
+    },
   ];
 
   const tiers = [
@@ -83,95 +99,119 @@ export default function LandingPage() {
       amount: 25,
       prizePerQuarter: 200,
       totalPrize: 800,
-      features: ["$800 Total Prize Pool", "Available All Games", "1 Consolation Question", "Perfect for Beginners"],
-      popular: false
+      features: [
+        "$800 Total Prize Pool",
+        "Available All Games",
+        "1 Consolation Question",
+        "Perfect for Beginners",
+      ],
+      popular: false,
     },
     {
       name: "Most Popular",
       amount: 100,
       prizePerQuarter: 900,
       totalPrize: 3600,
-      features: ["$3,600 Total Prize Pool", "Available All Games", "1 Consolation Question", "Best Value for Players"],
-      popular: true
+      features: [
+        "$3,600 Total Prize Pool",
+        "Available All Games",
+        "1 Consolation Question",
+        "Best Value for Players",
+      ],
+      popular: true,
     },
     {
       name: "High Roller",
       amount: 500,
       prizePerQuarter: 4500,
       totalPrize: 18000,
-      features: ["$18,000 Total Prize Pool", "Playoffs & Championships", "2 Consolation Questions", "Serious Players Only"],
-      popular: false
-    }
+      features: [
+        "$18,000 Total Prize Pool",
+        "Playoffs & Championships",
+        "2 Consolation Questions",
+        "Serious Players Only",
+      ],
+      popular: false,
+    },
   ];
 
   const features = [
     {
       icon: <Shield className="w-8 h-8" />,
       title: "100% Skill-Based",
-      description: "No random drawings or luck involved. Winners are determined purely by trivia knowledge and answer speed. Your sports expertise directly translates to wins!"
+      description:
+        "No random drawings or luck involved. Winners are determined purely by trivia knowledge and answer speed. Your sports expertise directly translates to wins!",
     },
     {
       icon: <DollarSign className="w-8 h-8" />,
       title: "NO FEES Guaranteed",
-      description: "We mean it - no fees on entry or prizes! You pay exactly what you see, and win exactly what's advertised. The only optional fee is 4% for instant payouts."
+      description:
+        "We mean it - no fees on entry or prizes! You pay exactly what you see, and win exactly what's advertised. The only optional fee is 4% for instant payouts.",
     },
     {
       icon: <Clock className="w-8 h-8" />,
       title: "Hidden Answer Times",
-      description: "Your trivia answer times stay private until a square wins. This prevents strategic avoidance and keeps competition fair and exciting for everyone."
+      description:
+        "Your trivia answer times stay private until a square wins. This prevents strategic avoidance and keeps competition fair and exciting for everyone.",
     },
     {
       icon: <Trophy className="w-8 h-8" />,
       title: "Consolation Prizes",
-      description: "Lost a speed competition? Get free trivia questions for future games! Higher tiers get more chances. We reward participation and keep you in the game."
+      description:
+        "Lost a speed competition? Get free trivia questions for future games! Higher tiers get more chances. We reward participation and keep you in the game.",
     },
     {
       icon: <Zap className="w-8 h-8" />,
       title: "Instant Payouts",
-      description: "Won big? Get 96% of your prize immediately with our express payout option, or wait 2-3 days for the full 100%. Your choice, your money!"
+      description:
+        "Won big? Get 96% of your prize immediately with our express payout option, or wait 2-3 days for the full 100%. Your choice, your money!",
     },
     {
       icon: <Users className="w-8 h-8" />,
       title: "Multi-Platform Access",
-      description: "Play on web, get notifications via Telegram, track games on mobile. We're everywhere you are, making it easy to never miss a game or win!"
-    }
+      description:
+        "Play on web, get notifications via Telegram, track games on mobile. We're everywhere you are, making it easy to never miss a game or win!",
+    },
   ];
 
   const faqs = [
     {
       question: "How is this different from gambling?",
-      answer: "Square Trivia is 100% skill-based! Winners are determined by their sports knowledge and answer speed, not random chance. It's like a timed quiz competition with prizes - completely legal and based on your abilities."
+      answer:
+        "Square Trivia is 100% skill-based! Winners are determined by their sports knowledge and answer speed, not random chance. It's like a timed quiz competition with prizes - completely legal and based on your abilities.",
     },
     {
       question: "Are there really NO FEES?",
-      answer: "Yes! There are absolutely no fees to play or win. The entry amount you see is exactly what you pay, and the prize amount shown is exactly what you win. The only optional fee is 4% if you choose instant payout instead of waiting 2-3 days for the full amount."
+      answer:
+        "Yes! There are absolutely no fees to play or win. The entry amount you see is exactly what you pay, and the prize amount shown is exactly what you win. The only optional fee is 4% if you choose instant payout instead of waiting 2-3 days for the full amount.",
     },
     {
       question: "How fast do I need to answer trivia questions?",
-      answer: "Average winning times are between 2-5 seconds. The timer starts when the question appears, so quick reading and fast thinking are key! Practice makes perfect, and you'll get faster over time."
+      answer:
+        "Average winning times are between 2-5 seconds. The timer starts when the question appears, so quick reading and fast thinking are key! Practice makes perfect, and you'll get faster over time.",
     },
     {
       question: "How do I know if my square wins?",
-      answer: "Your square wins if its numbers match the last digits of the score in ANY order. For example, square (2,7) wins with scores like 12-17, 17-12, 22-7, or 7-32. Each square has two ways to win, doubling your chances!"
+      answer:
+        "Your square wins if its numbers match the last digits of the score in ANY order. For example, square (2,7) wins with scores like 12-17, 17-12, 22-7, or 7-32. Each square has two ways to win, doubling your chances!",
     },
     {
       question: "What happens if I lose on a winning square?",
-      answer: "If your square wins but you had the slower answer time, you get consolation prizes! You'll receive free trivia questions (1-4 depending on your tier) that you can use to claim squares on $25 tier boards. It's our way of keeping you in the game!"
+      answer:
+        "If your square wins but you had the slower answer time, you get consolation prizes! You'll receive free trivia questions (1-4 depending on your tier) that you can use to claim squares on $25 tier boards. It's our way of keeping you in the game!",
     },
     {
       question: "When and how do I get paid?",
-      answer: "You have two options: Choose instant payout to get 96% of your prize the same day (4% express service fee), or wait 2-3 days to receive the full 100% amount. Payments are processed via your preferred method - we support multiple payout options!"
-    }
+      answer:
+        "You have two options: Choose instant payout to get 96% of your prize the same day (4% express service fee), or wait 2-3 days to receive the full 100% amount. Payments are processed via your preferred method - we support multiple payout options!",
+    },
   ];
 
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-emerald-50 via-blue-50 to-emerald-50 pt-20">
-        <motion.div 
-          className="absolute inset-0 opacity-10"
-          style={{ y }}
-        >
+        <motion.div className="absolute inset-0 opacity-10" style={{ y }}>
           <div className="absolute top-0 -right-20 w-96 h-96 bg-emerald-500 rounded-full blur-3xl" />
           <div className="absolute bottom-0 -left-20 w-96 h-96 bg-blue-500 rounded-full blur-3xl" />
         </motion.div>
@@ -185,19 +225,22 @@ export default function LandingPage() {
               transition={{ duration: 0.8 }}
             >
               <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
-                Win Big with Your{' '}
+                Win Big with Your{" "}
                 <span className="bg-gradient-to-r from-emerald-500 to-blue-600 bg-clip-text text-transparent">
                   Sports Knowledge
                 </span>
               </h1>
               <p className="text-xl text-gray-600 mb-8">
-                The only skill-based sports squares platform where speed and knowledge determine winners!
+                The only skill-based sports squares platform where speed and
+                knowledge determine winners!
               </p>
 
               <div className="flex flex-wrap gap-4 mb-8">
                 <div className="flex items-center gap-2">
                   <Check className="w-5 h-5 text-emerald-500" />
-                  <span className="font-semibold">NO FEES on Entry or Prizes</span>
+                  <span className="font-semibold">
+                    NO FEES on Entry or Prizes
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="w-5 h-5 text-emerald-500" />
@@ -211,13 +254,17 @@ export default function LandingPage() {
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  onClick={() => navigate('/register')}
+                  onClick={() => navigate("/register")}
                   className="px-8 py-4 bg-emerald-500 text-white font-semibold rounded-lg hover:bg-emerald-600 transform hover:scale-105 transition-all shadow-lg"
                 >
                   Start Playing Now
                 </button>
                 <button
-                  onClick={() => document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' })}
+                  onClick={() =>
+                    document
+                      .getElementById("how-it-works")
+                      .scrollIntoView({ behavior: "smooth" })
+                  }
                   className="px-8 py-4 border-2 border-emerald-500 text-emerald-600 font-semibold rounded-lg hover:bg-emerald-50 transition-all"
                 >
                   Learn More
@@ -241,26 +288,32 @@ export default function LandingPage() {
                       whileHover={{ scale: 1.2 }}
                       className={`aspect-square rounded flex items-center justify-center text-xs font-semibold cursor-pointer transition-all ${
                         activeSquares.has(i)
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-100 hover:bg-emerald-500 hover:text-white'
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-100 hover:bg-emerald-500 hover:text-white"
                       }`}
                     >
                       {i}
                     </motion.div>
                   ))}
                 </div>
-                
+
                 <div className="grid grid-cols-3 gap-4 pt-4 border-t">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-emerald-500">$800</div>
+                    <div className="text-2xl font-bold text-emerald-500">
+                      $800
+                    </div>
                     <div className="text-sm text-gray-600">Prize Pool</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-emerald-500">2.3s</div>
+                    <div className="text-2xl font-bold text-emerald-500">
+                      2.3s
+                    </div>
                     <div className="text-sm text-gray-600">Avg Win Time</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-emerald-500">47/50</div>
+                    <div className="text-2xl font-bold text-emerald-500">
+                      47/50
+                    </div>
                     <div className="text-sm text-gray-600">Squares Filled</div>
                   </div>
                 </div>
@@ -274,8 +327,12 @@ export default function LandingPage() {
       <section id="how-it-works" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">How Square Trivia Works</h2>
-            <p className="text-xl text-gray-600">Simple, fair, and rewarding - here's how you play and win!</p>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              How Square Trivia Works
+            </h2>
+            <p className="text-xl text-gray-600">
+              Simple, fair, and rewarding - here's how you play and win!
+            </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-8">
@@ -304,11 +361,18 @@ export default function LandingPage() {
       </section>
 
       {/* Tiers Section */}
-      <section className="py-20 bg-gradient-to-br from-emerald-50 to-blue-50">
+      <section
+        className="py-20 bg-gradient-to-br from-emerald-50 to-blue-50"
+        id="pricing"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Choose Your Playing Tier</h2>
-            <p className="text-xl text-gray-600">Guaranteed prizes every quarter - NO FEES on playing or winning!</p>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Choose Your Playing Tier
+            </h2>
+            <p className="text-xl text-gray-600">
+              Guaranteed prizes every quarter - NO FEES on playing or winning!
+            </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -320,7 +384,9 @@ export default function LandingPage() {
                 whileHover={{ y: -10 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className={`relative bg-white rounded-2xl p-8 ${
-                  tier.popular ? 'ring-4 ring-yellow-400 transform scale-105' : 'shadow-lg'
+                  tier.popular
+                    ? "ring-4 ring-yellow-400 transform scale-105"
+                    : "shadow-lg"
                 }`}
               >
                 {tier.popular && (
@@ -328,10 +394,14 @@ export default function LandingPage() {
                     MOST POPULAR
                   </div>
                 )}
-                
+
                 <div className="text-center mb-6">
-                  <div className="text-sm font-semibold text-gray-500 mb-2">{tier.name}</div>
-                  <div className="text-5xl font-bold text-gray-900 mb-2">${tier.amount}</div>
+                  <div className="text-sm font-semibold text-gray-500 mb-2">
+                    {tier.name}
+                  </div>
+                  <div className="text-5xl font-bold text-gray-900 mb-2">
+                    ${tier.amount}
+                  </div>
                   <div className="text-lg text-emerald-600 font-semibold">
                     Win ${tier.prizePerQuarter.toLocaleString()}/Quarter
                   </div>
@@ -347,11 +417,11 @@ export default function LandingPage() {
                 </ul>
 
                 <button
-                  onClick={() => navigate('/register')}
+                  onClick={() => navigate("/register")}
                   className={`w-full py-3 rounded-lg font-semibold transition-all ${
                     tier.popular
-                      ? 'bg-yellow-400 text-black hover:bg-yellow-500'
-                      : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                      ? "bg-yellow-400 text-black hover:bg-yellow-500"
+                      : "bg-emerald-500 text-white hover:bg-emerald-600"
                   }`}
                 >
                   Get Started
@@ -361,7 +431,10 @@ export default function LandingPage() {
           </div>
 
           <div className="text-center mt-8">
-            <Link to="/games" className="text-emerald-600 hover:text-emerald-700 font-semibold">
+            <Link
+              to="/games"
+              className="text-emerald-600 hover:text-emerald-700 font-semibold"
+            >
               View all 6 tiers →
             </Link>
           </div>
@@ -372,8 +445,13 @@ export default function LandingPage() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Why Square Trivia is Different</h2>
-            <p className="text-xl text-gray-600">We've revolutionized the traditional squares game with skill-based competition</p>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Why Square Trivia is Different
+            </h2>
+            <p className="text-xl text-gray-600">
+              We've revolutionized the traditional squares game with skill-based
+              competition
+            </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -404,8 +482,12 @@ export default function LandingPage() {
       <section className="py-20 bg-gray-50">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h2>
-            <p className="text-xl text-gray-600">Everything you need to know about Square Trivia</p>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-xl text-gray-600">
+              Everything you need to know about Square Trivia
+            </p>
           </div>
 
           <div className="space-y-4">
@@ -418,24 +500,28 @@ export default function LandingPage() {
                 className="bg-white rounded-lg shadow-md overflow-hidden"
               >
                 <button
-                  onClick={() => setActiveFaq(activeFaq === index ? null : index)}
+                  onClick={() =>
+                    setActiveFaq(activeFaq === index ? null : index)
+                  }
                   className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
                 >
-                  <span className="font-semibold text-gray-900">{faq.question}</span>
-                  <Plus className={`w-5 h-5 text-gray-500 transition-transform ${
-                    activeFaq === index ? 'rotate-45' : ''
-                  }`} />
+                  <span className="font-semibold text-gray-900">
+                    {faq.question}
+                  </span>
+                  <Plus
+                    className={`w-5 h-5 text-gray-500 transition-transform ${
+                      activeFaq === index ? "rotate-45" : ""
+                    }`}
+                  />
                 </button>
-                
+
                 <motion.div
                   initial={{ height: 0 }}
-                  animate={{ height: activeFaq === index ? 'auto' : 0 }}
+                  animate={{ height: activeFaq === index ? "auto" : 0 }}
                   transition={{ duration: 0.3 }}
                   className="overflow-hidden"
                 >
-                  <div className="px-6 pb-4 text-gray-600">
-                    {faq.answer}
-                  </div>
+                  <div className="px-6 pb-4 text-gray-600">{faq.answer}</div>
                 </motion.div>
               </motion.div>
             ))}
@@ -446,14 +532,17 @@ export default function LandingPage() {
       {/* Final CTA */}
       <section className="py-20 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-4xl font-bold mb-4">Ready to Turn Your Sports Knowledge into Cash?</h2>
+          <h2 className="text-4xl font-bold mb-4">
+            Ready to Turn Your Sports Knowledge into Cash?
+          </h2>
           <p className="text-xl mb-8 opacity-90">
-            Join thousands of sports fans winning with their trivia skills - NO FEES, just pure competition!
+            Join thousands of sports fans winning with their trivia skills - NO
+            FEES, just pure competition!
           </p>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/register')}
+            onClick={() => navigate("/register")}
             className="px-8 py-4 bg-white text-emerald-600 font-bold rounded-lg hover:bg-gray-100 transition-all inline-flex items-center gap-2"
           >
             Start Playing Now <ChevronRight className="w-5 h-5" />
@@ -466,12 +555,34 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="flex justify-center gap-8 mb-8">
-              <Link to="/legal" className="hover:text-emerald-400 transition-colors">Terms of Service</Link>
-              <Link to="/legal" className="hover:text-emerald-400 transition-colors">Privacy Policy</Link>
-              <Link to="/support" className="hover:text-emerald-400 transition-colors">Support</Link>
-              <Link to="/contact" className="hover:text-emerald-400 transition-colors">Contact</Link>
+              <Link
+                to="/legal"
+                className="hover:text-emerald-400 transition-colors"
+              >
+                Terms of Service
+              </Link>
+              <Link
+                to="/legal"
+                className="hover:text-emerald-400 transition-colors"
+              >
+                Privacy Policy
+              </Link>
+              <Link
+                to="/support"
+                className="hover:text-emerald-400 transition-colors"
+              >
+                Support
+              </Link>
+              <Link
+                to="/contact"
+                className="hover:text-emerald-400 transition-colors"
+              >
+                Contact
+              </Link>
             </div>
-            <p className="text-gray-400">© 2025 Square Trivia. All rights reserved. 18+ only.</p>
+            <p className="text-gray-400">
+              © 2025 Square Trivia. All rights reserved. 18+ only.
+            </p>
           </div>
         </div>
       </footer>
