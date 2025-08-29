@@ -452,7 +452,8 @@ export default function AdminGames() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {game?.teams?.away} @ {game?.teams?.home}
+                            {game?.teams?.away || "TBA"} @
+                            {game?.teams?.home || "TBA"}
                           </div>
                           <div className="text-sm text-gray-500">
                             {game.sport}

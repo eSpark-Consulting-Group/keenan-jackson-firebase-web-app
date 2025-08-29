@@ -415,7 +415,8 @@ export default function Games() {
                                 </span>
                               </div>
                               <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                                {game?.teams?.away} @ {game.teams?.home}
+                                {game?.teams?.away || "TBA"} @{" "}
+                                {game.teams?.home || "TBA"}
                               </h3>
                               <p className="text-sm text-gray-600">
                                 {new Date(

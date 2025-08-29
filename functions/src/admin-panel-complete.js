@@ -193,7 +193,7 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
       venue:
         sport === "NFL"
           ? game.StadiumDetails?.Name
-          : game.Stadium?.Name || "TBD",
+          : game.Stadium?.Name || "TBA",
       week: game.Week,
       scores: {
         home: sport === "NFL" ? game.HomeScore : game.HomeTeamScore,

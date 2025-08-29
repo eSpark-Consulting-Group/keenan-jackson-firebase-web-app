@@ -97,7 +97,11 @@ export default function Payouts() {
     doc.setFontSize(12);
     doc.text(`Full Name: ${userData.taxInfo?.fullName || "N/A"}`, 20, 70);
     doc.text(`Address: ${userData.taxInfo?.address || "N/A"}`, 20, 78);
-    doc.text(`SSN (Last 4 Digits): ${userData.taxInfo?.ssn_last4 || "XXXX"}`, 20, 86);
+    doc.text(
+      `SSN (Last 4 Digits): ${userData.taxInfo?.ssn_last4 || "XXXX"}`,
+      20,
+      86
+    );
 
     // Earnings
     doc.setFontSize(14);
@@ -109,7 +113,11 @@ export default function Payouts() {
       20,
       115
     );
-    doc.text(`W-9 Submitted: ${userData.taxInfo?.w9_submitted ? "Yes" : "No"}`, 20, 123);
+    doc.text(
+      `W-9 Submitted: ${userData.taxInfo?.w9_submitted ? "Yes" : "No"}`,
+      20,
+      123
+    );
 
     // Sample Text / Explanation
     doc.setFontSize(11);
@@ -615,11 +623,9 @@ export default function Payouts() {
                       <div className="ml-8 space-b-1">
                         <p className="text-sm text-gray-700">
                           <span className="font-bold text-lg">
-                            {payout.gameInfo?.teams
-                              ? `${payout.gameInfo.teams.away || "TBD"} @ ${
-                                  payout.gameInfo.teams.home || "TBD"
-                                }`
-                              : "Game Winnings"}
+                            {`${payout?.gameInfo?.teams?.away || "TBA"} @ ${
+                              payout?.gameInfo?.teams?.home || "TBA"
+                            }`}
                           </span>
                         </p>
                         <p className="text-sm text-gray-700">
@@ -762,18 +768,30 @@ export default function Payouts() {
 
                   {/* RIGHT SIDE ACTIONS */}
                   <div className="ml-6 flex flex-col items-end gap-2">
-                    {payout.payoutStatus === "pending" && (
-                      <button
-                        onClick={() => handleInstantPayout(payout)}
-                        disabled={payout.payoutType === "instant"} // disable if already instant
-                        className={`flex items-center px-4 py-2 rounded-xl shadow transition-colors ${payout.payoutType === "instant" ? "bg-gray-400 cursor-not-allowed text-gray-200" : "bg-purple-600 text-white hover:bg-purple-700"}`}
-                      >
-                        <Zap className="h-4 w-4 mr-2" />
-                        {payout.payoutType === "instant"
-                          ? "Already requsted"
+                    {/* {payout.payoutStatus === "pending" && ( */}
+                    <button
+                      onClick={() => handleInstantPayout(payout)}
+                      disabled={
+                        payout.payoutType === "instant" ||
+                        payout.payoutStatus !== "pending"
+                      }
+                      className={`flex items-center px-4 py-2 rounded-xl shadow transition-colors ${
+                        payout.payoutType === "instant"
+                          ? "bg-gray-300 cursor-not-allowed text-gray-600"
+                          : payout.payoutStatus !== "pending"
+                            ? "bg-gray-300 cursor-not-allowed text-gray-600"
+                            : "bg-purple-600 text-white hover:bg-purple-700"
+                      }`}
+                    >
+                      <Zap className="h-4 w-4 mr-2" />
+                      {payout.payoutType === "instant"
+                        ? "Already Requested for Payout"
+                        : payout.payoutStatus !== "pending"
+                          ? "Get Instant Not Available Now"
                           : "Get Instant Paid"}
-                      </button>
-                    )}
+                    </button>
+
+                    {/* )} */}
 
                     {payout.payoutStatus === "completed" && (
                       <button className="text-gray-400 hover:text-gray-600">

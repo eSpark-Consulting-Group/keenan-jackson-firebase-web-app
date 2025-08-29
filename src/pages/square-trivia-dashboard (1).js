@@ -405,8 +405,8 @@ export default function Dashboard() {
                     </div>
 
                     <h3 className="text-lg font-semibold mb-2">
-                      {board.gameInfo?.teams?.away} @{" "}
-                      {board.gameInfo?.teams?.home}
+                      {board.gameInfo?.teams?.away || "TBA"} @{" "}
+                      {board.gameInfo?.teams?.home || "TBA"}
                     </h3>
 
                     <div className="flex items-center justify-between text-sm text-gray-600">
