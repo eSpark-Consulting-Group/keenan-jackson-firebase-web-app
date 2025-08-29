@@ -81,22 +81,28 @@ export default function GameBoard() {
         );
         if (gameDoc.exists()) {
           const gameData = { id: gameDoc.id, ...gameDoc.data() };
+          console.log(gameData, "GAME DATA");
           setGame(gameData);
 
           // Set current scores
-          if (gameData?.processedQuarters && gameData?.quarterScores) {
-            // Get quarters in order
-            const quarters = ["q1", "q2", "q3", "q4", "ot"];
+          if (gameData?.currentQuarter) {
+            // Map quarter number or OT string to key
+            const quarterMap = {
+              1: "q1",
+              2: "q2",
+              3: "q3",
+              4: "q4",
+              ot: "ot",
+            };
 
-            // Find the last processed quarter that is true
-            const lastProcessed = quarters
-              .reverse()
-              .find((q) => gameData.processedQuarters[q]);
+            // Resolve key from currentQuarter
+            const currentKey = quarterMap[gameData.currentQuarter] || "q1";
 
-            // Get score for that quarter (or default to 0,0)
-            const score = lastProcessed
-              ? gameData.quarterScores[lastProcessed] || { home: 0, away: 0 }
-              : { home: 0, away: 0 };
+            // Get score for that quarter (fallback to 0,0)
+            const score = gameData.quarterScores?.[currentKey] || {
+              home: 0,
+              away: 0,
+            };
 
             // Set scores
             setScores(score);
