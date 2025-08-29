@@ -690,20 +690,48 @@ async function processLoser(loserData) {
 
   if (consolationQuery.empty) {
     // 3️⃣ Also update tierAccess with consolationCount as questionLimit
-    const tierAccessQuery = await db
-      .collection("tierAccess")
-      .where("userId", "==", userId)
-      .where("tier", "==", tierId)
-      .limit(1)
-      .get();
+    if (tierId === "tier_25") {
+      const tierAccessQuery = await db
+        .collection("tierAccess")
+        .where("userId", "==", userId)
+        .where("tier", "==", "tier_25")
+        .limit(1)
+        .get();
 
-    if (!tierAccessQuery.empty) {
-      const tierAccessRef = tierAccessQuery.docs[0].ref;
-      await tierAccessRef.update({
-        questionLimit: consolationCount,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        active: true
-      });
+      if (!tierAccessQuery.empty) {
+        const tierAccessRef = tierAccessQuery.docs[0].ref;
+        await tierAccessRef.update({
+          questionLimit: admin.firestore.FieldValue.increment(1),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          active: true,
+        });
+      }
+    } else {
+      const tier25Query = await db
+        .collection("tierAccess")
+        .where("userId", "==", userId)
+        .where("tier", "==", "tier_25")
+        .limit(1)
+        .get();
+
+      if (!tier25Query.empty) {
+        const tierAccessRef = tier25Query.docs[0].ref;
+        await tierAccessRef.update({
+          questionLimit: admin.firestore.FieldValue.increment(1),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          active: true,
+        });
+      } else {
+        await db.collection("tierAccess").add({
+          userId,
+          tier: "tier_25",
+          donationId,
+          grantedAt: admin.firestore.FieldValue.serverTimestamp(),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          active: true,
+          questionLimit: 1
+        });
+      }
     }
   }
 
