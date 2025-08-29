@@ -22,12 +22,25 @@ import {
   Send,
   Coins,
   Plus,
+  Edit,
+  Trash2,
+  BadgeCheck,
 } from "lucide-react";
 import { useAuth } from "../contexts/authcontext";
-import { db, formatCurrency } from "../firebase/config";
+import { collections, db, formatCurrency } from "../firebase/config";
 import toast from "react-hot-toast";
 import PayoutModal from "../components/Auth/payout-modal";
-import { doc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import PayoutMethods from "../components/Payouts/payment-methods";
 
 export default function Profile() {
   const {
@@ -42,9 +55,13 @@ export default function Profile() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [addingTelegram, setAddingTelegram] = useState(false);
+  const [showPayoutMethods, setShowPayoutMethods] = useState(false);
+  const [payouts, setPayouts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [payoutMethods, setPayoutMethods] = useState([]);
+  const [defaultPayoutMethod, setDefaultPayoutMethod] = useState(null);
+  const [selectedPayoutMethod, setSelectedPayoutMethod] = useState(null);
   const [defaultMethod, setDefaultMethod] = useState(false);
-  const [payoutModal, setPayoutModal] = useState(false);
-  console.log("userData:", userData);
   const [formData, setFormData] = useState({
     displayName: userData?.displayName || "",
     phone: userData?.phone || "",
@@ -55,12 +72,82 @@ export default function Profile() {
       sms: userData?.notifications?.sms ?? false,
     },
   });
+  const loadPayouts = async () => {
+    try {
+      setLoading(true);
 
+      const payoutsQuery = query(
+        collection(db, collections.winners),
+        where("userId", "==", user.uid),
+        orderBy("createdAt", "desc")
+      );
+
+      const snapshot = await getDocs(payoutsQuery);
+      const payoutsData = [];
+      let totalWinnings = 0;
+      let pendingAmount = 0;
+      let completedAmount = 0;
+      let instantAmount = 0;
+
+      snapshot.forEach((doc) => {
+        const data = { id: doc.id, ...doc.data() };
+        payoutsData.push(data);
+
+        const amount = data.prizeAmount || 0;
+
+        // ✅ Totals based on prizeAmount
+        totalWinnings += amount;
+
+        if (data.payoutStatus === "pending") {
+          pendingAmount += amount;
+        } else if (data.payoutStatus === "completed") {
+          completedAmount += amount;
+          if (data.payoutType === "instant" || data.isInstant) {
+            instantAmount += amount;
+          }
+        }
+      });
+
+      setPayouts(payoutsData);
+      setStats({
+        totalWinnings,
+        pendingAmount,
+        completedAmount,
+        instantPayouts: instantAmount,
+      });
+    } catch (error) {
+      console.error("Error loading payouts:", error);
+      toast.error("Failed to load payouts");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    if (user) {
+      loadPayouts();
+      loadPayoutMethods();
+    }
+  }, [user]);
+
+  const loadPayoutMethods = async () => {
+    try {
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const userData = userDoc.data();
+
+      if (userData?.paymentMethods) {
+        setPayoutMethods(userData.paymentMethods);
+        setDefaultPayoutMethod(userData.defaultPaymentMethod);
+        setSelectedPayoutMethod(userData.defaultPaymentMethod);
+      }
+    } catch (error) {
+      console.error("Error loading payment methods:", error);
+    }
+  };
   useEffect(() => {
     loadUserStats();
   }, []);
 
-  
+
   const getPayoutMethodIcon = (type) => {
     switch (type) {
       case "ach":
@@ -68,13 +155,13 @@ export default function Profile() {
       case "paypal":
         return DollarSign;
       case "venmo":
-        return Wallet; // suggested icon
+        return Wallet;
       case "zelle":
-        return Send; // suggested icon
+        return Send;
       case "check":
         return Mail;
       case "crypto":
-        return Coins; // suggested icon
+        return Coins;
       default:
         return CreditCard;
     }
@@ -172,16 +259,8 @@ export default function Profile() {
       setSavingProfile(false);
     }
   };
-  // Open the payout modal with pre-filled data
-  const handleEditMethod = (method) => {
-    setPayoutModal({
-      isOpen: true,
-      mode: "edit",
-      method,
-    });
-  };
   // Set default payout method
-const handleSetDefaultPayout = async (methodId) => {
+  const handleSetDefaultPayout = async (methodId) => {
     try {
       await updateDoc(doc(db, "users", user.uid), {
         defaultPaymentMethod: methodId,
@@ -196,38 +275,43 @@ const handleSetDefaultPayout = async (methodId) => {
   };
   // Delete payout method
   // Delete payout method
-const handleDeleteMethod = async (methodId) => {
-  if (!window.confirm("Are you sure you want to delete this payment method?")) {
-    return;
-  }
-
-  try {
-    const updatedMethods = userData.paymentMethods.filter(
-      (m) => m.id !== methodId
-    );
-
-    // Update payment methods first
-    await updateUserProfile({
-      paymentMethods: updatedMethods,
-    });
-
-    // If deleted method was the default, set the first available as new default
-    if (userData.defaultPaymentMethod === methodId && updatedMethods.length > 0) {
-      const newDefault = updatedMethods[0].id;
-      await updateDoc(doc(db, "users", user.uid), {
-        defaultPaymentMethod: newDefault,
-      });
-      setDefaultMethod(newDefault);
-      toast.success("Default method updated to first available one.");
+  const handleDeleteMethod = async (methodId) => {
+    if (
+      !window.confirm("Are you sure you want to delete this payment method?")
+    ) {
+      return;
     }
 
-    toast.success("Payment method deleted successfully!");
-    window.location.reload();
-  } catch (error) {
-    console.error("Error deleting payout method:", error);
-    toast.error("Failed to delete payment method");
-  }
-};
+    try {
+      const updatedMethods = userData.paymentMethods.filter(
+        (m) => m.id !== methodId
+      );
+
+      // Update payment methods first
+      await updateUserProfile({
+        paymentMethods: updatedMethods,
+      });
+
+      // If deleted method was the default, set the first available as new default
+      if (
+        userData.defaultPaymentMethod === methodId &&
+        updatedMethods.length > 0
+      ) {
+        const newDefault = updatedMethods[0].id;
+        await updateDoc(doc(db, "users", user.uid), {
+          defaultPaymentMethod: newDefault,
+        });
+        setDefaultMethod(newDefault);
+        toast.success("Default method updated to first available one.");
+      }
+
+      toast.success("Payment method deleted successfully!");
+      window.location.reload();
+    } catch (error) {
+      console.error("Error deleting payout method:", error);
+      toast.error("Failed to delete payment method");
+    }
+  };
 
   const handleAddTelegram = async () => {
     if (!formData.telegramUsername) {
@@ -479,7 +563,8 @@ const handleDeleteMethod = async (methodId) => {
                     </p>
                   )}
                   {userData?.hasTelegram && !userData?.telegramChatId && (
-                    <a target="_blank"
+                    <a
+                      target="_blank"
                       className="text-xs text-blue-600 mt-1"
                       href={`https://t.me/${process.env.REACT_APP_TELEGRAM_BOT_USERNAME}?start=${userData?.id}`}
                       rel="noreferrer"
@@ -487,30 +572,15 @@ const handleDeleteMethod = async (methodId) => {
                       Connect Telegram
                     </a>
                   )}
-                  {/* {userData?.payoutDetails &&
-                    Object.keys(userData?.payoutDetails)?.length > 0 && (
-                      <p className="text-sm text-blue-600 mt-6">
-                        Current Payout Method:{" "}
-                        <span className="uppercase text-sm text-blue-600 mt-6 cursor-pointer">
-                          {userData?.payoutDetails?.method}
-                        </span>
-                      </p>
-                    )}
-                  <p
-                    className="text-xs text-blue-600 mt-6 cursor-pointer"
-                    onClick={() => setPayoutModal(true)}
-                  >
-                    {userData?.payoutDetails &&
-                    Object.keys(userData?.payoutDetails)?.length > 0
-                      ? "Edit Payout"
-                      : "Add Payout Method"}
-                  </p> */}
                   <div className="flex gap-x-3 items-center justify-between  mt-2">
                     <label className=" text-sm font-medium text-gray-700 mt-2 flex items-center justify-between">
                       Payouts Methods
                     </label>
-                    <div onClick={() => setPayoutModal(true)} className="flex items-center text-xs text-blue-600 mt-1 cursor-pointer">
-                     Add New <Plus/> 
+                    <div
+                      onClick={() => setShowPayoutMethods(true)}
+                      className="flex items-center text-xs text-blue-600 mt-1 cursor-pointer"
+                    >
+                      <Plus /> <span class={"text-sm"}> Add New Method</span>
                     </div>
                   </div>
                   {userData?.paymentMethods?.length > 0 &&
@@ -544,7 +614,7 @@ const handleDeleteMethod = async (methodId) => {
                                 ) || "No details available"}
                               </p>
                             </div>
-                          </div>  
+                          </div>
                           {/* Right side actions */}
                           <div className="flex items-center space-x-3">
                             {!isDefault && (
@@ -552,22 +622,25 @@ const handleDeleteMethod = async (methodId) => {
                                 onClick={() =>
                                   handleSetDefaultPayout(method.id)
                                 }
-                                className="text-xs text-blue-600 hover:underline"
+                                className="text-xs text-green-600 hover:underline"
+                                title="Set as Default"
                               >
-                                Set Default
+                                <CheckCircle />
                               </button>
                             )}
                             <button
-                              onClick={() => handleEditMethod(method.id)}
+                              onClick={() => setShowPayoutMethods(true)}
                               className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                              title="Edit Method"
                             >
-                              Edit
+                              <Edit />
                             </button>
                             <button
                               onClick={() => handleDeleteMethod(method.id)}
                               className="text-red-600 hover:text-red-800 text-sm font-medium"
+                              title="Delete Method"
                             >
-                               Delete
+                              <Trash2 />
                             </button>
                           </div>
                         </div>
@@ -809,7 +882,49 @@ const handleDeleteMethod = async (methodId) => {
           </motion.div>
         </div>
       </div>
-      <PayoutModal isOpen={payoutModal} onClose={() => setPayoutModal(false)} />
+      {/* Payment Methods Modal */}
+      {showPayoutMethods && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          onClick={() => {
+            setShowPayoutMethods(false);
+            window.location.reload();
+          }}
+        >
+          <motion.div
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900">
+                Payment Methods
+              </h3>
+              <button
+                onClick={() => {
+                  setShowPayoutMethods(false);
+                  window.location.reload();
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                X{/* <X className="h-5 w-5" /> */}
+              </button>
+            </div>
+
+            <div className="p-6">
+              <PayoutMethods
+                embedded={true}
+                onMethodSelect={() => {
+                  loadPayoutMethods();
+                }}
+              />
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 }
