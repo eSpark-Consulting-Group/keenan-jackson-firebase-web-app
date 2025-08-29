@@ -630,6 +630,7 @@ async function processWinner(winnerData) {
     payoutType: "standard",
     status: "pending_payout",
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    isTelegramSend: false,
     ...winnerData,
   });
 
