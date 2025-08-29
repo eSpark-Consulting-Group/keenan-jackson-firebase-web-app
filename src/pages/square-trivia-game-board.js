@@ -81,7 +81,6 @@ export default function GameBoard() {
         );
         if (gameDoc.exists()) {
           const gameData = { id: gameDoc.id, ...gameDoc.data() };
-          console.log(gameData);
           setGame(gameData);
 
           // Set current scores
@@ -149,12 +148,15 @@ export default function GameBoard() {
       unsubscribeGame = onSnapshot(gameRef, (doc) => {
         if (doc.exists()) {
           const gameData = { id: doc.id, ...doc.data() };
+          const order = ["q1", "q2", "q3", "q4", "ot"];
+          const latest = order.filter((q) => game?.processedQuarters[q]).pop();
           setGame(gameData);
 
           // Update scores and winning squares
-          if (gameData.scores) {
-            setScores(gameData.scores);
-            updateWinningSquares(gameData.scores);
+          if (gameData.quarterScores[latest]) {
+            console.log("REAL TIME CALLED");
+            setScores(gameData.quarterScores[latest]);
+            updateWinningSquares(gameData.quarterScores[latest]);
           }
         }
       });
@@ -170,24 +172,22 @@ export default function GameBoard() {
     const homeLastDigit = (currentScores.home || 0) % 10;
     const awayLastDigit = (currentScores.away || 0) % 10;
 
-    // Calculate both possible winning positions
     const winningPositions = [];
 
-    // Position 1: away digit as row, home digit as column
+    // Orientation 1: use mapped row
     const pos1 = getPositionFromDigits(awayLastDigit, homeLastDigit);
     if (pos1 !== null) winningPositions.push(pos1);
 
-    // Position 2: home digit as row, away digit as column (if different)
+    // Orientation 2: mirror, but keep raw digits
     if (homeLastDigit !== awayLastDigit) {
-      const pos2 = getPositionFromDigits(homeLastDigit, awayLastDigit);
+      const pos2 = getPositionFromDigits(homeLastDigit, awayLastDigit, true);
       if (pos2 !== null) winningPositions.push(pos2);
     }
 
     setWinningSquares(winningPositions);
   };
 
-  const getPositionFromDigits = (rowDigit, colDigit) => {
-    // Map digits to row indices (0-4)
+  const getPositionFromDigits = (rowDigit, colDigit, useRaw = false) => {
     const rowMap = {
       0: 0,
       5: 0,
@@ -201,7 +201,7 @@ export default function GameBoard() {
       9: 4,
     };
 
-    const row = rowMap[rowDigit];
+    const row = useRaw ? rowDigit : rowMap[rowDigit];
     const col = colDigit;
 
     if (row === undefined || col === undefined) return null;

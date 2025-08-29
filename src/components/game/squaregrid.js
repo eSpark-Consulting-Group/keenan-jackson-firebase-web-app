@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Users, Zap, Trophy, EyeOff } from "lucide-react";
+import { useAuth } from "../../contexts/authcontext";
+import { Link, useSearchParams } from "react-router-dom";
 
 const SELF_PAIRS = new Set(["0-0", "1-1", "3-3", "4-4", "7-7"]);
 
@@ -32,6 +34,9 @@ export default function SquareGrid({
 }) {
   const [hoveredSquare, setHoveredSquare] = useState(null);
   const [selectedInfo, setSelectedInfo] = useState(null);
+  const { userData } = useAuth();
+  const [searchParams] = useSearchParams();
+  const view = searchParams.get("view");
 
   const getSquareStatus = (position) => {
     const squareData = board.squares?.[position];
@@ -182,6 +187,13 @@ export default function SquareGrid({
     <div className="bg-white rounded-lg shadow-lg p-6">
       {/* Header */}
       <div className="mb-4">
+        {view && (
+          <Link to={"/home#pricing"}>
+            <p className="text-sm text-blue-600 cursor-pointer">
+              Buy Additional Questions
+            </p>
+          </Link>
+        )}
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Game Board</h2>
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-600">
@@ -223,6 +235,9 @@ export default function SquareGrid({
             allowSelection && (status === "available" || status === "partial");
           const isWinning = winningSquares.includes(Number(position));
           const isRevealed = revealedSquares.has(position);
+          const order = ["q1", "q2", "q3", "q4", "ot"]; // chronological order
+
+          const latest = order.filter((q) => game?.processedQuarters[q]).pop();
 
           return (
             <motion.div
@@ -242,18 +257,19 @@ export default function SquareGrid({
             >
               {getSquareContent(position, status, row, col)}
 
-              {isWinning && (
-                <div className="absolute top-0 right-0 -mt-1 -mr-1">
-                  <div className="relative">
-                    <Trophy className="h-4 w-4 text-yellow-600" />
-                    {!isRevealed && (
-                      <div className="absolute inset-0 animate-ping">
-                        <Trophy className="h-4 w-4 text-yellow-400 opacity-75" />
-                      </div>
-                    )}
+              {isWinning &&
+                game?.quarterScores[latest]?.winnerUserId === userData?.id && (
+                  <div className="absolute top-0 right-0 -mt-1 -mr-1">
+                    <div className="relative">
+                      <Trophy className="h-4 w-4 text-yellow-600" />
+                      {!isRevealed && (
+                        <div className="absolute inset-0 animate-ping">
+                          <Trophy className="h-4 w-4 text-yellow-400 opacity-75" />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {status !== "available" && !isWinning && (
                 <div className="absolute bottom-0 right-0 -mb-1 -mr-1">
@@ -264,7 +280,7 @@ export default function SquareGrid({
           );
         })}
         {/* Away team label */}
-        <div className="absolute -left-16 top-1/2 -translate-y-1/2 -rotate-90 text-sm font-semibold text-gray-700">
+        <div className="absolute -left-[3.4rem] top-1/2 -translate-y-1/2 -rotate-90 text-sm font-semibold text-gray-700">
           ← {`${game?.teams?.away} Team` || "Away Team"}
         </div>
       </div>

@@ -412,7 +412,6 @@ export default function Games() {
                   {filteredDateGames.map((game) => {
                     const userBoard = getUserBoardForGame(game);
                     const hasAccess = userBoard !== undefined;
-                    console.log(game, "GAME");
 
                     return (
                       <motion.div
@@ -502,7 +501,7 @@ export default function Games() {
                                       </Link>
                                     ) : hasAccess ? (
                                       <Link
-                                        to={`/game/${board.id}`}
+                                        to={`/game/${board.id}?view=true`}
                                         className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
                                       >
                                         View Board

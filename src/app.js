@@ -131,6 +131,14 @@ function App() {
                   }
                 />
                 <Route
+                  path="/home"
+                  element={
+                    <Layout>
+                      <LandingPage />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/login"
                   element={
                     <Layout>
