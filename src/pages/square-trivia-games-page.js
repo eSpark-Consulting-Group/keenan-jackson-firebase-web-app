@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Grid3X3,
   Calendar,
   Clock,
-  Users,
-  Trophy,
   ChevronRight,
-  Filter,
   Search,
-  DollarSign,
   AlertCircle,
-  Zap,
-  TrendingUp,
   Shield,
   Plus,
   Lock,
@@ -29,17 +23,15 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
-import TierSelection from "../components/game/tierselection";
 
 export default function Games() {
-  const { user, userData } = useAuth();
+  const { userData } = useAuth();
+  const navigate = useNavigate();
   const [games, setGames] = useState([]);
-  const [boards, setBoards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSport, setSelectedSport] = useState("all");
   const [selectedTier, setSelectedTier] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [showTierSelection, setShowTierSelection] = useState(false);
   const [groupedGames, setGroupedGames] = useState({});
   const [userTierAccess, setUserTierAccess] = useState([]); // store allowed tierIds
 
@@ -234,13 +226,6 @@ export default function Games() {
     return `${minutes}m`;
   };
 
-  const getUserBoardForGame = (game) => {
-    // Find board that matches user's tier
-    return game.boards.find((board) =>
-      userData?.currentTiers?.includes(board.tierId)
-    );
-  };
-
   const sports = [
     { value: "all", label: "All Sports" },
     { value: "NFL", label: "NFL" },
@@ -273,7 +258,7 @@ export default function Games() {
             {(!userData?.currentTiers ||
               userData.currentTiers.length === 0) && (
               <button
-                onClick={() => setShowTierSelection(true)}
+                onClick={() => navigate("/tiers")}
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors hover:text-white"
               >
                 <Plus className="h-5 w-5 mr-2" />
@@ -314,7 +299,7 @@ export default function Games() {
                 ) : null;
               })}
               <button
-                onClick={() => setShowTierSelection(true)}
+                onClick={() => navigate("/tiers")}
                 className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors"
               >
                 <Plus className="h-5 w-5" />
@@ -410,9 +395,6 @@ export default function Games() {
 
                 <div className="grid gap-4">
                   {filteredDateGames.map((game) => {
-                    const userBoard = getUserBoardForGame(game);
-                    const hasAccess = userBoard !== undefined;
-
                     return (
                       <motion.div
                         key={game.id}
@@ -546,7 +528,7 @@ export default function Games() {
             {(!userData?.currentTiers ||
               userData.currentTiers.length === 0) && (
               <button
-                onClick={() => setShowTierSelection(true)}
+                onClick={() => navigate("/tiers")}
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors hover:text-white"
               >
                 Choose a Tier to Get Started
@@ -554,18 +536,6 @@ export default function Games() {
               </button>
             )}
           </motion.div>
-        )}
-
-        {/* Tier Selection Modal */}
-        {showTierSelection && (
-          <TierSelection
-            isOpen={showTierSelection}
-            onClose={() => setShowTierSelection(false)}
-            onComplete={() => {
-              setShowTierSelection(false);
-              loadGames();
-            }}
-          />
         )}
       </div>
     </div>
