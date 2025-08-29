@@ -819,19 +819,19 @@ export default function Payouts() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Prize Amount:</span>
                     <span className="font-semibold">
-                      {formatCurrency(selectedPayout.amount)}
+                      {formatCurrency(selectedPayout.prizeAmount)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Instant Fee (4%):</span>
                     <span className="text-red-600">
-                      -{formatCurrency(selectedPayout.amount * 0.04)}
+                      -{formatCurrency(selectedPayout.prizeAmount * 0.04)}
                     </span>
                   </div>
                   <div className="border-t pt-2 flex justify-between">
                     <span className="font-semibold">You'll Receive:</span>
                     <span className="font-bold text-lg text-green-600">
-                      {formatCurrency(selectedPayout.amount * 0.96)}
+                      {formatCurrency(selectedPayout.prizeAmount * 0.96)}
                     </span>
                   </div>
                 </div>
