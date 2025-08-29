@@ -514,13 +514,6 @@ export default function Payouts() {
             transition={{ delay: 0.3 }}
             className="space-y-4"
           >
-            {filteredPayouts.map((payout, index) => (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="space-y-6"
-              >
                 {payouts.map((payout, index) => (
                   <motion.div
                     key={payout.id}
@@ -723,8 +716,6 @@ export default function Payouts() {
                     </div>
                   </motion.div>
                 ))}
-              </motion.div>
-            ))}
           </motion.div>
         ) : (
           <motion.div
