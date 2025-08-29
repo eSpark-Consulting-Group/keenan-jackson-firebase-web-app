@@ -71,7 +71,7 @@ export default function Payouts() {
     completedAmount: 0,
     instantPayouts: 0,
   });
-console.log("stats:", userData);
+  console.log("stats:", userData);
   useEffect(() => {
     if (user) {
       loadPayouts();
@@ -146,15 +146,31 @@ console.log("stats:", userData);
   };
 
   const handleInstantPayout = async (payout) => {
-    // Check if user has payment methods
     if (!payoutMethods || payoutMethods.length === 0) {
       toast.error("Please add a payment method first");
       setShowPayoutMethods(true);
       return;
     }
 
-    setSelectedPayout(payout);
-    setShowInstantPayoutModal(true);
+    try {
+      // ✅ Update in Firestore
+      await updateDoc(doc(db, collections.winners, payout.id), {
+        payoutType: "instant",
+      });
+
+      // ✅ Update local state
+      const updatedPayout = { ...payout, payoutType: "instant" };
+      setSelectedPayout(updatedPayout);
+      setPayouts((prev) =>
+        prev.map((p) => (p.id === payout.id ? updatedPayout : p))
+      );
+
+      // ✅ Open modal
+      setShowInstantPayoutModal(true);
+    } catch (error) {
+      console.error("Error updating payoutType:", error);
+      toast.error("Failed to set payout as instant");
+    }
   };
 
   const confirmInstantPayout = async () => {
@@ -685,16 +701,18 @@ console.log("stats:", userData);
 
                       {/* RIGHT SIDE ACTIONS */}
                       <div className="ml-6 flex flex-col items-end gap-2">
-                        {payout.payoutStatus === "pending" &&
-                          !payout.isInstant && (
-                            <button
-                              onClick={() => handleInstantPayout(payout)}
-                              className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-xl shadow hover:bg-purple-700 transition-colors"
-                            >
-                              <Zap className="h-4 w-4 mr-2" />
-                              Get Instant Paid
-                            </button>
-                          )}
+                        {payout.payoutStatus === "pending" && (
+                          <button
+                            onClick={() => handleInstantPayout(payout)}
+                            disabled={payout.payoutType === "instant"} // disable if already instant
+                            className={`flex items-center px-4 py-2 rounded-xl shadow transition-colors ${payout.payoutType === "instant" ? "bg-gray-400 cursor-not-allowed text-gray-200" : "bg-purple-600 text-white hover:bg-purple-700"}`}
+                          >
+                            <Zap className="h-4 w-4 mr-2" />
+                            {payout.payoutType === "instant"
+                              ? "Already requsted"
+                              : "Get Instant Paid"}
+                          </button>
+                        )}
 
                         {payout.payoutStatus === "completed" && (
                           <button className="text-gray-400 hover:text-gray-600">
