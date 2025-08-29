@@ -46,6 +46,7 @@ import toast from "react-hot-toast";
 // import PayoutMethods from "../components/PayoutMethods";
 import { useAuth } from "../contexts/authcontext";
 import PayoutMethods from "../components/Payouts/payment-methods";
+import jsPDF from "jspdf";
 
 export default function Payouts() {
   const { user, userData } = useAuth();
@@ -62,6 +63,82 @@ export default function Payouts() {
   const [selectedPayoutMethod, setSelectedPayoutMethod] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   console.log("payoutMethods:", payoutMethods);
+  console.log("userData:", payoutMethods);
+
+  const generatePDF = () => {
+    const creationDate = new Date().toLocaleDateString();
+    const taxYear = new Date().getFullYear();
+
+    const doc = new jsPDF();
+
+    // Header / Title
+    doc.setFontSize(20);
+    doc.text("TAX CERTIFICATE", 105, 20, { align: "center" });
+
+    // Issuer Info
+    doc.setFontSize(10);
+    doc.text("Issued By: Square Trivia.", 20, 30);
+    doc.text("1234 Business Ave, Suite 200, New York, NY 10001", 20, 36);
+    doc.text("support@fantasysports.com | +1 (800) 123-4567", 20, 42);
+
+    // Tax Year & Issue Date
+    doc.setFontSize(12);
+    doc.text(`Issued On: ${creationDate}`, 150, 30);
+    doc.text(`Tax Year: ${taxYear}`, 150, 38);
+
+    // Divider
+    doc.setLineWidth(0.5);
+    doc.line(20, 48, 190, 48);
+
+    // Taxpayer Info
+    doc.setFontSize(14);
+    doc.text("Taxpayer Information", 20, 60);
+
+    doc.setFontSize(12);
+    doc.text(`Full Name: ${userData.taxInfo?.fullName || "N/A"}`, 20, 70);
+    doc.text(`Address: ${userData.taxInfo?.address || "N/A"}`, 20, 78);
+    doc.text(`SSN (Last 4 Digits): ${userData.taxInfo?.ssn_last4 || "XXXX"}`, 20, 86);
+
+    // Earnings
+    doc.setFontSize(14);
+    doc.text("Earnings Summary", 20, 105);
+
+    doc.setFontSize(12);
+    doc.text(
+      `Total Annual Winnings: $${userData.taxInfo?.total_annual_winnings || 0}`,
+      20,
+      115
+    );
+    doc.text(`W-9 Submitted: ${userData.taxInfo?.w9_submitted ? "Yes" : "No"}`, 20, 123);
+
+    // Sample Text / Explanation
+    doc.setFontSize(11);
+    const sampleText =
+      "This certificate confirms the total annual winnings received by the taxpayer during the stated tax year. " +
+      "If total winnings exceed $600, they will be reported to the IRS in accordance with federal regulations. " +
+      "The information contained herein is based on the records available in our system. " +
+      "Please consult your tax advisor for additional guidance regarding your personal tax obligations.";
+    doc.text(sampleText, 20, 145, { maxWidth: 170, align: "justify" });
+
+    // Signature Line
+    doc.setFontSize(12);
+    doc.text("Authorized Representative:", 20, 200);
+    doc.line(80, 198, 150, 198); // signature line
+    doc.text("Square Trivia.", 80, 205);
+
+    // Footer Disclaimer
+    doc.setFontSize(9);
+    doc.text(
+      "This is a system-generated tax certificate. No manual signature is required.",
+      105,
+      285,
+      { align: "center" }
+    );
+
+    // Save PDF
+    doc.save(`Tax-Certificate-${taxYear}.pdf`);
+  };
+
   const toggleExpand = (id) => {
     setExpandedId(expandedId === id ? null : id);
   };
@@ -497,7 +574,10 @@ export default function Payouts() {
             </div>
 
             {stats.totalWinnings >= 600 && (
-              <button className="flex items-center text-sm text-blue-600 hover:text-blue-800">
+              <button
+                onClick={generatePDF}
+                className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+              >
                 <FileText className="h-4 w-4 mr-1" />
                 Tax Documents
                 <ExternalLink className="h-3 w-3 ml-1" />
@@ -514,208 +594,196 @@ export default function Payouts() {
             transition={{ delay: 0.3 }}
             className="space-y-4"
           >
-                {payouts.map((payout, index) => (
-                  <motion.div
-                    key={payout.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 + index * 0.05 }}
-                    className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all"
-                  >
-                    <div className="flex items-start justify-between">
-                      {/* LEFT SIDE INFO */}
-                      <div className="flex-1">
-                        <div className="flex items-center mb-2">
-                          {getStatusIcon(payout.payoutStatus)}
-                          <h3 className="ml-3 text-xxl font-bold text-gray-900">
-                            {formatCurrency(payout.prizeAmount || 0)}
-                          </h3>
-                        </div>
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-                          <div className="ml-8 space-b-1">
-                            <p className="text-sm text-gray-700">
-                              <span className="font-bold text-lg">
-                                {payout.gameInfo?.teams
-                                  ? `${payout.gameInfo.teams.away || "TBD"} @ ${
-                                      payout.gameInfo.teams.home || "TBD"
-                                    }`
-                                  : "Game Winnings"}
-                              </span>
-                            </p>
-                            <p className="text-sm text-gray-700">
-                              <span className="font-semibold">Solo Win:</span>{" "}
-                              {payout.isSoloWin ? "Yes ✅" : "No"}
-                            </p>
-                            <p className="text-sm text-gray-700">
-                              <span className="font-semibold">Tier:</span>{" "}
-                              {payout.tierId?.split("_")[1] || "N/A"}
-                            </p>
-                            <p className="text-sm text-gray-700">
-                              <span className="font-semibold">Dated:</span>{" "}
-                              {formatDate(payout.createdAt)}
-                            </p>
-                          </div>
-                          <div className="ml-8 space-b-1  ">
-                            <p className="text-sm mb-3">
-                              <span className="font-semibold"> Status:</span>{" "}
-                              <span
-                                className={`px-2 py-1 rounded-full text-xs font-bold capitalize ${getStatusColor(
-                                  payout.payoutStatus
-                                )}`}
-                              >
-                                {payout.payoutStatus
-                                  ? payout.payoutStatus
-                                  : "Unknown"}
-                              </span>
-                            </p>
-                            <p className="text-sm mb-2">
-                              <span className="font-semibold">
-                                {" "}
-                                Payout Type:{" "}
-                              </span>{" "}
-                              <span
-                                className={`px-2 py-1 rounded-full text-xs font-bold capitalize ${getPayouttypeColor(
-                                  payout.payoutType
-                                )}`}
-                              >
-                                {payout.payoutType
-                                  ? payout.payoutType
-                                  : "Standard"}
-                              </span>
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Expand/Collapse Button */}
-                        <div className="mt-3 ml-8">
-                          <button
-                            onClick={() => toggleExpand(payout.id)}
-                            className="flex items-center text-sm text-purple-600 hover:text-purple-800 font-medium"
-                          >
-                            {expandedId === payout.id ? (
-                              <>
-                                Hide Details{" "}
-                                <ChevronUp className="ml-1 h-4 w-4" />
-                              </>
-                            ) : (
-                              <>
-                                More Details{" "}
-                                <ChevronDown className="ml-1 h-4 w-4" />
-                              </>
-                            )}
-                          </button>
-
-                          {/* Collapsible Content */}
-                          {expandedId === payout.id && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              transition={{ duration: 0.35 }}
-                              className="mt-3 pl-3 border-l-2 border-gray-200"
-                            >
-                              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-                                <p className="text-sm text-gray-700">
-                                  <span className="font-semibold">
-                                    Game ID:
-                                  </span>{" "}
-                                  {payout.gameId || "N/A"}
-                                </p>
-                                <p className="text-sm text-gray-700">
-                                  <span className="font-semibold">
-                                    User ID:
-                                  </span>{" "}
-                                  {payout.userId}
-                                </p>
-                                <p className="text-sm text-gray-700">
-                                  <span className="font-semibold">
-                                    Claim ID:
-                                  </span>{" "}
-                                  {payout.claimId || "Not claimed yet"}
-                                </p>
-
-                                <p className="text-sm text-gray-700 col-span-2">
-                                  <span className="font-semibold">
-                                    Notification Status:
-                                  </span>{" "}
-                                  {payout.notificationStatus || "N/A"}
-                                </p>
-
-                                {payout.notificationErrors?.length > 0 && (
-                                  <div className="col-span-2 flex items-start bg-red-50 text-red-700 border border-red-200 rounded-lg p-2">
-                                    <AlertCircle className="h-4 w-4 mr-2 mt-0.5" />
-                                    <span className="text-sm">
-                                      {payout.notificationErrors.join(", ")}
-                                    </span>
-                                  </div>
-                                )}
-
-                                <p className="text-sm text-gray-700">
-                                  <span className="font-semibold">
-                                    Reported on 1099:
-                                  </span>{" "}
-                                  {payout.reportedOn1099 ? "Yes" : "No"}
-                                </p>
-                                <p className="text-sm text-gray-700">
-                                  <span className="font-semibold">
-                                    Winner Answer Time:
-                                  </span>{" "}
-                                  {payout.answerTime} ms
-                                </p>
-                                <p className="text-sm text-gray-700">
-                                  <span className="font-semibold">
-                                    Instant Payout Fee:
-                                  </span>{" "}
-                                  {payout.instantPayoutFee
-                                    ? "Granted"
-                                    : "Not Granted"}
-                                </p>
-                                <p className="text-sm text-gray-700">
-                                  <span className="font-semibold">
-                                    Consolation Square:
-                                  </span>{" "}
-                                  {payout.consolationSquareGranted
-                                    ? "Granted"
-                                    : "Not Granted"}
-                                </p>
-
-                                {payout.processedBy && (
-                                  <p className="text-sm text-gray-700">
-                                    <span className="font-semibold">
-                                      Processed By:
-                                    </span>{" "}
-                                    {payout.processedBy}
-                                  </p>
-                                )}
-                              </div>
-                            </motion.div>
-                          )}
-                        </div>
+            {payouts.map((payout, index) => (
+              <motion.div
+                key={payout.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 + index * 0.05 }}
+                className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all"
+              >
+                <div className="flex items-start justify-between">
+                  {/* LEFT SIDE INFO */}
+                  <div className="flex-1">
+                    <div className="flex items-center mb-2">
+                      {getStatusIcon(payout.payoutStatus)}
+                      <h3 className="ml-3 text-xxl font-bold text-gray-900">
+                        {formatCurrency(payout.prizeAmount || 0)}
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                      <div className="ml-8 space-b-1">
+                        <p className="text-sm text-gray-700">
+                          <span className="font-bold text-lg">
+                            {payout.gameInfo?.teams
+                              ? `${payout.gameInfo.teams.away || "TBD"} @ ${
+                                  payout.gameInfo.teams.home || "TBD"
+                                }`
+                              : "Game Winnings"}
+                          </span>
+                        </p>
+                        <p className="text-sm text-gray-700">
+                          <span className="font-semibold">Solo Win:</span>{" "}
+                          {payout.isSoloWin ? "Yes ✅" : "No"}
+                        </p>
+                        <p className="text-sm text-gray-700">
+                          <span className="font-semibold">Tier:</span>{" "}
+                          {payout.tierId?.split("_")[1] || "N/A"}
+                        </p>
+                        <p className="text-sm text-gray-700">
+                          <span className="font-semibold">Dated:</span>{" "}
+                          {formatDate(payout.createdAt)}
+                        </p>
                       </div>
-
-                      {/* RIGHT SIDE ACTIONS */}
-                      <div className="ml-6 flex flex-col items-end gap-2">
-                        {payout.payoutStatus === "pending" && (
-                          <button
-                            onClick={() => handleInstantPayout(payout)}
-                            disabled={payout.payoutType === "instant"} // disable if already instant
-                            className={`flex items-center px-4 py-2 rounded-xl shadow transition-colors ${payout.payoutType === "instant" ? "bg-gray-400 cursor-not-allowed text-gray-200" : "bg-purple-600 text-white hover:bg-purple-700"}`}
+                      <div className="ml-8 space-b-1  ">
+                        <p className="text-sm mb-3">
+                          <span className="font-semibold"> Status:</span>{" "}
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-bold capitalize ${getStatusColor(
+                              payout.payoutStatus
+                            )}`}
                           >
-                            <Zap className="h-4 w-4 mr-2" />
-                            {payout.payoutType === "instant"
-                              ? "Already requsted"
-                              : "Get Instant Paid"}
-                          </button>
-                        )}
-
-                        {payout.payoutStatus === "completed" && (
-                          <button className="text-gray-400 hover:text-gray-600">
-                            <Download className="h-5 w-5" />
-                          </button>
-                        )}
+                            {payout.payoutStatus
+                              ? payout.payoutStatus
+                              : "Unknown"}
+                          </span>
+                        </p>
+                        <p className="text-sm mb-2">
+                          <span className="font-semibold"> Payout Type: </span>{" "}
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-bold capitalize ${getPayouttypeColor(
+                              payout.payoutType
+                            )}`}
+                          >
+                            {payout.payoutType ? payout.payoutType : "Standard"}
+                          </span>
+                        </p>
                       </div>
                     </div>
-                  </motion.div>
-                ))}
+
+                    {/* Expand/Collapse Button */}
+                    <div className="mt-3 ml-8">
+                      <button
+                        onClick={() => toggleExpand(payout.id)}
+                        className="flex items-center text-sm text-purple-600 hover:text-purple-800 font-medium"
+                      >
+                        {expandedId === payout.id ? (
+                          <>
+                            Hide Details <ChevronUp className="ml-1 h-4 w-4" />
+                          </>
+                        ) : (
+                          <>
+                            More Details{" "}
+                            <ChevronDown className="ml-1 h-4 w-4" />
+                          </>
+                        )}
+                      </button>
+
+                      {/* Collapsible Content */}
+                      {expandedId === payout.id && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          transition={{ duration: 0.35 }}
+                          className="mt-3 pl-3 border-l-2 border-gray-200"
+                        >
+                          <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                            <p className="text-sm text-gray-700">
+                              <span className="font-semibold">Game ID:</span>{" "}
+                              {payout.gameId || "N/A"}
+                            </p>
+                            <p className="text-sm text-gray-700">
+                              <span className="font-semibold">User ID:</span>{" "}
+                              {payout.userId}
+                            </p>
+                            <p className="text-sm text-gray-700">
+                              <span className="font-semibold">Claim ID:</span>{" "}
+                              {payout.claimId || "Not claimed yet"}
+                            </p>
+
+                            <p className="text-sm text-gray-700 col-span-2">
+                              <span className="font-semibold">
+                                Notification Status:
+                              </span>{" "}
+                              {payout.notificationStatus || "N/A"}
+                            </p>
+
+                            {payout.notificationErrors?.length > 0 && (
+                              <div className="col-span-2 flex items-start bg-red-50 text-red-700 border border-red-200 rounded-lg p-2">
+                                <AlertCircle className="h-4 w-4 mr-2 mt-0.5" />
+                                <span className="text-sm">
+                                  {payout.notificationErrors.join(", ")}
+                                </span>
+                              </div>
+                            )}
+
+                            <p className="text-sm text-gray-700">
+                              <span className="font-semibold">
+                                Reported on 1099:
+                              </span>{" "}
+                              {payout.reportedOn1099 ? "Yes" : "No"}
+                            </p>
+                            <p className="text-sm text-gray-700">
+                              <span className="font-semibold">
+                                Winner Answer Time:
+                              </span>{" "}
+                              {payout.answerTime} ms
+                            </p>
+                            <p className="text-sm text-gray-700">
+                              <span className="font-semibold">
+                                Instant Payout Fee:
+                              </span>{" "}
+                              {payout.instantPayoutFee
+                                ? "Granted"
+                                : "Not Granted"}
+                            </p>
+                            <p className="text-sm text-gray-700">
+                              <span className="font-semibold">
+                                Consolation Square:
+                              </span>{" "}
+                              {payout.consolationSquareGranted
+                                ? "Granted"
+                                : "Not Granted"}
+                            </p>
+
+                            {payout.processedBy && (
+                              <p className="text-sm text-gray-700">
+                                <span className="font-semibold">
+                                  Processed By:
+                                </span>{" "}
+                                {payout.processedBy}
+                              </p>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* RIGHT SIDE ACTIONS */}
+                  <div className="ml-6 flex flex-col items-end gap-2">
+                    {payout.payoutStatus === "pending" && (
+                      <button
+                        onClick={() => handleInstantPayout(payout)}
+                        disabled={payout.payoutType === "instant"} // disable if already instant
+                        className={`flex items-center px-4 py-2 rounded-xl shadow transition-colors ${payout.payoutType === "instant" ? "bg-gray-400 cursor-not-allowed text-gray-200" : "bg-purple-600 text-white hover:bg-purple-700"}`}
+                      >
+                        <Zap className="h-4 w-4 mr-2" />
+                        {payout.payoutType === "instant"
+                          ? "Already requsted"
+                          : "Get Instant Paid"}
+                      </button>
+                    )}
+
+                    {payout.payoutStatus === "completed" && (
+                      <button className="text-gray-400 hover:text-gray-600">
+                        <Download className="h-5 w-5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </motion.div>
         ) : (
           <motion.div
