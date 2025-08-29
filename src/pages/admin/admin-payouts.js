@@ -31,6 +31,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
+import { Link } from "react-router-dom";
 
 export default function AdminPayouts() {
   const [loading, setLoading] = useState(true);
@@ -582,8 +583,8 @@ export default function AdminPayouts() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            <a href={`/admin/users/${payout.userId}`}>
-                            {payout.user?.displayName || "Unknown User"}</a>
+                            <Link to={`/admin/users/${payout.userId}`}>
+                            {payout.user?.displayName || "Unknown User"}</Link>
                           </div>
                           <div className="text-sm text-gray-500">
                             {payout.user?.email || payout.email}
@@ -677,8 +678,8 @@ export default function AdminPayouts() {
                                 <Send className="h-4 w-4" />
                               </button>
                           )}
-                            <a href={`/admin/payouts/${payout.id}`}>
-                              <Eye className="h-4 w-4" /></a>
+                            <Link to={`/admin/payouts/${payout.id}`}>
+                              <Eye className="h-4 w-4" /></Link>
                         </div>
                       </td>
                     </tr>
