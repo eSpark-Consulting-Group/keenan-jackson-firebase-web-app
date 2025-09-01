@@ -7,6 +7,7 @@ const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
 const TelegramBot = require('node-telegram-bot-api');
 const twilio = require('twilio');
+const sgMail = require('@sendgrid/mail');
 
 // Import from constants/config using CommonJS
 const {
@@ -125,56 +126,45 @@ function getPayoutPercentage(tierId) {
 
 class EmailService {
   constructor() {
-    this.transporter = null;
     this.initialized = false;
   }
 
-  /**
-   * Initialize email transporter
-   */
   async initialize() {
     if (this.initialized) return;
-
     try {
-      this.transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-        }
-      });
-
-      // Verify connection
-      await this.transporter.verify();
+      // Use your SendGrid API key from environment variable
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
       this.initialized = true;
-      console.log('Email service initialized successfully');
+      console.log('SendGrid email service initialized successfully');
     } catch (error) {
       logError(error, { context: 'EmailService.initialize' });
-      throw new Error('Failed to initialize email service');
+      throw new Error('Failed to initialize SendGrid service');
     }
   }
 
-  /**
-   * Send email with retry logic
-   */
   async sendEmail(to, subject, html, attachments = []) {
     if (!this.initialized) {
       await this.initialize();
     }
 
-    const mailOptions = {
-      from: NOTIFICATION_CONFIG.EMAIL.FROM_ADDRESS,
+    const msg = {
       to,
+      from: NOTIFICATION_CONFIG.EMAIL.FROM_ADDRESS, // must be a verified SendGrid sender
       subject,
       html,
-      attachments
+      attachments: attachments.map(att => ({
+        content: att.content.toString('base64'),
+        filename: att.filename,
+        type: att.contentType,
+        disposition: 'attachment'
+      }))
     };
 
     return await retryOperation(
       async () => {
-        const info = await this.transporter.sendMail(mailOptions);
-        console.log(`Email sent to ${to}: ${info.messageId}`);
-        return info;
+        const response = await sgMail.send(msg);
+        console.log(`Email sent to ${to} via SendGrid: ${response[0].statusCode}`);
+        return response;
       },
       3,
       1000
