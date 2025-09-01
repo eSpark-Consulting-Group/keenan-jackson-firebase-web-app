@@ -71,7 +71,7 @@ exports.createGame = functions.https.onCall(async (data, context) => {
       week,
       externalGameId,
       status: "scheduled",
-      currentQuarter: 0,
+      currentQuarter: 1,
       processedQuarters: {
         q1: false,
         q2: false,
@@ -223,6 +223,18 @@ exports.claimSquare = functions.https.onCall(async (data, context) => {
     }
 
     const board = boardDoc.data();
+
+    // 🏈 Fetch related game
+    let currentQuarter = 1;
+    if (board.gameId) {
+      const gameRef = db.collection("games").doc(board.gameId);
+      const gameSnap = await gameRef.get();
+      if (gameSnap.exists) {
+        const gameData = gameSnap.data();
+        currentQuarter = gameData.currentQuarter || 1;
+      }
+    }
+
     const squares = board.squares || {};
     const squareData = squares[squarePosition] || { claims: [] };
 
@@ -249,6 +261,7 @@ exports.claimSquare = functions.https.onCall(async (data, context) => {
     const newClaim = {
       userId,
       tokenId,
+      currentQuarter,
       answerTime: answerTime / 1000, // Convert to seconds
       // claimedAt: admin.firestore.FieldValue.serverTimestamp(),
       claimedAt: new Date(), // ✅ becomes a Firestore Timestamp
@@ -276,6 +289,7 @@ exports.claimSquare = functions.https.onCall(async (data, context) => {
       message: "Square claimed successfully",
       squarePosition,
       occupancy: squareData.claims.length,
+      currentQuarter,
     };
   } catch (error) {
     console.error("Claim square error:", error);
@@ -291,48 +305,52 @@ exports.determineWinners = functions.pubsub
   .schedule("every 2 minutes")
   .timeZone("America/New_York")
   .onRun(async (context) => {
-    // console.log("🏁 Starting determineWinners scheduled function...");
+    console.log("🏁 Starting determineWinners scheduled function...");
 
     try {
       // 1) Fetch active games
-      // console.log("🔎 Fetching active games...");
+      console.log("🔎 Fetching active games...");
       const gamesSnapshot = await db
         .collection("games")
         .where("status", "in", ["active", "in_progress"])
         .get();
 
       if (gamesSnapshot.empty) {
-        // console.log("⚠️ No active games found, exiting.");
+        console.log("⚠️ No active games found, exiting.");
         return null;
       }
-      // console.log(`✅ Found ${gamesSnapshot.size} active games`);
+      console.log(`✅ Found ${gamesSnapshot.size} active games`);
 
       // 2) Process each game independently
       const perGameTasks = gamesSnapshot.docs.map(async (gameDoc) => {
         const game = gameDoc.data();
         const gameId = gameDoc.id;
-        // console.log("🎮 Processing Game", { gameId, game });
+
+        console.log(
+          "🎮 Processing Game",
+          JSON.stringify({ gameId, status: game.status })
+        );
 
         const quarters = ["q1", "q2", "q3", "q4"];
         for (const quarter of quarters) {
-          // console.log("➡️ Checking quarter", { gameId, quarter });
+          console.log("➡️ Checking quarter", { gameId, quarter });
 
           const quarterScore = game.quarterScores?.[quarter];
-          // console.log("   Quarter score", { gameId, quarter, quarterScore });
+          console.log("   Quarter score", { gameId, quarter, quarterScore });
 
           // Skip if quarter doesn't exist, has no scores yet, or already processed
           if (!quarterScore) {
-            // console.log("   ⚠️ Skipping quarter (no data)", {
-            //   gameId,
-            //   quarter,
-            // });
+            console.log("   ⚠️ Skipping quarter (no data)", {
+              gameId,
+              quarter,
+            });
             continue;
           }
           if (quarterScore.processed) {
-            // console.log("   ✅ Already processed, skipping", {
-            //   gameId,
-            //   quarter,
-            // });
+            console.log("   ✅ Already processed, skipping", {
+              gameId,
+              quarter,
+            });
             continue;
           }
 
@@ -343,25 +361,25 @@ exports.determineWinners = functions.pubsub
             homeLastDigit * 10 + awayLastDigit, // home-away
             awayLastDigit * 10 + homeLastDigit, // away-home
           ];
-          // console.log("   🧮 Computed winning digits", {
-          //   gameId,
-          //   quarter,
-          //   homeLastDigit,
-          //   awayLastDigit,
-          //   winningPositions,
-          // });
+          console.log("   🧮 Computed winning digits", {
+            gameId,
+            quarter,
+            homeLastDigit,
+            awayLastDigit,
+            winningPositions,
+          });
 
           // 2a) Fetch boards for this game
-          // console.log("   🔎 Fetching boards", { gameId });
+          console.log("   🔎 Fetching boards", { gameId });
           const boardsSnapshot = await db
             .collection("boards")
             .where("gameId", "==", gameId)
             .get();
 
-          // console.log("   ✅ Boards found", {
-          //   gameId,
-          //   count: boardsSnapshot.size,
-          // });
+          console.log("   ✅ Boards found", {
+            gameId,
+            count: boardsSnapshot.size,
+          });
 
           const actions = []; // collect async tasks
 
@@ -369,33 +387,28 @@ exports.determineWinners = functions.pubsub
           for (const boardDoc of boardsSnapshot.docs) {
             const board = boardDoc.data();
             const boardId = boardDoc.id;
-            // console.log(
-            //   "📝 Processing Board",
-            //   JSON.stringify({ gameId, boardId, board })
-            // );
-            // console.log(
-            //   "   📝 Winning positions",
-            //   JSON.stringify({
-            //     gameId,
-            //     winningPositions,
-            //   })
-            // );
+            console.log(
+              "📝 Processing Board",
+              JSON.stringify({ gameId, boardId })
+            );
 
             for (const position of winningPositions) {
-              // console.log("      ➡️ Checking position", { gameId, position });
+              console.log("      ➡️ Checking position", { gameId, position });
               const square = board.squares?.[position];
-              // console.log("         Square data", { gameId, position, square });
+              console.log("         Square data", { gameId, position, square });
 
               if (!square || !square.claims || square.claims.length === 0) {
-                // console.log("         ⚠️ No claims for square, skipping", {
-                // gameId,
-                // position,
-                // });
+                console.log("         ⚠️ No claims for square, skipping", {
+                  gameId,
+                  position,
+                });
                 continue;
               }
 
               // If only 1 claim → solo winner
               if (square.claims.length === 1) {
+                const onlyClaim = square.claims[0];
+
                 const winnerUserSnap = await db
                   .collection("users")
                   .doc(onlyClaim.userId)
@@ -409,24 +422,19 @@ exports.determineWinners = functions.pubsub
                 if (winnerTelegramId) {
                   await sendTelegramNotification(
                     winnerTelegramId,
-                    `
-🎉 Congratulations! 🎉
-
-You’ve won in *Quarter ${quarter.toUpperCase()}*
-
-Great job beating the competition! 🏆🔥
+                    `🎉 Congratulations! 🎉 You’ve won in *Quarter ${quarter.toUpperCase()}* Great job beating the competition! 🏆🔥
 `
                   );
                 }
-                const onlyClaim = square.claims[0];
-                // console.log("         🏆 Solo winner found", {
-                //   gameId,
-                //   boardId,
-                //   quarter,
-                //   position,
-                //   userId: onlyClaim.userId,
-                //   answerTime: onlyClaim.answerTime,
-                // });
+
+                console.log("         🏆 Solo winner found", {
+                  gameId,
+                  boardId,
+                  quarter,
+                  position,
+                  userId: onlyClaim.userId,
+                  answerTime: onlyClaim.answerTime,
+                });
 
                 actions.push(async () => {
                   await processWinner({
@@ -442,14 +450,14 @@ Great job beating the competition! 🏆🔥
                 });
               } else {
                 // Multiple claims → sort by fastest
-                // console.log("         ⚔️ Multiple claimants found", {
-                //   gameId,
-                //   position,
-                //   claims: square.claims.map((c) => ({
-                //     userId: c.userId,
-                //     answerTime: c.answerTime,
-                //   })),
-                // });
+                console.log("         ⚔️ Multiple claimants found", {
+                  gameId,
+                  position,
+                  claims: square.claims.map((c) => ({
+                    userId: c.userId,
+                    answerTime: c.answerTime,
+                  })),
+                });
 
                 const sorted = [...square.claims].sort(
                   (a, b) => a.answerTime - b.answerTime
@@ -480,22 +488,22 @@ Great job beating the competition! 🏆🔥
                   );
                 }
 
-                // console.log("         🏆 Winner", {
-                //   gameId,
-                //   boardId,
-                //   quarter,
-                //   position,
-                //   userId: winner.userId,
-                //   answerTime: winner.answerTime,
-                // });
-                // console.log("         ❌ Loser", {
-                //   gameId,
-                //   boardId,
-                //   quarter,
-                //   position,
-                //   userId: loser.userId,
-                //   answerTime: loser.answerTime,
-                // });
+                console.log("         🏆 Winner", {
+                  gameId,
+                  boardId,
+                  quarter,
+                  position,
+                  userId: winner.userId,
+                  answerTime: winner.answerTime,
+                });
+                console.log("         ❌ Loser", {
+                  gameId,
+                  boardId,
+                  quarter,
+                  position,
+                  userId: loser.userId,
+                  answerTime: loser.answerTime,
+                });
 
                 actions.push(async () => {
                   // Winner
@@ -528,15 +536,15 @@ Great job beating the competition! 🏆🔥
                   const updatedClaims = square.claims.filter(
                     (c) => c.userId !== loser.userId
                   );
-                  // console.log(
-                  //   "         🔄 Updating board after loser removal",
-                  //   {
-                  //     gameId,
-                  //     boardId,
-                  //     position,
-                  //     updatedClaims,
-                  //   }
-                  // );
+                  console.log(
+                    "         🔄 Updating board after loser removal",
+                    {
+                      gameId,
+                      boardId,
+                      position,
+                      updatedClaims,
+                    }
+                  );
 
                   await db
                     .collection("boards")
@@ -560,43 +568,178 @@ Great job beating the competition! 🏆🔥
 
             for (const act of actions) {
               try {
-                // console.log("▶️ Executing action", { gameId, quarter });
+                console.log("▶️ Executing action", { gameId, quarter });
                 await act();
-                // console.log("      ✅ Action completed", { gameId, quarter });
+                console.log("      ✅ Action completed", { gameId, quarter });
               } catch (err) {
-                // console.error("      💥 Action failed", {
-                //   gameId,
-                //   quarter,
-                //   error: err,
-                // });
+                console.error("      💥 Action failed", {
+                  gameId,
+                  quarter,
+                  error: err,
+                });
               }
             }
 
-            // console.log("   🔖 Marking quarter as processed", {
-            //   gameId,
-            //   quarter,
-            // });
+            console.log("   🔖 Marking quarter as processed", {
+              gameId,
+              quarter,
+            });
             await gameDoc.ref.update({
               [`quarterScores.${quarter}.processed`]: true,
               [`quarterScores.${quarter}.processedAt`]:
                 admin.firestore.FieldValue.serverTimestamp(),
               [`quarterScores.${quarter}.winningPositions`]: winningPositions,
             });
+            // 🧹 Cleanup old claims for this game/quarter
+            console.log("   🧹 Cleaning up old claims", { gameId, quarter });
           } else {
-            // console.log("   ⚠️ No winners, leaving unprocessed", {
-            //   gameId,
-            //   quarter,
-            // });
+            console.log("   ⚠️ No winners, leaving unprocessed", {
+              gameId,
+              quarter,
+            });
           }
+
+          // for (const boardDoc of boardsSnapshot.docs) {
+          //   const board = boardDoc.data();
+          //   const boardId = boardDoc.id;
+          //   const gameId = board.gameId;
+          //   console.warn(`⚠️ GameId ${gameId} here`);
+
+          //   if (!gameId) {
+          //     console.warn(
+          //       `⚠️ Board ${boardId} has no gameId, skipping cleanup`
+          //     );
+          //     continue;
+          //   }
+
+          //   try {
+          //     // 🔍 Fetch game doc fresh
+          //     const gameSnap = await db.collection("games").doc(gameId).get();
+          //     if (!gameSnap.exists) {
+          //       console.warn(
+          //         `⚠️ Game ${gameId} not found for board ${boardId}, skipping cleanup`
+          //       );
+          //       continue;
+          //     }
+
+          //     const game = gameSnap.data();
+
+          //     const currentQuarter = game.currentQuarter || 1;
+          //     console.warn(`⚠️ currentQuarter ${game.currentQuarter} here`);
+          //     console.log("   📌 Running cleanup for board", {
+          //       boardId,
+          //       gameId,
+          //       currentQuarter,
+          //     });
+
+          //     await cleanupOldClaims(boardId, board, currentQuarter);
+
+          //     console.log("   ✅ Cleanup complete", {
+          //       boardId,
+          //       gameId,
+          //       currentQuarter,
+          //     });
+          //   } catch (err) {
+          //     console.error("   💥 Cleanup failed", {
+          //       boardId,
+          //       gameId,
+          //       error: err,
+          //     });
+          //   }
+          // }
         }
       });
 
       await Promise.all(perGameTasks);
-      // console.log("🏁 Winner determination complete for all games");
+      console.log("🏁 Winner determination complete for all games");
       return null;
     } catch (err) {
-      // console.error("💥 Error in determineWinners", { error: err });
+      console.error("💥 Error in determineWinners", { error: err });
       return null;
+    }
+  });
+
+// cleanup-old-claims.js
+async function cleanupOldClaims(boardId, board, currentQuarter) {
+  const updates = {};
+  let removedSquares = [];
+
+  for (const [position, square] of Object.entries(board.squares || {})) {
+    if (!square.claims || square.claims.length === 0) continue;
+
+    console.log(`🔎 Checking square ${position} on board ${boardId}`, {
+      claims: square.claims,
+      currentQuarter,
+    });
+
+    // If ANY claim is older than currentQuarter → remove whole square
+    const hasOldClaim = square.claims.some(
+      (c) => c.currentQuarter < currentQuarter
+    );
+
+    if (hasOldClaim) {
+      updates[`squares.${position}`] = admin.firestore.FieldValue.delete();
+      removedSquares.push(position);
+
+      console.log(`🗑️ Removing whole square ${position}`, {
+        claims: square.claims,
+      });
+    }
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await db.collection("boards").doc(boardId).update(updates);
+    console.log(`🧹 Removed ${removedSquares.length} squares on board ${boardId}`, {
+      removedSquares,
+    });
+  } else {
+    console.log(`✨ No squares to clean on board ${boardId}`);
+  }
+}
+
+
+exports.cleanupClaims = functions.pubsub
+  .schedule("every 2 minutes")
+  .onRun(async () => {
+    console.log("🧹 Running scheduled cleanup job...");
+
+    const boardsSnapshot = await db.collection("boards").get();
+    console.log(`📊 Found ${boardsSnapshot.size} boards to check`);
+
+    for (const boardDoc of boardsSnapshot.docs) {
+      const board = boardDoc.data();
+      const boardId = boardDoc.id;
+
+      if (!board.gameId) {
+        console.warn(`⚠️ Board ${boardId} has no gameId`);
+        continue;
+      }
+
+      const gameSnap = await db.collection("games").doc(board.gameId).get();
+      if (!gameSnap.exists) {
+        console.warn(`⚠️ Game ${board.gameId} not found for board ${boardId}`);
+        continue;
+      }
+
+      const game = gameSnap.data();
+      const currentQuarter = game.currentQuarter || 1;
+
+      console.log("➡️ Starting cleanup for board", {
+        boardId,
+        gameId: board.gameId,
+        currentQuarter,
+      });
+
+      try {
+        await cleanupOldClaims(boardId, board, currentQuarter);
+        console.log("✅ Cleanup complete", { boardId, gameId: board.gameId });
+      } catch (err) {
+        console.error("💥 Cleanup failed", {
+          boardId,
+          gameId: board.gameId,
+          error: err.message,
+        });
+      }
     }
   });
 
@@ -1170,6 +1313,7 @@ module.exports = {
   createGame: exports.createGame,
   claimSquare: exports.claimSquare,
   determineWinners: exports.determineWinners,
+  cleanupClaims: exports.cleanupClaims,
   createCheckoutSession: exports.createCheckoutSession,
   verifyCheckoutSession: exports.verifyCheckoutSession,
   handleStripeWebhook: exports.handleStripeWebhook,
