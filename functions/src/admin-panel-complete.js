@@ -175,6 +175,7 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
     });
 
     let games = response.data || [];
+    // const games = DUMMY_GAMES;
 
     if (teamName) {
       const searchTerm = teamName.toLowerCase();
@@ -192,6 +193,7 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
       awayTeam: game.AwayTeam,
       startTime: sport === "NFL" ? game?.Date : game?.DateTime,
       status: game.Status,
+
       venue:
         sport === "NFL"
           ? game.StadiumDetails?.Name
@@ -202,7 +204,6 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
         away: sport === "NFL" ? game.AwayScore : game.AwayTeamScore,
       },
     }));
-
     console.log(`Admin ${adminId} searched ${sport} games`);
     return {
       success: true,

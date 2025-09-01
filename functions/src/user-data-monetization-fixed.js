@@ -7,6 +7,7 @@ const { verifyUserTierAccess } = require("./trivia-system-fixed");
 const { default: axios } = require("axios");
 // import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 const { logger } = require("firebase-functions");
+const { GAME_CONFIG } = require("./constants-configuration-fixed");
 
 const db = admin.firestore();
 
@@ -92,6 +93,15 @@ async function sendTelegramNotification(chatId, message) {
     }
   );
 }
+
+const API_SPORTS_CONFIG = {
+  NFL: {
+    endpoint: "/v3/nfl/scores/json/ScoresByWeek",
+  },
+  CFB: {
+    endpoint: "/v3/cfb/scores/json/GamesByWeek",
+  },
+};
 
 // =====================================
 // DATA COLLECTION FUNCTIONS
@@ -767,6 +777,193 @@ exports.sendGameReminders = functions.pubsub
 
     await Promise.all(promises);
   });
+
+exports.sendPayoutMessages = functions.pubsub
+  .schedule("every 5 minutes")
+  .onRun(async () => {
+    try {
+      logger.info("Hello Payout Function");
+      const winnersSnap = await db
+        .collection("winners")
+        .where("payoutStatus", "==", "completed")
+        .get();
+
+      const pendingDocs = winnersSnap.docs.filter(
+        (doc) => !doc.data().isTelegramSend
+      );
+
+      if (pendingDocs.length === 0) {
+        console.log(
+          "No winners found with completed payout and unsent message."
+        );
+        return null;
+      }
+
+      const tasks = pendingDocs.map(async (winnerDoc) => {
+        const winnerData = winnerDoc.data();
+        const userId = winnerData.userId;
+
+        if (!userId) {
+          console.log(`Winner ${winnerDoc.id} has no userId`);
+          return;
+        }
+
+        // Get user info
+        const userSnap = await db.collection("users").doc(userId).get();
+        if (!userSnap.exists) {
+          console.log(`User ${userId} not found`);
+          return;
+        }
+
+        const userData = userSnap.data();
+        const chatId = userData.telegramChatId;
+
+        if (!chatId) {
+          console.log(`User ${userId} has no Telegram chatId`);
+          return;
+        }
+
+        // Send Telegram message
+        const message = `🎉 Congratulations! Your payout has been completed.`;
+
+        try {
+          await sendTelegramNotification(chatId, message);
+
+          console.log(`Message sent to ${userId} (${chatId})`);
+
+          // Mark as sent
+          await winnerDoc.ref.update({
+            isTelegramSend: true,
+            telegramSentAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        } catch (err) {
+          console.error(`Failed to send Telegram message to ${chatId}`, err);
+        }
+      });
+
+      await Promise.all(tasks);
+
+      return null;
+    } catch (error) {
+      console.error("Error in sendPayoutMessages function:", error);
+      return null;
+    }
+  });
+
+exports.checkCancelledGames = functions.pubsub
+  .schedule("every 5 minutes")
+  .timeZone("America/Denver")
+  .onRun(async (context) => {
+    const db = admin.firestore();
+    const now = new Date();
+    const year = now.getFullYear();
+
+    try {
+      logger.info("checkCancelledGames started");
+
+      // Get all games that are not cancelled
+      const gamesSnap = await db
+        .collection("games")
+        .where("status", "!=", GAME_CONFIG.STATUS.CANCELLED)
+        .get();
+
+      logger.info(`📊 Found ${gamesSnap.size} non-cancelled games`);
+
+      if (gamesSnap.empty) return;
+
+      for (const gameDoc of gamesSnap.docs) {
+        const game = gameDoc.data();
+        const { externalGameId, week, sport } = game;
+        if (!externalGameId) continue;
+
+        const config = API_SPORTS_CONFIG[sport];
+
+        logger.info(
+          `🔎 Checking game ${gameDoc.id} (extId: ${externalGameId}, week: ${week}, sport: ${sport})`
+        );
+
+        // Call SportsData API
+        const url = `https://api.sportsdata.io${config.endpoint}/${year}/${week}?key=${process.env.REACT_APP_APISPORTS_KEY}`;
+        const res = await fetch(url);
+        const gamesList = await res.json();
+
+        logger.info(
+          `📡 API returned ${gamesList?.length || 0} games for week ${week}`
+        );
+
+        const apiGame = gamesList.find((g) =>
+          sport === "NFL"
+            ? g.GameKey === externalGameId
+            : g.GameID === externalGameId
+        );
+        if (!apiGame) {
+          logger.info(`⚠️ API did not return game ${externalGameId}`);
+          continue;
+        }
+
+        if (apiGame.Status === "Canceled") {
+          logger.info(`❌ Game ${gameDoc.id} is cancelled. Refunding tiers...`);
+
+          const batch = db.batch();
+
+          // 1. Mark game as cancelled
+          batch.update(gameDoc.ref, {
+            status: GAME_CONFIG.STATUS.CANCELLED,
+            cancelledAt: getTimestamp(),
+          });
+
+          // 2. Refund tiers for all claims on this game's boards
+          const boardsSnap = await db
+            .collection("boards")
+            .where("gameId", "==", gameDoc.id)
+            .get();
+
+          for (const boardDoc of boardsSnap.docs) {
+            const board = boardDoc.data();
+            const squares = board.squares || {};
+
+            Object.values(squares).forEach((square) => {
+              const claims = square.claims || [];
+              claims.forEach((claim) => {
+                const { userId, tierId } = claim;
+                if (!userId || !tierId) return;
+
+                const userRef = db.collection("users").doc(userId);
+
+                // Push tierId back into currentTiers array
+                batch.update(userRef, {
+                  currentTiers: admin.firestore.FieldValue.arrayUnion(tierId),
+                });
+              });
+            });
+          }
+
+          await batch.commit();
+
+          // 3. Log
+          await db.collection("systemLogs").add({
+            type: "game_cancelled",
+            gameId: gameDoc.id,
+            externalGameId,
+            refunded: true,
+            timestamp: getTimestamp(),
+          });
+
+          logger.info(`✅ Refunded tiers for cancelled game ${gameDoc.id}`);
+        }
+      }
+    } catch (error) {
+      logError(error, { context: "checkCancelledGames" });
+    }
+  });
+
+async function sendTelegramNotification(chatId, message) {
+  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, text: message }),
+  });
+}
 
 exports.setAdminClaim = functions.https.onCall(async (data, context) => {
   const { uid } = data;
