@@ -15,6 +15,7 @@ const {
   ERROR_MESSAGES,
   FEATURE_FLAGS,
   VALIDATION_RULES,
+  DUMMY_GAMES,
   // DUMMY_GAMES,
 } = require("./constants-configuration-fixed");
 
@@ -132,8 +133,8 @@ class ApiSportsService {
       });
 
       // const games = await this.makeRequest(url);
-      const { data: games } = await axios.get(url);
-      // const games = DUMMY_GAMES;
+      // const { data: games } = await axios.get(url);
+      const games = DUMMY_GAMES;
       logger.info("[fetchGameScore] API returned", {
         gameKey,
         sport,

@@ -5,6 +5,7 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const { sendMail } = require("./payment-system-modified");
+const { DUMMY_GAMES } = require("./constants-configuration-fixed");
 // const { DUMMY_GAMES } = require("./constants-configuration-fixed");
 
 // =====================================
@@ -170,12 +171,12 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
 
     const url = `https://api.sportsdata.io${config.endpoint}/${year}/${week}`;
 
-    const response = await axios.get(url, {
-      params: { key: process.env.REACT_APP_APISPORTS_KEY },
-    });
+    // const response = await axios.get(url, {
+    //   params: { key: process.env.REACT_APP_APISPORTS_KEY },
+    // });
 
-    let games = response.data || [];
-    // const games = DUMMY_GAMES;
+    // let games = response.data || [];
+    const games = DUMMY_GAMES;
 
     if (teamName) {
       const searchTerm = teamName.toLowerCase();

@@ -15,7 +15,7 @@ import { auth, db } from "./firebase/config";
 // Context Providers
 import { AuthProvider } from "./contexts/authcontext";
 import { GameProvider } from "./contexts/gamecontext";
-import { NotificationProvider } from "./contexts/notificationcontext";
+// import { NotificationProvider } from "./contexts/notificationcontext";
 
 // Layout Components
 import Layout from "./components/layout/layout";
@@ -92,266 +92,266 @@ function App() {
   return (
     <AuthProvider value={{ user, userData }}>
       <GameProvider>
-        <NotificationProvider>
-          <Router>
-            <div className="App">
-              <Toaster
-                position="top-right"
-                toastOptions={{
+        {/* <NotificationProvider> */}
+        <Router>
+          <div className="App">
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: "#363636",
+                  color: "#fff",
+                },
+                success: {
+                  duration: 3000,
+                  iconTheme: {
+                    primary: "#10B981",
+                    secondary: "#fff",
+                  },
+                },
+                error: {
                   duration: 4000,
-                  style: {
-                    background: "#363636",
-                    color: "#fff",
+                  iconTheme: {
+                    primary: "#EF4444",
+                    secondary: "#fff",
                   },
-                  success: {
-                    duration: 3000,
-                    iconTheme: {
-                      primary: "#10B981",
-                      secondary: "#fff",
-                    },
-                  },
-                  error: {
-                    duration: 4000,
-                    iconTheme: {
-                      primary: "#EF4444",
-                      secondary: "#fff",
-                    },
-                  },
-                }}
+                },
+              }}
+            />
+
+            <Routes>
+              {/* Public Routes */}
+              <Route
+                path="/"
+                element={
+                  <Layout>
+                    <LandingPage />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/home"
+                element={
+                  <Layout>
+                    <LandingPage />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/login"
+                element={
+                  <Layout>
+                    <Login />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/register"
+                element={
+                  <Layout>
+                    <Register />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/how-to-play"
+                element={
+                  <Layout>
+                    <HowToPlay />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/legal/:page"
+                element={
+                  <Layout>
+                    <Legal />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/free-entry"
+                element={
+                  <Layout>
+                    <FreeEntry />
+                  </Layout>
+                }
               />
 
-              <Routes>
-                {/* Public Routes */}
-                {/* <Route path="/" element={<Layout><Landing /></Layout>} /> */}
-                <Route
-                  path="/"
-                  element={
+              {/* Protected Routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
                     <Layout>
-                      <LandingPage />
+                      <Dashboard />
                     </Layout>
-                  }
-                />
-                <Route
-                  path="/home"
-                  element={
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/games"
+                element={
+                  <ProtectedRoute>
                     <Layout>
-                      <LandingPage />
+                      <Games />
                     </Layout>
-                  }
-                />
-                <Route
-                  path="/login"
-                  element={
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/game/:boardId"
+                element={
+                  <ProtectedRoute>
                     <Layout>
-                      <Login />
+                      <GameBoard />
                     </Layout>
-                  }
-                />
-                <Route
-                  path="/register"
-                  element={
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
                     <Layout>
-                      <Register />
+                      <Profile />
                     </Layout>
-                  }
-                />
-                <Route
-                  path="/tiers"
-                  element={
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tiers"
+                element={
+                  <ProtectedRoute>
                     <Layout>
                       <Tier />
                     </Layout>
-                  }
-                />
-                <Route
-                  path="/how-to-play"
-                  element={
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/payment-success"
+                element={
+                  <ProtectedRoute>
                     <Layout>
-                      <HowToPlay />
+                      <PaymentSuccess />
                     </Layout>
-                  }
-                />
-                <Route
-                  path="/legal/:page"
-                  element={
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/payment-cancel"
+                element={
+                  <ProtectedRoute>
                     <Layout>
-                      <Legal />
+                      <PaymentCancel />
                     </Layout>
-                  }
-                />
-                <Route
-                  path="/free-entry"
-                  element={
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/payouts"
+                element={
+                  <ProtectedRoute>
                     <Layout>
-                      <FreeEntry />
+                      <Payouts />
                     </Layout>
-                  }
-                />
+                  </ProtectedRoute>
+                }
+              />
 
-                {/* Protected Routes */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <Dashboard />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/games"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <Games />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/game/:boardId"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <GameBoard />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <Profile />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/payment-success"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <PaymentSuccess />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/payment-cancel"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <PaymentCancel />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/payouts"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <Payouts />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
+              {/* Admin Routes */}
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <Layout>
+                      <AdminDashboard />
+                    </Layout>
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/games"
+                element={
+                  <AdminRoute>
+                    <Layout>
+                      <AdminGames />
+                    </Layout>
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <AdminRoute>
+                    <Layout>
+                      <AdminUsers />
+                    </Layout>
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/users/:userId"
+                element={
+                  <AdminRoute>
+                    <Layout>
+                      <AdminUsersSingle />
+                    </Layout>
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/payouts"
+                element={
+                  <AdminRoute>
+                    <Layout>
+                      <AdminPayouts />
+                    </Layout>
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/payouts/:payoutId"
+                element={
+                  <AdminRoute>
+                    <Layout>
+                      <AdminPayoutsSingle />
+                    </Layout>
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/trivia"
+                element={
+                  <AdminRoute>
+                    <Layout>
+                      <AdminTrivia />
+                    </Layout>
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/reports"
+                element={
+                  <AdminRoute>
+                    <Layout>
+                      <AdminReports />
+                    </Layout>
+                  </AdminRoute>
+                }
+              />
 
-                {/* Admin Routes */}
-                <Route
-                  path="/admin"
-                  element={
-                    <AdminRoute>
-                      <Layout>
-                        <AdminDashboard />
-                      </Layout>
-                    </AdminRoute>
-                  }
-                />
-                <Route
-                  path="/admin/games"
-                  element={
-                    <AdminRoute>
-                      <Layout>
-                        <AdminGames />
-                      </Layout>
-                    </AdminRoute>
-                  }
-                />
-                <Route
-                  path="/admin/users"
-                  element={
-                    <AdminRoute>
-                      <Layout>
-                        <AdminUsers />
-                      </Layout>
-                    </AdminRoute>
-                  }
-                />
-                <Route
-                  path="/admin/users/:userId"
-                  element={
-                    <AdminRoute>
-                      <Layout>
-                        <AdminUsersSingle />
-                      </Layout>
-                    </AdminRoute>
-                  }
-                />
-                
-                <Route
-                  path="/admin/payouts"
-                  element={
-                    <AdminRoute>
-                      <Layout>
-                        <AdminPayouts />
-                      </Layout>
-                    </AdminRoute>
-                  }
-                />
-                <Route
-                  path="/admin/payouts/:payoutId"
-                  element={
-                    <AdminRoute>
-                      <Layout>
-                        <AdminPayoutsSingle />
-                      </Layout>
-                    </AdminRoute>
-                  }
-                />
-                <Route
-                  path="/admin/trivia"
-                  element={
-                    <AdminRoute>
-                      <Layout>
-                        <AdminTrivia />
-                      </Layout>
-                    </AdminRoute>
-                  }
-                />
-                <Route
-                  path="/admin/reports"
-                  element={
-                    <AdminRoute>
-                      <Layout>
-                        <AdminReports />
-                      </Layout>
-                    </AdminRoute>
-                  }
-                />
-
-                {/* Catch all - redirect to dashboard or landing */}
-                <Route
-                  path="*"
-                  element={<Navigate to={user ? "/dashboard" : "/"} replace />}
-                />
-              </Routes>
-            </div>
-          </Router>
-        </NotificationProvider>
+              {/* Catch all - redirect to dashboard or landing */}
+              <Route
+                path="*"
+                element={<Navigate to={user ? "/dashboard" : "/"} replace />}
+              />
+            </Routes>
+          </div>
+        </Router>
+        {/* </NotificationProvider> */}
       </GameProvider>
     </AuthProvider>
   );

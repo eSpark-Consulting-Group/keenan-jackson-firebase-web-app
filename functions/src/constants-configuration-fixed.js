@@ -506,15 +506,15 @@ const DUMMY_GAMES = [
     YardLine: null,
     YardLineTerritory: null,
     RedZone: null,
-    AwayScoreQuarter1: 12, // update here
-    AwayScoreQuarter2: 33,
-    AwayScoreQuarter3: null,
-    AwayScoreQuarter4: null,
+    AwayScoreQuarter1: 11, // update here
+    AwayScoreQuarter2: 12,
+    AwayScoreQuarter3: 13,
+    AwayScoreQuarter4: 16,
     AwayScoreOvertime: null,
-    HomeScoreQuarter1: 19, //update here
-    HomeScoreQuarter2: 34,
-    HomeScoreQuarter3: null,
-    HomeScoreQuarter4: null,
+    HomeScoreQuarter1: 16, //update here
+    HomeScoreQuarter2: 13,
+    HomeScoreQuarter3: 18,
+    HomeScoreQuarter4: 18,
     HomeScoreOvertime: null,
     HasStarted: false,
     IsInProgress: false,
@@ -522,7 +522,7 @@ const DUMMY_GAMES = [
     Has1stQuarterStarted: true,
     Has2ndQuarterStarted: true,
     Has3rdQuarterStarted: true,
-    Has4thQuarterStarted: false,
+    Has4thQuarterStarted: true,
     IsOvertime: false,
     DownAndDistance: null,
     QuarterDescription: "",

@@ -354,12 +354,13 @@ exports.determineWinners = functions.pubsub
             continue;
           }
 
-          // Compute winning positions
-          const homeLastDigit = Number(quarterScore.home) % 10;
-          const awayLastDigit = Number(quarterScore.away) % 10;
+          // Compute winning positions (always 2-digit strings)
+          const homeLastDigit = Math.abs(Number(quarterScore.home)) % 10;
+          const awayLastDigit = Math.abs(Number(quarterScore.away)) % 10;
+
           const winningPositions = [
-            homeLastDigit * 10 + awayLastDigit, // home-away
-            awayLastDigit * 10 + homeLastDigit, // away-home
+            `${homeLastDigit}${awayLastDigit}`.padStart(2, "0"), // "50"
+            `${awayLastDigit}${homeLastDigit}`.padStart(2, "0"), // "05"
           ];
           console.log("   🧮 Computed winning digits", {
             gameId,
@@ -387,10 +388,7 @@ exports.determineWinners = functions.pubsub
           for (const boardDoc of boardsSnapshot.docs) {
             const board = boardDoc.data();
             const boardId = boardDoc.id;
-            console.log(
-              "📝 Processing Board",
-              JSON.stringify({ gameId, boardId })
-            );
+            console.log("📝 Processing Board", { gameId, boardId });
 
             for (const position of winningPositions) {
               console.log("      ➡️ Checking position", { gameId, position });
@@ -413,17 +411,15 @@ exports.determineWinners = functions.pubsub
                   .collection("users")
                   .doc(onlyClaim.userId)
                   .get();
-                let winnerTelegramId = null;
-                if (winnerUserSnap.exists) {
-                  winnerTelegramId =
-                    winnerUserSnap.data().telegramChatId || null;
-                }
+                const winnerTelegramId =
+                  winnerUserSnap.exists && winnerUserSnap.data().telegramChatId
+                    ? winnerUserSnap.data().telegramChatId
+                    : null;
 
                 if (winnerTelegramId) {
                   await sendTelegramNotification(
                     winnerTelegramId,
-                    `🎉 Congratulations! 🎉 You’ve won in *Quarter ${quarter.toUpperCase()}* Great job beating the competition! 🏆🔥
-`
+                    `🎉 Congratulations! 🎉 You’ve won in *Quarter ${quarter.toUpperCase()}* Great job beating the competition! 🏆🔥`
                   );
                 }
 
@@ -469,22 +465,15 @@ exports.determineWinners = functions.pubsub
                   .collection("users")
                   .doc(winner.userId)
                   .get();
-                let winnerTelegramId = null;
-                if (winnerUserSnap.exists) {
-                  winnerTelegramId =
-                    winnerUserSnap.data().telegramChatId || null;
-                }
+                const winnerTelegramId =
+                  winnerUserSnap.exists && winnerUserSnap.data().telegramChatId
+                    ? winnerUserSnap.data().telegramChatId
+                    : null;
 
                 if (winnerTelegramId) {
                   await sendTelegramNotification(
                     winnerTelegramId,
-                    `
-🎉 Congratulations! 🎉
-
-You’ve won in *Quarter ${quarter.toUpperCase()}*
-
-Great job beating the competition! 🏆🔥
-`
+                    `🎉 Congratulations! 🎉\n\nYou’ve won in *Quarter ${quarter.toUpperCase()}*\n\nGreat job beating the competition! 🏆🔥`
                   );
                 }
 
@@ -590,63 +579,12 @@ Great job beating the competition! 🏆🔥
                 admin.firestore.FieldValue.serverTimestamp(),
               [`quarterScores.${quarter}.winningPositions`]: winningPositions,
             });
-            // 🧹 Cleanup old claims for this game/quarter
-            console.log("   🧹 Cleaning up old claims", { gameId, quarter });
           } else {
             console.log("   ⚠️ No winners, leaving unprocessed", {
               gameId,
               quarter,
             });
           }
-
-          // for (const boardDoc of boardsSnapshot.docs) {
-          //   const board = boardDoc.data();
-          //   const boardId = boardDoc.id;
-          //   const gameId = board.gameId;
-          //   console.warn(`⚠️ GameId ${gameId} here`);
-
-          //   if (!gameId) {
-          //     console.warn(
-          //       `⚠️ Board ${boardId} has no gameId, skipping cleanup`
-          //     );
-          //     continue;
-          //   }
-
-          //   try {
-          //     // 🔍 Fetch game doc fresh
-          //     const gameSnap = await db.collection("games").doc(gameId).get();
-          //     if (!gameSnap.exists) {
-          //       console.warn(
-          //         `⚠️ Game ${gameId} not found for board ${boardId}, skipping cleanup`
-          //       );
-          //       continue;
-          //     }
-
-          //     const game = gameSnap.data();
-
-          //     const currentQuarter = game.currentQuarter || 1;
-          //     console.warn(`⚠️ currentQuarter ${game.currentQuarter} here`);
-          //     console.log("   📌 Running cleanup for board", {
-          //       boardId,
-          //       gameId,
-          //       currentQuarter,
-          //     });
-
-          //     await cleanupOldClaims(boardId, board, currentQuarter);
-
-          //     console.log("   ✅ Cleanup complete", {
-          //       boardId,
-          //       gameId,
-          //       currentQuarter,
-          //     });
-          //   } catch (err) {
-          //     console.error("   💥 Cleanup failed", {
-          //       boardId,
-          //       gameId,
-          //       error: err,
-          //     });
-          //   }
-          // }
         }
       });
 
@@ -660,19 +598,42 @@ Great job beating the competition! 🏆🔥
   });
 
 // cleanup-old-claims.js
-async function cleanupOldClaims(boardId, board, currentQuarter) {
+async function cleanupOldClaims(boardId, board, currentQuarter, game) {
   const updates = {};
   let removedSquares = [];
+
+  // Prize mapping
+  const tierAmounts = {
+    tier_25: { quarter: 200 },
+    tier_50: { quarter: 450 },
+    tier_100: { quarter: 900 },
+    tier_250: { quarter: 2250 },
+    tier_500: { quarter: 4500 },
+    tier_1000: { quarter: 9000 },
+  };
+
+  let fastest = board.fastest || null;
 
   for (const [position, square] of Object.entries(board.squares || {})) {
     if (!square.claims || square.claims.length === 0) continue;
 
-    console.log(`🔎 Checking square ${position} on board ${boardId}`, {
-      claims: square.claims,
-      currentQuarter,
-    });
+    // 1. Find the fastest claim in this square (using answerTime)
+    const fastestClaim = square.claims.reduce(
+      (best, c) => (!best || c.answerTime < best.answerTime ? c : best),
+      null
+    );
 
-    // If ANY claim is older than currentQuarter → remove whole square
+    if (fastestClaim) {
+      if (!fastest || fastestClaim.answerTime < fastest.time) {
+        fastest = {
+          userId: fastestClaim.userId,
+          time: fastestClaim.answerTime, // store under "time" for consistency
+          quarter: fastestClaim.currentQuarter,
+        };
+      }
+    }
+
+    // 2. Delete if any claim is from an older quarter
     const hasOldClaim = square.claims.some(
       (c) => c.currentQuarter < currentQuarter
     );
@@ -680,23 +641,39 @@ async function cleanupOldClaims(boardId, board, currentQuarter) {
     if (hasOldClaim) {
       updates[`squares.${position}`] = admin.firestore.FieldValue.delete();
       removedSquares.push(position);
-
-      console.log(`🗑️ Removing whole square ${position}`, {
-        claims: square.claims,
-      });
     }
   }
 
-  if (Object.keys(updates).length > 0) {
+  // Save updates + fastest tracker
+  if (Object.keys(updates).length > 0 || fastest) {
+    if (fastest) updates["fastest"] = fastest;
     await db.collection("boards").doc(boardId).update(updates);
-    console.log(`🧹 Removed ${removedSquares.length} squares on board ${boardId}`, {
-      removedSquares,
-    });
-  } else {
-    console.log(`✨ No squares to clean on board ${boardId}`);
+  }
+
+  // 3. Only add winner when Q4 is processed
+  if (game.quarterScores?.q4?.processed && fastest) {
+    const tierId = board.tierId;
+    const prizeAmount = tierAmounts[tierId]?.quarter || 0;
+
+    const winnerDoc = {
+      boardId,
+      gameId: board.gameId,
+      tierId,
+      quarter: 4,
+      prizeAmount,
+      answerTime: fastest.time,
+      userId: fastest.userId,
+      payoutType: "standard",
+      status: "pending_payout",
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      isTelegramSend: false,
+    };
+
+    await db.collection("winners").add(winnerDoc);
+
+    console.log(`🏆 Winner added for board ${boardId}`, winnerDoc);
   }
 }
-
 
 exports.cleanupClaims = functions.pubsub
   .schedule("every 2 minutes")
@@ -731,7 +708,7 @@ exports.cleanupClaims = functions.pubsub
       });
 
       try {
-        await cleanupOldClaims(boardId, board, currentQuarter);
+        await cleanupOldClaims(boardId, board, currentQuarter, game);
         console.log("✅ Cleanup complete", { boardId, gameId: board.gameId });
       } catch (err) {
         console.error("💥 Cleanup failed", {

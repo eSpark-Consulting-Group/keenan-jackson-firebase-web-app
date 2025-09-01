@@ -177,18 +177,21 @@ export default function GameBoard() {
   const updateWinningSquares = (currentScores) => {
     const homeLastDigit = (currentScores.home || 0) % 10;
     const awayLastDigit = (currentScores.away || 0) % 10;
+    console.log(homeLastDigit, "HOME");
+    console.log(awayLastDigit, "AWAY");
 
     const winningPositions = [];
 
-    // Orientation 1: use mapped row
-    const pos1 = getPositionFromDigits(awayLastDigit, homeLastDigit);
+    // Orientation 1: raw digits
+    const pos1 = getPositionFromDigits(awayLastDigit, homeLastDigit, true);
     if (pos1 !== null) winningPositions.push(pos1);
 
-    // Orientation 2: mirror, but keep raw digits
+    // Orientation 2: mirrored raw digits
     if (homeLastDigit !== awayLastDigit) {
       const pos2 = getPositionFromDigits(homeLastDigit, awayLastDigit, true);
       if (pos2 !== null) winningPositions.push(pos2);
     }
+    console.log(winningPositions);
 
     setWinningSquares(winningPositions);
   };
