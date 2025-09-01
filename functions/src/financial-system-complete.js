@@ -7,6 +7,7 @@ const admin = require('firebase-admin');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { Parser } = require('json2csv');
 const nodemailer = require('nodemailer');
+const { sendMail } = require('./payment-system-modified');
 console.log('Stripe secret key:', process.env.STRIPE_SECRET_KEY);
 
 
@@ -1304,8 +1305,8 @@ async function sendInstantPayoutConfirmation(userId, payoutAmount, instantFee, s
     </div>
   ` : '';
   
-  await mailTransport.sendMail({
-    from: 'Square Trivia <payouts@squaretrivia.com>',
+  await sendMail({
+    // from: 'Square Trivia <payouts@squaretrivia.com>',
     to: user.email,
     subject: '⚡ Your Instant Prize Has Been Sent!',
     html: `
@@ -1375,8 +1376,8 @@ async function sendPayoutConfirmation(userId, amount, transactionId) {
     </div>
   ` : '';
   
-  await mailTransport.sendMail({
-    from: 'Square Trivia <payouts@squaretrivia.com>',
+  await sendMail({
+    // from: 'Square Trivia <payouts@squaretrivia.com>',
     to: user.email,
     subject: '💰 Your Prize Has Been Sent!',
     html: `
@@ -1420,8 +1421,8 @@ async function sendPayoutConfirmation(userId, amount, transactionId) {
 }
 
 async function sendAdminEmail(subject, message) {
-  await mailTransport.sendMail({
-    from: 'Square Trivia Finance <finance@squaretrivia.com>',
+  await sendMail({
+    // from: 'Square Trivia Finance <finance@squaretrivia.com>',
     to: 'admin@squaretrivia.com',
     subject,
     text: message
@@ -1430,8 +1431,8 @@ async function sendAdminEmail(subject, message) {
 
 async function sendAdminAlert(subject, message) {
   // Send urgent email
-  await mailTransport.sendMail({
-    from: 'Square Trivia Alerts <alerts@squaretrivia.com>',
+  await sendMail({
+    // from: 'Square Trivia Alerts <alerts@squaretrivia.com>',
     to: 'admin@squaretrivia.com',
     subject: `🚨 ${subject}`,
     text: message,

@@ -4,6 +4,8 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
+const { sendMail } = require("./payment-system-modified");
+// const { DUMMY_GAMES } = require("./constants-configuration-fixed");
 
 // =====================================
 // CONSTANTS - Configure these during deployment
@@ -1881,8 +1883,8 @@ async function sendAdminEmail(email, subject, message) {
     },
   });
 
-  await mailTransport.sendMail({
-    from: "Square Trivia Admin <admin@squaretrivia.com>",
+  await sendMail({
+    // from: "Square Trivia Admin <admin@squaretrivia.com>",
     to: email,
     subject,
     html: `
