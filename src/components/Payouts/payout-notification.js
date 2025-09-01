@@ -7,7 +7,7 @@ import {
   Zap,
   ChevronRight
 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/authcontext';
 import { db, collections, formatCurrency } from '../../firebase/config';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
@@ -23,25 +23,26 @@ export default function PayoutNotification() {
     // Listen for new pending payouts
     const q = query(
       collection(db, collections.payouts),
-      where('userId', '==', user.uid),
-      where('status', '==', 'pending')
+      where("userId", "==", user.uid),
+      where("status", "==", "pending")
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
-        if (change.type === 'added') {
+        if (change.type === "added") {
           const payout = { id: change.doc.id, ...change.doc.data() };
-          
+
           // Check if this payout was already dismissed
           if (!dismissed.includes(payout.id)) {
             // Check if payout is less than 5 minutes old
-            const createdAt = payout.createdAt?.toDate?.() || new Date(payout.createdAt);
+            const createdAt =
+              payout.createdAt?.toDate?.() || new Date(payout.createdAt);
             const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-            
+
             if (createdAt > fiveMinutesAgo) {
               setNewPayout(payout);
               setShowNotification(true);
-              
+
               // Auto-hide after 10 seconds
               setTimeout(() => {
                 setShowNotification(false);
@@ -94,14 +95,13 @@ export default function PayoutNotification() {
                 {formatCurrency(newPayout.amount)}
               </p>
               <p className="text-sm text-gray-600">
-                {newPayout.gameInfo?.teams 
-                  ? `${newPayout.gameInfo.teams.away} @ ${newPayout.gameInfo.teams.home}`
-                  : 'Game Winnings'
-                }
+                {newPayout?.gameInfo?.teams?.away || "TBA"} @
+                {newPayout?.gameInfo?.teams?.home || "TBA"}
               </p>
               {newPayout.quarter && (
                 <p className="text-xs text-gray-500">
-                  Quarter {newPayout.quarter} • Square ({newPayout.square?.row},{newPayout.square?.col})
+                  Quarter {newPayout.quarter} • Square ({newPayout.square?.row},
+                  {newPayout.square?.col})
                 </p>
               )}
             </div>
@@ -115,7 +115,7 @@ export default function PayoutNotification() {
                 <Zap className="h-4 w-4 mr-1" />
                 Get Instant
               </Link>
-              
+
               <Link
                 to="/payouts"
                 onClick={handleDismiss}

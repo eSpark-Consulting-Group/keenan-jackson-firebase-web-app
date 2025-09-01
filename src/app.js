@@ -49,6 +49,7 @@ import AdminPayoutsSingle from "./pages/admin/admin-payouts-single";
 import "./styles/index.css";
 import LandingPage from "./pages/LandingPage";
 import Payouts from "./pages/square-trivia-payouts-page";
+import Tier from "./pages/square-trivia-tier-page";
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -151,6 +152,14 @@ function App() {
                   element={
                     <Layout>
                       <Register />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tiers"
+                  element={
+                    <Layout>
+                      <Tier />
                     </Layout>
                   }
                 />

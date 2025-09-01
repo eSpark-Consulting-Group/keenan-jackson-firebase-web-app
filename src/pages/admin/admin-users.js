@@ -28,6 +28,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
+import { Link } from "react-router-dom";
 
 export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
@@ -556,8 +557,8 @@ export default function AdminUsers() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            <a href={`/admin/users/${user.id}`} className="hover:underline">
-                            {user.displayName || "Anonymous"}</a>
+                            <Link to={`/admin/users/${user.id}`} className="hover:underline">
+                            {user.displayName || "Anonymous"}</Link>
                           </div>
                           <div className="text-sm text-gray-500">
                             {user.email}

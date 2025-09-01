@@ -64,6 +64,17 @@ export const sendMail = async ({ to, subject, html }) => {
     }
   }
 };
+// =====================================
+// CONSTANTS (from Artifact #1)
+// =====================================
+// const TIER_CONFIG = {
+//   tier_25: { amount: 25, name: '$25 Tier', telegramGroupId: functions.config().telegram.tier_25_group_id, payoutPercentage: 0.77 },
+//   tier_50: { amount: 50, name: '$50 Tier', telegramGroupId: functions.config().telegram.tier_50_group_id, payoutPercentage: 0.77 },
+//   tier_100: { amount: 100, name: '$100 Tier', telegramGroupId: functions.config().telegram.tier_100_group_id, payoutPercentage: 0.77 },
+//   tier_250: { amount: 250, name: '$250 Tier', telegramGroupId: functions.config().telegram.tier_250_group_id, payoutPercentage: 0.80 },
+//   tier_500: { amount: 500, name: '$500 Tier', telegramGroupId: functions.config().telegram.tier_500_group_id, payoutPercentage: 0.80 },
+//   tier_1000: { amount: 1000, name: '$1000 Tier', telegramGroupId: functions.config().telegram.tier_1000_group_id, payoutPercentage: 0.80 }
+// };
 
 const TIER_CONFIG = {
   tier_25: {

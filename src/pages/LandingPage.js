@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
 import {
@@ -13,8 +13,8 @@ import {
   Plus,
   Check,
   Grid3X3,
-  TrendingUp,
 } from "lucide-react";
+import { useAuth } from "../contexts/authcontext";
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -24,6 +24,8 @@ export default function LandingPage() {
   const { scrollYProgress } = useScroll();
 
   const { hash } = useLocation();
+  const { userData } = useAuth();
+  const tiersData = userData != null ? "/tiers" : "/register";
 
   useEffect(() => {
     if (hash) {
@@ -254,7 +256,7 @@ export default function LandingPage() {
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  onClick={() => navigate("/register")}
+                  onClick={() => navigate(tiersData)}
                   className="px-8 py-4 bg-emerald-500 text-white font-semibold rounded-lg hover:bg-emerald-600 transform hover:scale-105 transition-all shadow-lg"
                 >
                   Start Playing Now
@@ -417,7 +419,7 @@ export default function LandingPage() {
                 </ul>
 
                 <button
-                  onClick={() => navigate("/register")}
+                  onClick={() => navigate(tiersData)}
                   className={`w-full py-3 rounded-lg font-semibold transition-all ${
                     tier.popular
                       ? "bg-yellow-400 text-black hover:bg-yellow-500"
@@ -432,7 +434,7 @@ export default function LandingPage() {
 
           <div className="text-center mt-8">
             <Link
-              to="/games"
+              to={tiersData}
               className="text-emerald-600 hover:text-emerald-700 font-semibold"
             >
               View all 6 tiers →
@@ -542,7 +544,7 @@ export default function LandingPage() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate("/register")}
+            onClick={() => navigate(tiersData)}
             className="px-8 py-4 bg-white text-emerald-600 font-bold rounded-lg hover:bg-gray-100 transition-all inline-flex items-center gap-2"
           >
             Start Playing Now <ChevronRight className="w-5 h-5" />
