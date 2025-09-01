@@ -77,6 +77,11 @@ export default function PaymentSuccess() {
           toast.success(`Payment successful! Tier: ${res.tier}`);
           runConfetti();
           refreshUserData();
+          await callFunction("sendPaymentSuccessEmail", {
+            email: user?.email,
+            tierName: tier?.name,
+            amount: tier?.amount,
+          });
         } else {
           toast.error(res.message || "Payment not completed");
         }

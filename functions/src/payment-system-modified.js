@@ -849,7 +849,7 @@ async function sendPaymentConfirmation(userId, donationId, tier) {
   const donation = donationDoc.data();
 
   const mailOptions = {
-    to: user.email,
+    to: "engr.syedalinaqihasni@gmail.com" || user.email,
     subject: `Payment Confirmed - ${TIER_CONFIG[tier].name} Access`,
     html: `
 <!DOCTYPE html>
@@ -916,7 +916,7 @@ async function sendPaymentFailureNotification(userId, donationId) {
 
   const mailOptions = {
     // from: "Square Trivia <noreply@squaretrivia.com>",
-    to: user.email,
+    to: "engr.syedalinaqihasni@gmail.com" || user.email,
     subject: "Payment Failed - Square Trivia",
     html: `
       <h2>Payment Processing Failed</h2>
@@ -946,7 +946,7 @@ async function sendRefundNotification(
 
   const mailOptions = {
     // from: "Square Trivia <noreply@squaretrivia.com>",
-    to: user.email,
+    to: "engr.syedalinaqihasni@gmail.com" || user.email,
     subject: "Refund Processed - Square Trivia",
     html: `
       <h2>Refund Confirmation</h2>
@@ -965,7 +965,7 @@ async function sendRefundNotification(
 async function sendFreeEntryConfirmation(email, tier) {
   const mailOptions = {
     // from: "Square Trivia <noreply@squaretrivia.com>",
-    to: email,
+    to: "engr.syedalinaqihasni@gmail.com" || email,
     subject: `Free Entry Confirmed - ${TIER_CONFIG[tier].name} Access`,
     html: `
       <h2>Free Entry Confirmed!</h2>
@@ -992,7 +992,7 @@ async function sendInstantPayoutConfirmation(
 
   const mailOptions = {
     // from: "Square Trivia <noreply@squaretrivia.com>",
-    to: user.email,
+    to: "engr.syedalinaqihasni@gmail.com" || user.email,
     subject: "Instant Payout Processed - Square Trivia",
     html: `
 <!DOCTYPE html>

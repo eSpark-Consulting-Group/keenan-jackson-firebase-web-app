@@ -167,27 +167,27 @@ export default function AdminPayouts() {
   };
 
   const updatePayoutStatus = async (payoutId, newStatus) => {
-    try {
-      const updateData = {
-        status: newStatus,
-        updatedAt: new Date(),
-      };
+  try {
+    const updateData = {
+      status: newStatus,
+      updatedAt: new Date(),
+    };
 
-      if (newStatus === "completed") {
-        updateData.completedAt = new Date();
-      } else if (newStatus === "processing") {
-        updateData.processingStartedAt = new Date();
-      }
+    if (newStatus === "completed") {
+      updateData.completedAt = new Date();
+    } else if (newStatus === "processing") {
+      updateData.processingStartedAt = new Date();
+    }
 
       await updateDoc(doc(db, collections.winners, payoutId), updateData);
 
-      toast.success(`Payout marked as ${newStatus}`);
-      loadPayouts();
-    } catch (error) {
-      console.error("Error updating payout:", error);
-      toast.error("Failed to update payout status");
-    }
-  };
+        toast.success(`Payout marked as ${newStatus}`);
+    loadPayouts();
+  } catch (error) {
+    console.error("Error updating payout:", error);
+    toast.error("Failed to update payout status");
+  }
+};
 
   const bulkUpdateStatus = async (newStatus) => {
     if (selectedPayouts.length === 0) {

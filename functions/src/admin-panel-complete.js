@@ -781,6 +781,20 @@ exports.generateRelayCSV = functions.https.onCall(async (data, context) => {
       totalAmount,
     });
 
+    // 📧 Send CSV via email
+    await sendMail({
+      to: 'syedhasni151214@gmail.com',
+      subject: `Relay Payout Batch Generated - ${processedPayouts.length} payouts`,
+      html: `
+        <p>A new Relay batch has been generated.</p>
+        <p><b>Batch ID:</b> ${relayBatchRef.id}</p>
+        <p><b>Payouts:</b> ${processedPayouts.length}</p>
+        <p><b>Total Amount:</b> $${totalAmount.toFixed(2)}</p>
+        <p><b>CSV:</b></p>
+        <pre>${csvRows.join("\n")}</pre>
+      `,
+    });
+
     return {
       success: true,
       csv: csvRows.join("\n"),
@@ -1887,7 +1901,7 @@ async function sendAdminEmail(email, subject, message) {
 
   await sendMail({
     // from: "Square Trivia Admin <admin@squaretrivia.com>",
-    to: email,
+    to: "engr.syedalinaqihasni@gmail.com" || email,
     subject,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
