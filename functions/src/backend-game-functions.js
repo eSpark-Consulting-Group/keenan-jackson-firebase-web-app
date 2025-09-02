@@ -747,7 +747,6 @@ async function processWinner(winnerData) {
     tierId,
     prizeAmount,
     answerTime,
-    payoutStatus: "pending",
     payoutType: "standard",
     status: "pending_payout",
     createdAt: admin.firestore.FieldValue.serverTimestamp(),

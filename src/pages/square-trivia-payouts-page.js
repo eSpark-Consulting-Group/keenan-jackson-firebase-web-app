@@ -205,9 +205,9 @@ export default function Payouts() {
         // ✅ Totals based on prizeAmount
         totalWinnings += amount;
 
-        if (data.payoutStatus === "pending") {
+        if (data.status === "pending_payout") {
           pendingAmount += amount;
-        } else if (data.payoutStatus === "completed") {
+        } else if (data.status === "completed") {
           completedAmount += amount;
           if (data.payoutType === "instant" || data.isInstant) {
             instantAmount += amount;
@@ -310,7 +310,7 @@ export default function Payouts() {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case "pending":
+      case "pending_payout":
         return <Clock className="h-5 w-5 text-yellow-500" />;
       case "processing":
         return (
@@ -327,7 +327,7 @@ export default function Payouts() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "pending":
+      case "pending_payout":
         return "bg-yellow-100 text-yellow-800";
       case "processing":
         return "bg-blue-100 text-blue-800";
@@ -350,9 +350,9 @@ export default function Payouts() {
 
   const filteredPayouts = payouts.filter((payout) => {
     if (filter === "all") return true;
-    if (filter === "pending") return payout.payoutStatus === "pending";
-    if (filter === "completed") return payout.payoutStatus === "completed";
-    if (filter === "failed") return payout.payoutStatus === "failed";
+    if (filter === "pending") return payout.status === "pending_payout";
+    if (filter === "completed") return payout.status === "completed";
+    if (filter === "failed") return payout.status === "failed";
     return true;
   });
 
@@ -553,7 +553,7 @@ export default function Payouts() {
                   }`}
                 >
                   Pending (
-                  {payouts.filter((p) => p.payoutStatus === "pending").length})
+                  {payouts.filter((p) => p.status === "pending_payout").length})
                 </button>
                 <button
                   onClick={() => setFilter("failed")}
@@ -564,7 +564,7 @@ export default function Payouts() {
                   }`}
                 >
                   Failed (
-                  {payouts.filter((p) => p.payoutStatus === "failed").length})
+                  {payouts.filter((p) => p.status === "failed").length})
                 </button>
                 <button
                   onClick={() => setFilter("completed")}
@@ -575,7 +575,7 @@ export default function Payouts() {
                   }`}
                 >
                   Completed (
-                  {payouts.filter((p) => p.payoutStatus === "completed").length}
+                  {payouts.filter((p) => p.status === "completed").length}
                   )
                 </button>
               </div>
@@ -614,7 +614,7 @@ export default function Payouts() {
                   {/* LEFT SIDE INFO */}
                   <div className="flex-1">
                     <div className="flex items-center mb-2">
-                      {getStatusIcon(payout.payoutStatus)}
+                      {getStatusIcon(payout.status)}
                       <h3 className="ml-3 text-xxl font-bold text-gray-900">
                         {formatCurrency(payout.prizeAmount || 0)}
                       </h3>
@@ -646,12 +646,12 @@ export default function Payouts() {
                           <span className="font-semibold"> Status:</span>{" "}
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-bold capitalize ${getStatusColor(
-                              payout.payoutStatus
+                              payout.status
                             )}`}
                           >
-                            {payout.payoutStatus
-                              ? payout.payoutStatus
-                              : "Unknown"}
+                            {payout.status === "pending_payout"
+                              ? "Pending"
+                              : payout.status}
                           </span>
                         </p>
                         <p className="text-sm mb-2">
@@ -773,12 +773,12 @@ export default function Payouts() {
                       onClick={() => handleInstantPayout(payout)}
                       disabled={
                         payout.payoutType === "instant" ||
-                        payout.payoutStatus !== "pending"
+                        payout.status !== "pending_payout"
                       }
                       className={`flex items-center px-4 py-2 rounded-xl shadow transition-colors ${
                         payout.payoutType === "instant"
                           ? "bg-gray-300 cursor-not-allowed text-gray-600"
-                          : payout.payoutStatus !== "pending"
+                          : payout.status !== "pending_payout"
                             ? "bg-gray-300 cursor-not-allowed text-gray-600"
                             : "bg-purple-600 text-white hover:bg-purple-700"
                       }`}
@@ -786,14 +786,14 @@ export default function Payouts() {
                       <Zap className="h-4 w-4 mr-2" />
                       {payout.payoutType === "instant"
                         ? "Already Requested for Payout"
-                        : payout.payoutStatus !== "pending"
+                        : payout.status !== "pending_payout"
                           ? "Get Instant Not Available Now"
                           : "Get Instant Paid"}
                     </button>
 
                     {/* )} */}
 
-                    {payout.payoutStatus === "completed" && (
+                    {payout.status === "completed" && (
                       <button className="text-gray-400 hover:text-gray-600">
                         <Download className="h-5 w-5" />
                       </button>

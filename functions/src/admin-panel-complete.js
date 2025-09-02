@@ -756,7 +756,7 @@ exports.generateRelayCSV = functions.https.onCall(async (data, context) => {
 
       // Update winner status
       batch.update(winnerDoc.ref, {
-        payoutStatus: "processing",
+        status: "processing",
         payoutType: "batch",
         relayBatchId: relayBatchRef.id,
         processingStartedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -833,7 +833,7 @@ exports.markRelayBatchProcessed = functions.https.onCall(
           .collection("winners")
           .doc(payout.winnerId);
         batch.update(winnerRef, {
-          payoutStatus: "completed",
+          status: "completed",
           payoutCompletedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
       }
@@ -1556,7 +1556,7 @@ exports.getAdminStats = functions.https.onCall(async (data, context) => {
     // Winner and payout stats
     const winners = await admin.firestore().collection("winners").get();
     const pendingPayouts = winners.docs.filter(
-      (doc) => doc.data().payoutStatus === "pending"
+      (doc) => doc.data().status === "pending_payout"
     );
     const instantPayouts = winners.docs.filter(
       (doc) => doc.data().payoutType === "instant"
@@ -1790,8 +1790,8 @@ async function exportWinners(filters) {
     query = query.where("tier", "==", filters.tier);
   }
 
-  if (filters.payoutStatus) {
-    query = query.where("payoutStatus", "==", filters.payoutStatus);
+  if (filters.status) {
+    query = query.where("status", "==", filters.status);
   }
 
   const snapshot = await query.get();
