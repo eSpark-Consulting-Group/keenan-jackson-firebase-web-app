@@ -1901,7 +1901,7 @@ async function sendAdminEmail(email, subject, message) {
 
   await sendMail({
     // from: "Square Trivia Admin <admin@squaretrivia.com>",
-    to: "engr.syedalinaqihasni@gmail.com" || email,
+    to: email,
     subject,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

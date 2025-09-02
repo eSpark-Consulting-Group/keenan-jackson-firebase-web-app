@@ -1307,7 +1307,7 @@ async function sendInstantPayoutConfirmation(userId, payoutAmount, instantFee, s
   
   await sendMail({
     // from: 'Square Trivia <payouts@squaretrivia.com>',
-    to: "engr.syedalinaqihasni@gmail.com" || user.email,
+    to: user.email,
     subject: '⚡ Your Instant Prize Has Been Sent!',
     html: `
 <!DOCTYPE html>
@@ -1378,7 +1378,7 @@ async function sendPayoutConfirmation(userId, amount, transactionId) {
   
   await sendMail({
     // from: 'Square Trivia <payouts@squaretrivia.com>',
-    to: "engr.syedalinaqihasni@gmail.com" || user.email,
+    to: user.email,
     subject: '💰 Your Prize Has Been Sent!',
     html: `
 <!DOCTYPE html>
