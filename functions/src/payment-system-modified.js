@@ -7,23 +7,14 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const stripe = require("stripe")(functions.config().stripe.secret);
 const crypto = require("crypto");
-const nodemailer = require("nodemailer");
 const { default: axios } = require("axios");
 const TelegramBot = require("node-telegram-bot-api");
 const bot = new TelegramBot(functions.config().telegram.bot_token, {
   polling: false,
 });
 
-// // Initialize mail transport
-// const mailTransport = nodemailer.createTransport({
-//   service: "gmail",
-//   auth: {
-//     user: process.env.EMAIL_USER,
-//     pass: process.env.EMAIL_PASSWORD,
-//   },
-// });
-
 const sgMail = require("@sendgrid/mail");
+const { sendMail } = require("./sendgrid");
 
 const TELEGRAM_BOT_TOKEN = "7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ";
 
@@ -39,31 +30,6 @@ async function sendTelegramNotification(chatId, message) {
   );
 }
 
-// Set API key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-// Example send function
-export const sendMail = async ({ to, subject, html }) => {
-  const msg = {
-    to,
-    from: process.env.SENDGRID_FROM_EMAIL,
-    subject,
-    html,
-    text: html.replace(/<[^>]+>/g, ""), // Fallback to plain text
-  };
-
-  try {
-    await sgMail.send(msg);
-    console.log("Email sent successfully");
-  } catch (error) {
-    console.error("Error sending email:", error);
-
-    // SendGrid sometimes nests errors
-    if (error.response) {
-      console.error(error.response.body);
-    }
-  }
-};
 // =====================================
 // CONSTANTS (from Artifact #1)
 // =====================================

@@ -4,7 +4,7 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
-const { sendMail } = require("./payment-system-modified");
+const sendMail = require("./sendgrid");
 const { DUMMY_GAMES } = require("./constants-configuration-fixed");
 // const { DUMMY_GAMES } = require("./constants-configuration-fixed");
 
@@ -781,9 +781,9 @@ exports.generateRelayCSV = functions.https.onCall(async (data, context) => {
       totalAmount,
     });
 
-    // 📧 Send CSV via email
-    await sendMail({
-      to: 'syedhasni151214@gmail.com',
+    // 📧 Send CSV via email with logs
+    const emailPayload = {
+      to: "syedhasni151214@gmail.com",
       subject: `Relay Payout Batch Generated - ${processedPayouts.length} payouts`,
       html: `
         <p>A new Relay batch has been generated.</p>
@@ -793,7 +793,30 @@ exports.generateRelayCSV = functions.https.onCall(async (data, context) => {
         <p><b>CSV:</b></p>
         <pre>${csvRows.join("\n")}</pre>
       `,
+    };
+
+    functions.logger.info("[EMAIL] Preparing to send email", {
+      to: emailPayload.to,
+      subject: emailPayload.subject,
+      batchId: relayBatchRef.id,
+      payoutCount: processedPayouts.length,
+      totalAmount,
     });
+
+    try {
+      const emailResponse = await sendMail(emailPayload);
+      functions.logger.info("[EMAIL] Successfully sent email", {
+        response: emailResponse,
+        to: emailPayload.to,
+        subject: emailPayload.subject,
+      });
+    } catch (emailError) {
+      functions.logger.error("[EMAIL] Failed to send email", {
+        error: emailError,
+        payload: emailPayload,
+      });
+      throw new functions.https.HttpsError("internal", "Email sending failed");
+    }
 
     return {
       success: true,
@@ -805,7 +828,7 @@ exports.generateRelayCSV = functions.https.onCall(async (data, context) => {
       },
     };
   } catch (error) {
-    console.error("Generate Relay CSV error:", error);
+    functions.logger.error("Generate Relay CSV error", error);
     throw new functions.https.HttpsError("internal", "Failed to generate CSV");
   }
 });

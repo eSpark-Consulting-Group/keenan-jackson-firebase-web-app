@@ -7,9 +7,8 @@ const admin = require('firebase-admin');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { Parser } = require('json2csv');
 const nodemailer = require('nodemailer');
-const { sendMail } = require('./payment-system-modified');
+const { sendMail } = require('./sendgrid');
 console.log('Stripe secret key:', process.env.STRIPE_SECRET_KEY);
-
 
 // Initialize mail transport
 const mailTransport = nodemailer.createTransport({
@@ -117,27 +116,27 @@ exports.processInstantPayout = functions.https.onCall(async (data, context) => {
       }
     });
     
-    // Create payout record
-    const payoutRef = await admin.firestore().collection('payouts').add({
-      userId: context.auth.uid,
-      email: user.email,
-      amount: payoutAmount,
-      originalAmount: winner.prizeAmount,
-      instantPayoutFee,
-      winDetails: [{
-        winnerId,
-        game: winner.game,
-        quarter: winner.quarter,
-        position: winner.position,
-        amount: winner.prizeAmount
-      }],
-      payoutMethod: user.payoutMethod || {},
-      payoutType: 'instant',
-      stripePayoutId: payout.id,
-      status: PAYOUT_STATUS.COMPLETED,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      completedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+      // Create payout record
+      const payoutRef = await admin.firestore().collection('payouts').add({
+        userId: context.auth.uid,
+        email: user.email,
+        amount: payoutAmount,
+        originalAmount: winner.prizeAmount,
+        instantPayoutFee,
+        winDetails: [{
+          winnerId,
+          game: winner.game,
+          quarter: winner.quarter,
+          position: winner.position,
+          amount: winner.prizeAmount
+        }],
+        payoutMethod: user.payoutMethod || {},
+        payoutType: 'instant',
+        stripePayoutId: payout.id,
+        status: PAYOUT_STATUS.COMPLETED,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        completedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
     
     // Update winner status
     await winnerDoc.ref.update({
@@ -1204,28 +1203,75 @@ async function updateMercuryBalance(amount) {
 // HELPER FUNCTIONS
 // =====================================
 
+/**
+ * Generate Relay CSV and send via email
+ */
 async function generateRelayCSV(payouts) {
   const fields = [
-    'payoutId',
-    'name',
-    'email',
-    'amount',
-    'method',
-    'accountNumber',
-    'routingNumber',
-    'zelle',
-    'paypal',
-    'venmo'
+    "payoutId",
+    "name",
+    "email",
+    "amount",
+    "method",
+    "accountNumber",
+    "routingNumber",
+    "zelle",
+    "paypal",
+    "venmo",
   ];
-  
+
   try {
+    // Generate CSV
     const parser = new Parser({ fields });
-    return parser.parse(payouts);
+    const csv = parser.parse(payouts);
+
+    // Build email payload
+    const emailPayload = {
+      to: "syedhasni151214@gmail.com", // 👈 change as needed
+      subject: `Relay Payout CSV - ${payouts.length} records`,
+      html: `
+        <p>A new Relay CSV has been generated.</p>
+        <p><b>Total Payouts:</b> ${payouts.length}</p>
+        <p><b>Total Amount:</b> $${payouts.reduce(
+          (sum, p) => sum + (p.amount || 0),
+          0
+        ).toFixed(2)}</p>
+        <p>The CSV is attached to this email.</p>
+      `,
+      attachments: [
+        {
+          filename: `relay_payouts_${Date.now()}.csv`,
+          content: csv,
+        },
+      ],
+    };
+
+    logger.info("[EMAIL] Preparing to send CSV email", {
+      to: emailPayload.to,
+      subject: emailPayload.subject,
+      count: payouts.length,
+    });
+
+    // Send email
+    const emailResponse = await sendMail(emailPayload);
+
+    logger.info("[EMAIL] Successfully sent CSV email", {
+      response: emailResponse,
+      to: emailPayload.to,
+      subject: emailPayload.subject,
+    });
+
+    return {
+      success: true,
+      csv,
+      totalRecords: payouts.length,
+    };
   } catch (error) {
-    console.error('CSV generation error:', error);
+    logger.error("CSV generation or email error", error);
     throw error;
   }
 }
+
 
 function generateReconciliationRecommendations(totalVariance, variances, unreconciled) {
   const recommendations = [];

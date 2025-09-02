@@ -6,6 +6,7 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const nodemailer = require("nodemailer");
+const { sendMail } = require("./sendgrid");
 
 // Initialize services
 const mailTransport = nodemailer.createTransport({
