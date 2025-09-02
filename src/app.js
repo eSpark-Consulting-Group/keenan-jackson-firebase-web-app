@@ -50,6 +50,7 @@ import "./styles/index.css";
 import LandingPage from "./pages/LandingPage";
 import Payouts from "./pages/square-trivia-payouts-page";
 import Tier from "./pages/square-trivia-tier-page";
+import ContactForm from "./pages/square-trivia-from-page";
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -206,6 +207,16 @@ function App() {
                   <ProtectedRoute>
                     <Layout>
                       <GameBoard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/form"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <ContactForm />
                     </Layout>
                   </ProtectedRoute>
                 }

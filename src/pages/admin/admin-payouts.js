@@ -18,6 +18,7 @@ import {
   collections,
   formatCurrency,
   INSTANT_PAYOUT_FEE,
+  functions,
 } from "../../firebase/config";
 import {
   collection,
@@ -32,10 +33,12 @@ import {
 } from "firebase/firestore";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
+import { httpsCallable } from "firebase/functions";
 
 export default function AdminPayouts() {
   const [loading, setLoading] = useState(true);
   const [payouts, setPayouts] = useState([]);
+  console.log("Payouts:", payouts);
   const [stats, setStats] = useState({
     pendingCount: 0,
     pendingAmount: 0,
@@ -214,28 +217,39 @@ export default function AdminPayouts() {
     }
   };
 
-  const exportForRelay = () => {
-    const exportData = payouts
-      .filter((p) => p.status === "pending" || p.status === "processing")
-      .map((payout) => ({
-        email: payout.user?.email || payout.email,
-        amount: payout.amount,
-        reference: payout.id,
-        name: payout.user?.displayName || "Square Trivia Winner",
-      }));
+const exportForRelay = async (payouts) => {
+  try {
+    // ✅ Prepare payout data for Firebase function
+    const payoutIds = payouts
+    // .filter((p) => p.payoutType === "pending" || p.payoutType === "processing" || p.payoutType === "failed" || p.payoutType === null)
+    .slice(0, 20) // Limit to 20 for now
+    // .map((payout) => ({
+    //   email: payout.user?.email || payout.email,
+    //   amount: payout.prizeAmount,
+    //   reference: payout.id,
+    //   name: payout.user?.displayName || "Square Trivia Winner",
+    // }));
+    .map((p) => p.id);
 
-    const csv = [
-      ["email", "amount", "reference", "name"],
-      ...exportData.map((row) => [
-        row.email,
-        row.amount,
-        row.reference,
-        row.name,
-      ]),
-    ]
-      .map((row) => row.join(","))
-      .join("\n");
+    if (payoutIds.length === 0) {
+      toast.error("No payouts available to export");
+      return;
+    }
 
+  
+    // ✅ Call Firebase function
+const generateRelayCSV = httpsCallable(functions, "generateRelayCSV");
+const result = await generateRelayCSV({ payoutIds });
+console.log(result.data);
+
+
+    if (!result.data.success) {
+      toast.error("Failed to generate Relay CSV");
+      return;
+    }
+
+    // ✅ Create downloadable CSV
+    const csv = result.data.csv;
     const blob = new Blob([csv], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -243,8 +257,17 @@ export default function AdminPayouts() {
     a.download = `relay-payouts-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
 
-    toast.success(`Exported ${exportData.length} payouts for Relay`);
-  };
+    // ✅ Show success toast for both
+    toast.success(
+      `Exported & emailed ${result.data.summary.payoutCount} payouts for Relay`
+    );
+  } catch (error) {
+    console.error("Export error:", error);
+    toast.error("Something went wrong while exporting");
+  }
+};
+
+
 
   const filteredPayouts = payouts.filter((payout) => {
     const matchesSearch =
@@ -320,7 +343,7 @@ export default function AdminPayouts() {
           </div>
           <div className="flex gap-3">
             <button
-              onClick={exportForRelay}
+              onClick={() => exportForRelay(payouts)}
               className="flex items-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
             >
               <Download className="h-4 w-4 mr-2" />

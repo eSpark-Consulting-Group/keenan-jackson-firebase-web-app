@@ -700,107 +700,43 @@ exports.getPendingPayouts = functions.https.onCall(async (data, context) => {
  */
 exports.generateRelayCSV = functions.https.onCall(async (data, context) => {
   const adminId = requireAdmin(context);
-
+console.log("adminId:", adminId);
   const { payoutIds } = data;
 
-  if (!Array.isArray(payoutIds) || payoutIds.length === 0) {
-    throw new functions.https.HttpsError(
-      "invalid-argument",
-      "Payout IDs required"
-    );
-  }
+  // if (!Array.isArray(payoutIds) || payoutIds.length === 0) {
+  //   throw new functions.https.HttpsError(
+  //     "invalid-argument",
+  //     "Payout IDs required"
+  //   );
+  // }
 
   try {
-    const csvRows = [
-      "Name,Email,Amount,Payment Method,Account Details", // Relay CSV headers
-    ];
+    // ✅ Format CSV with just payoutIds
+    // const csvRows = ["Payout ID"];
+    // payoutIds.forEach((id) => {
+    //   if (id && typeof id === "string") {
+    //     csvRows.push(id);
+    //   }
+    // });
 
-    const batch = admin.firestore().batch();
-    const relayBatchRef = admin.firestore().collection("relayBatches").doc();
+    // const csvContent = csvRows.join("\n");
 
-    let totalAmount = 0;
-    const processedPayouts = [];
-
-    for (const winnerId of payoutIds) {
-      const winnerDoc = await admin
-        .firestore()
-        .collection("winners")
-        .doc(winnerId)
-        .get();
-      if (!winnerDoc.exists) continue;
-
-      const winner = winnerDoc.data();
-      const userDoc = await admin
-        .firestore()
-        .collection("users")
-        .doc(winner.userId)
-        .get();
-      const user = userDoc.data();
-
-      // Format for Relay
-      const name = user.displayName || user.email.split("@")[0];
-      const amount = winner.prizeAmount.toFixed(2);
-      const paymentMethod = user.preferredPaymentMethod || "ACH";
-      const accountDetails = user.paymentAccountLast4 || "On File";
-
-      csvRows.push(
-        `"${name}","${user.email}",${amount},${paymentMethod},"${accountDetails}"`
-      );
-
-      totalAmount += winner.prizeAmount;
-      processedPayouts.push({
-        winnerId,
-        userId: winner.userId,
-        amount: winner.prizeAmount,
-      });
-
-      // Update winner status
-      batch.update(winnerDoc.ref, {
-        payoutStatus: "processing",
-        payoutType: "batch",
-        relayBatchId: relayBatchRef.id,
-        processingStartedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-    }
-
-    // Create relay batch record
-    batch.set(relayBatchRef, {
-      createdBy: adminId,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      payoutCount: processedPayouts.length,
-      totalAmount,
-      status: "generated",
-      payouts: processedPayouts,
-    });
-
-    await batch.commit();
-
-    await logAdminAction(adminId, "generate_relay_csv", {
-      batchId: relayBatchRef.id,
-      payoutCount: processedPayouts.length,
-      totalAmount,
-    });
-
-    // 📧 Send CSV via email with logs
+    // 📧 Email payload
     const emailPayload = {
       to: "syedhasni151214@gmail.com",
-      subject: `Relay Payout Batch Generated - ${processedPayouts.length} payouts`,
+      subject: `Relay Payout IDs Exported - ${payoutIds.length} IDs`,
       html: `
-        <p>A new Relay batch has been generated.</p>
-        <p><b>Batch ID:</b> ${relayBatchRef.id}</p>
-        <p><b>Payouts:</b> ${processedPayouts.length}</p>
-        <p><b>Total Amount:</b> $${totalAmount.toFixed(2)}</p>
-        <p><b>CSV:</b></p>
-        <pre>${csvRows.join("\n")}</pre>
+        <p>A new Relay payout ID export has been generated.</p>
+        <p><b>Total IDs:</b> ${payoutIds.length}</p>
+        <p><b>CSV will shoew thete:</b></p>
       `,
     };
 
     functions.logger.info("[EMAIL] Preparing to send email", {
       to: emailPayload.to,
       subject: emailPayload.subject,
-      batchId: relayBatchRef.id,
-      payoutCount: processedPayouts.length,
-      totalAmount,
+      count: payoutIds.length,
+      html: emailPayload.html,
     });
 
     try {
@@ -820,12 +756,8 @@ exports.generateRelayCSV = functions.https.onCall(async (data, context) => {
 
     return {
       success: true,
-      csv: csvRows.join("\n"),
-      batchId: relayBatchRef.id,
-      summary: {
-        payoutCount: processedPayouts.length,
-        totalAmount,
-      },
+      // csv: csvContent,
+      count: payoutIds.length,
     };
   } catch (error) {
     functions.logger.error("Generate Relay CSV error", error);

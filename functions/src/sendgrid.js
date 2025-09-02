@@ -1,18 +1,16 @@
-require("dotenv/config");
+require("dotenv").config(); // instead of require("dotenv/config")
 const sgMail = require("@sendgrid/mail");
-const functions = require("firebase-functions");
 const { logger } = require("firebase-functions");
 
-
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+sgMail.setApiKey("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");
 
 const sendMail = async ({ to, subject, html }) => {
     const msg = {
         to,
-        from: process.env.SENDGRID_FROM_EMAIL,
+        from: "admin@squaretrivia.com",
         subject,
         html,
-        text: html.replace(/<[^>]+>/g, ""),
+        // text: html.replace(/<[^>]+>/g, ""),
     };
 
     try {
