@@ -97,6 +97,7 @@ async function sendTelegramNotification(chatId, message) {
 const API_SPORTS_CONFIG = {
   NFL: {
     endpoint: "/v3/nfl/scores/json/ScoresByWeek",
+    leagueId: 1,
   },
   CFB: {
     endpoint: "/v3/cfb/scores/json/GamesByWeek",
@@ -856,7 +857,8 @@ exports.checkCancelledGames = functions.pubsub
   .onRun(async (context) => {
     const db = admin.firestore();
     const now = new Date();
-    const year = now.getFullYear();
+    // const year = now.getFullYear();
+    const year = 2021;
 
     try {
       logger.info("checkCancelledGames started");
@@ -877,31 +879,34 @@ exports.checkCancelledGames = functions.pubsub
         if (!externalGameId) continue;
 
         const config = API_SPORTS_CONFIG[sport];
+        const url = `https://v1.american-football.api-sports.io/games?league=${config.leagueId}&season=${year}`;
 
         logger.info(
           `🔎 Checking game ${gameDoc.id} (extId: ${externalGameId}, week: ${week}, sport: ${sport})`
         );
 
-        // Call SportsData API
-        const url = `https://api.sportsdata.io${config.endpoint}/${year}/${week}?key=${process.env.REACT_APP_APISPORTS_KEY}`;
-        const res = await fetch(url);
-        const gamesList = await res.json();
+        const res = await fetch(url, {
+          headers: { "X-RapidAPI-Key": process.env.REACT_APP_APISPORTS_KEY },
+        });
+        const data = await res.json();
+        const gamesList = data.response || [];
 
         logger.info(
-          `📡 API returned ${gamesList?.length || 0} games for week ${week}`
+          `📡 API returned ${gamesList.length} games for league ${config.leagueId}`
         );
 
-        const apiGame = gamesList.find((g) =>
-          sport === "NFL"
-            ? g.GameKey === externalGameId
-            : g.GameID === externalGameId
+        // Find the specific game
+        const apiGame = gamesList.find(
+          (g) => g.game.id.toString() === externalGameId.toString()
         );
+        logger.info("Game:", { apiGame });
         if (!apiGame) {
           logger.info(`⚠️ API did not return game ${externalGameId}`);
           continue;
         }
 
-        if (apiGame.Status === "Canceled") {
+        // Check if the game is cancelled
+        if (apiGame.game.status?.long === "Canceled") {
           logger.info(`❌ Game ${gameDoc.id} is cancelled. Refunding tiers...`);
 
           const batch = db.batch();
@@ -929,8 +934,6 @@ exports.checkCancelledGames = functions.pubsub
                 if (!userId || !tierId) return;
 
                 const userRef = db.collection("users").doc(userId);
-
-                // Push tierId back into currentTiers array
                 batch.update(userRef, {
                   currentTiers: admin.firestore.FieldValue.arrayUnion(tierId),
                 });
@@ -953,7 +956,8 @@ exports.checkCancelledGames = functions.pubsub
         }
       }
     } catch (error) {
-      logError(error, { context: "checkCancelledGames" });
+      // logg(error, { context: "checkCancelledGames" });
+      logger.error("Error in Checking Cancel Game: ", { error });
     }
   });
 

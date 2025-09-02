@@ -7,6 +7,7 @@ const axios = require("axios");
 const { sendMail } = require("./payment-system-modified");
 const { DUMMY_GAMES } = require("./constants-configuration-fixed");
 // const { DUMMY_GAMES } = require("./constants-configuration-fixed");
+const { logger } = require("firebase-functions");
 
 // =====================================
 // CONSTANTS - Configure these during deployment
@@ -57,6 +58,7 @@ const BATCH_PAYOUT_DAYS = ["tuesday", "friday"];
 const API_SPORTS_CONFIG = {
   NFL: {
     endpoint: "/v3/nfl/scores/json/ScoresByWeek",
+    leagueId: 1,
   },
   CFB: {
     endpoint: "/v3/cfb/scores/json/GamesByWeek",
@@ -165,57 +167,95 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    const config = API_SPORTS_CONFIG[sport];
-    const year = new Date(new Date()).getFullYear();
-    // const weekNum = week || getWeekNumber(new Date(date || new Date()));
+    // const config = API_SPORTS_CONFIG[sport];
+    // const year = 2021; // hardcoded year
 
-    const url = `https://api.sportsdata.io${config.endpoint}/${year}/${week}`;
+    // // API-Football endpoint for games (adjust league/season as per config)
+    // const url = `https://v1.american-football.api-sports.io/games`;
 
     // const response = await axios.get(url, {
-    //   params: { key: process.env.REACT_APP_APISPORTS_KEY },
+    //   params: {
+    //     league: config.leagueId, // from your config
+    //     season: year,
+    //   },
+    //   headers: {
+    //     "x-apisports-key": process.env.REACT_APP_APISPORTS_KEY,
+    //   },
     // });
 
-    // let games = response.data || [];
-    const games = DUMMY_GAMES;
+    // let games = response.data?.response || [];
+    let games = DUMMY_GAMES;
+    // logger.info("GOT GAMES: ", { data: response?.data });
 
+    // ✅ Filter only Regular Season games
+    games = games.filter((g) => g.game.stage === "Regular Season");
+
+    // ✅ If week provided, filter by numeric week
+    if (week) {
+      games = games.filter((g) => {
+        const weekStr = g.game.week; // "Week 5"
+        const weekNum = weekStr
+          ? parseInt(weekStr.replace("Week", "").trim())
+          : null;
+        return weekNum === parseInt(week);
+      });
+    }
+
+    // ✅ Team filter
     if (teamName) {
       const searchTerm = teamName.toLowerCase();
       games = games.filter(
         (game) =>
-          game.HomeTeam?.toLowerCase().includes(searchTerm) ||
-          game.AwayTeam?.toLowerCase().includes(searchTerm)
+          game.teams.home?.name?.toLowerCase().includes(searchTerm) ||
+          game.teams.away?.name?.toLowerCase().includes(searchTerm)
       );
     }
 
-    const formattedGames = games.map((game) => ({
-      apiSportsId:
-        sport === "NFL" ? game.GameKey?.toString() : game.GameID?.toString(),
-      homeTeam: game.HomeTeam,
-      awayTeam: game.AwayTeam,
-      startTime: sport === "NFL" ? game?.Date : game?.DateTime,
-      status: game.Status,
+    // ✅ Format games to match old API shape
+    const formattedGames = games.map((game) => {
+      const weekStr = game.game.week;
+      const weekNum = weekStr
+        ? parseInt(weekStr.replace("Week", "").trim())
+        : null;
 
-      venue:
-        sport === "NFL"
-          ? game.StadiumDetails?.Name
-          : game.Stadium?.Name || "TBA",
-      week: game.Week,
-      scores: {
-        home: sport === "NFL" ? game.HomeScore : game.HomeTeamScore,
-        away: sport === "NFL" ? game.AwayScore : game.AwayTeamScore,
-      },
-    }));
-    console.log(`Admin ${adminId} searched ${sport} games`);
+      logger.info("Returning: ", { data: game });
+      let startTime = null;
+      if (game?.game?.date?.timestamp) {
+        // safest: use timestamp
+        startTime = new Date(game.game.date.timestamp * 1000).toISOString();
+      } else if (game?.game?.date?.date && game?.game?.date?.time) {
+        // fallback: combine date + time
+        startTime = new Date(
+          `${game.game.date.date}T${game.game.date.time}:00Z`
+        ).toISOString();
+      }
+
+      return {
+        apiSportsId: game.game.id?.toString(),
+        homeTeam: game.teams.home?.name,
+        awayTeam: game.teams.away?.name,
+        startTime, // ✅ now includes full datetime
+        status: game.game.status?.long,
+        venue: game.game.venue?.name || "TBA",
+        week: weekNum, // 👈 same as old week
+        scores: {
+          home: game.scores.home?.total ?? null,
+          away: game.scores.away?.total ?? null,
+        },
+      };
+    });
+
+    console.log(
+      `Admin ${adminId} searched ${sport} games for week ${week || "ALL"}`
+    );
+
     return {
       success: true,
       games: formattedGames,
       total: formattedGames.length,
     };
   } catch (error) {
-    console.error(
-      "SportsData.io search error:",
-      error?.response?.data || error
-    );
+    console.error("API-Football search error:", error?.response?.data || error);
     throw new functions.https.HttpsError("internal", "Failed to search games");
   }
 });

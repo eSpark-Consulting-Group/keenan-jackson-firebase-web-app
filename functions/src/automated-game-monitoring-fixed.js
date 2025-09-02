@@ -99,121 +99,94 @@ class ApiSportsService {
   /**
    * Fetch game score from API-Sports
    */
-  async fetchGameScore(gameKey, sport, week = 1) {
-    logger.info(`[fetchGameScore] Called`, { gameKey, sport, week });
+  async fetchGameScore(gameId, sport, week = 1) {
+    // logger.info(`[fetchGameScore] Called`, { gameId, sport, week });
 
-    if (!gameKey) {
-      logger.error("[fetchGameScore] No externalGameId provided");
-      throw new Error("No external GameKey provided");
-    }
-
-    if (FEATURE_FLAGS.MOCK_API_SPORTS) {
-      logger.warn("[fetchGameScore] Using MOCK data", { gameKey, sport, week });
-      return this.getMockGameData(gameKey, sport); // (apiSportsId -> gameKey)
+    if (!gameId) {
+      // logger.error("[fetchGameScore] No gameId provided");
+      throw new Error("No gameId provided");
     }
 
     const config = SPORTS_CONFIG[sport];
-    if (!config) {
-      logger.error(`[fetchGameScore] Unknown sport`, { sport });
-      throw new Error(`Unknown sport: ${sport}`);
-    }
-
-    const year = new Date().getFullYear();
-    logger.info(`[fetchGameScore] Parsed year/week`, { year, week });
-
-    const url = `https://api.sportsdata.io${config.endpoint}/${year}/${week}?key=${process.env.REACT_APP_APISPORTS_KEY}`;
-    logger.info(`[fetchGameScore] Built URL`, { url, gameKey, sport, week });
+    const year = 2021; // or dynamically: new Date().getFullYear()
 
     try {
-      logger.info("[fetchGameScore] Making API request…", {
-        usingKey: !!process.env.REACT_APP_APISPORTS_KEY,
-        gameKey,
-        sport,
-        week,
+      // logger.info(`[fetchGameScore] Making API request`, {
+      //   sport,
+      //   year,
+      //   leagueId: config.leagueId,
+      // });
+
+      // console.log("KEEEYYY: ", process.env.REACT_APP_APISPORTS_KEY);
+
+      // const url = `https://v1.american-football.api-sports.io/games`;
+      // const response = await axios.get(url, {
+      //   params: {
+      //     league: config.leagueId,
+      //     season: year,
+      //   },
+      //   headers: {
+      //     "x-apisports-key": process.env.REACT_APP_APISPORTS_KEY,
+      //   },
+      // });
+
+      // logger.info("RESPONSE: ", { response: response?.data });
+
+      const gamesList = DUMMY_GAMES || [];
+      logger.info(`[fetchGameScore] API returned games count`, {
+        count: gamesList,
       });
 
-      // const games = await this.makeRequest(url);
-      // const { data: games } = await axios.get(url);
-      const games = DUMMY_GAMES;
-      logger.info("[fetchGameScore] API returned", {
-        gameKey,
-        sport,
-        week,
-        count: Array.isArray(games) ? games.length : -1,
-      });
+      const apiGame = gamesList.find(
+        (g) => g.game.id.toString() === gameId.toString()
+      );
+      logger.info("API GAME: ", { response: apiGame });
 
-      if (!Array.isArray(games)) {
-        logger.error("[fetchGameScore] Unexpected API response format", {
-          type: typeof games,
-        });
-        throw new Error("Invalid response format from API");
-      }
+      if (!apiGame) {
+        // logger.warn("[fetchGameScore] Game not found in API response", {
+        //   gameId,
+        //   availableGameIds: gamesList.map((g) => g.game.id).slice(0, 50),
+        //   sport,
+        // });
 
-      const game = games.find((g) => g?.GameKey == gameKey);
-      if (!game) {
-        logger.warn("[fetchGameScore] Game not found in API response", {
-          gameKey,
-          availableKeys: games
-            .map((g) => g?.GameKey)
-            .filter(Boolean)
-            .slice(0, 50), // avoid huge logs
-          sport,
-          year,
-          week,
-        });
-
-        // SAFE STUB so the pipeline doesn’t crash
-        const notFoundStub = {
-          apiSportsId: gameKey,
+        return {
+          apiSportsId: gameId,
           status: "unknown",
-          currentPeriod: 0,
-          quarterScores: {},
           currentQuarter: 1,
+          quarterScores: {},
           totalScore: { home: 0, away: 0 },
           teams: { home: "", away: "" },
           startTime: null,
           lastUpdate: new Date().toISOString(),
           _notFound: true,
         };
-        logger.info("[fetchGameScore] Returning notFound stub", {
-          gameKey,
-          sport,
-          week,
-        });
-        return notFoundStub;
-
-        // OR: throw to skip this game entirely
-        // throw new Error(`Game ${gameKey} not found for ${sport} ${year} week ${week}`);
       }
 
-      logger.info("[fetchGameScore] Found game", {
-        gameKey,
-        home: game?.HomeTeam,
-        away: game?.AwayTeam,
-        sport,
-        year,
-        week,
-      });
+      // logger.info("[fetchGameScore] Game found, parsing data", {
+      //   gameId,
+      //   home: apiGame.game.teams.home.name,
+      //   away: apiGame.game.teams.away.name,
+      //   status: apiGame.game.status?.long,
+      // });
 
-      const parsed = this.parseGameData(game, sport);
-      logger.info("[fetchGameScore] Successfully parsed game data", {
-        gameKey,
-        sport,
-        week,
-        status: parsed?.status,
-        currentQuarter: parsed?.currentQuarter,
-      });
+      const parsed = this.parseGameData(apiGame, sport);
+
+      // logger.info("[fetchGameScore] Parsed game data successfully", {
+      //   gameId,
+      //   status: parsed.status,
+      //   currentQuarter: parsed.currentQuarter,
+      //   totalScore: parsed.totalScore,
+      //   startTime: parsed.startTime,
+      // });
+
       return parsed;
     } catch (error) {
-      logger.error("[fetchGameScore] Error fetching game score", {
-        error: error?.message,
-        stack: error?.stack,
-        gameKey,
-        sport,
-        week,
-        url,
-      });
-      logError(error, { context: "fetchGameScore", gameKey, sport, week, url });
+      // logger.error("[fetchGameScore] Error fetching game score", {
+      //   error: error?.message,
+      //   stack: error?.stack,
+      //   gameId,
+      //   sport,
+      // });
       throw error;
     }
   }
@@ -222,169 +195,78 @@ class ApiSportsService {
    * Parse API response into standard format
    */
   parseGameData(apiGame, sport) {
-    // HARD GUARD: avoid crashes if caller passes undefined
-    if (!apiGame || typeof apiGame !== "object") {
-      logger.error("[parseGameData] apiGame is missing/invalid", {
-        sport,
-        typeofApiGame: typeof apiGame,
-      });
-      return {
-        apiSportsId: null,
-        status: "unknown",
-        currentPeriod: 0,
-        quarterScores: {},
-        currentQuarter: 1,
-        totalScore: { home: 0, away: 0 },
-        teams: { home: "", away: "" },
-        startTime: null,
-        lastUpdate: new Date().toISOString(),
-        _parseWarning: "apiGame_missing",
-      };
-    }
+    // apiGame is structured like:
+    // {
+    //   game: {...},
+    //   league: {...},
+    //   teams: {...},
+    //   scores: {...}
+    // }
+    const game = apiGame.game;
+    const teams = apiGame.teams;
+    const scores = apiGame.scores;
 
-    let currentQuarter = 1;
-    const isBasketball = sport === "NBA" || sport === "NCAA_BB";
+    logger.info("GAMMME parse Game: ", { game, teams, scores });
 
-    logger.info("[parseGameData] Incoming raw game object", {
-      sport,
-      keys: Object.keys(apiGame || {}),
-      gameKey: apiGame?.GameKey || apiGame?.id,
-      status: apiGame?.Status || apiGame?.status,
-      scoreQuarter: apiGame?.HomeScoreQuarter1,
-    });
+    // Map status
+    const statusMap = {
+      NS: "scheduled",
+      Q1: "active",
+      Q2: "active",
+      Q3: "active",
+      Q4: "active",
+      OT: "active",
+      HT: "active",
+      FT: "completed",
+      AOT: "completed",
+      PST: "cancelled",
+      CANC: "cancelled",
+      SUSP: "cancelled",
+    };
+    const gameStatus = statusMap[game?.status?.short] || "unknown";
 
-    let quarterScores = {};
-
-    if (apiGame?.HomeScoreQuarter1 !== undefined) {
-      logger.info("[parseGameData] Detected NFL-style game object");
-      quarterScores = {
-        q1: {
-          home: apiGame?.HomeScoreQuarter1 ?? null,
-          away: apiGame?.AwayScoreQuarter1 ?? null,
-        },
-        q2: {
-          home: apiGame?.HomeScoreQuarter2 ?? null,
-          away: apiGame?.AwayScoreQuarter2 ?? null,
-        },
-        q3: {
-          home: apiGame?.HomeScoreQuarter3 ?? null,
-          away: apiGame?.AwayScoreQuarter3 ?? null,
-        },
-        q4: {
-          home: apiGame?.HomeScoreQuarter4 ?? null,
-          away: apiGame?.AwayScoreQuarter4 ?? null,
-        },
-      };
-
-      const quarterFlags = [
-        { key: "Has1stQuarterStarted", number: 1 },
-        { key: "Has2ndQuarterStarted", number: 2 },
-        { key: "Has3rdQuarterStarted", number: 3 },
-        { key: "Has4thQuarterStarted", number: 4 },
-      ];
-
-      for (const q of quarterFlags) {
-        if (apiGame[q.key]) {
-          currentQuarter = q.number;
-        } else {
-          break;
+    // Parse quarter scores
+    const quarterScores = {};
+    ["quarter_1", "quarter_2", "quarter_3", "quarter_4", "overtime"].forEach(
+      (q, idx) => {
+        if (scores?.home?.[q] !== undefined) {
+          const key = q === "overtime" ? "ot" : `q${idx + 1}`;
+          quarterScores[key] = {
+            home: scores.home[q] ?? null,
+            away: scores.away[q] ?? null,
+          };
         }
       }
+    );
 
-      console.log("Current Quarter =", currentQuarter);
-
-      logger.info(
-        "[parseGameData] Extracted NFL-style quarter scores",
-        quarterScores
-      );
-    } else if (apiGame?.Periods?.length) {
-      logger.info(
-        "[parseGameData] Detected NCAA-style game object with Periods",
-        {
-          periodsCount: apiGame?.Periods?.length,
-        }
-      );
-
-      quarterScores = apiGame.Periods.reduce((acc, p, idx) => {
-        acc[`q${idx + 1}`] = {
-          home: p?.HomeScore ?? null,
-          away: p?.AwayScore ?? null,
-        };
-        return acc;
-      }, {});
-      currentQuarter =
-        apiGame?.periods?.current ||
-        apiGame?.Periods?.length ||
-        apiGame?.Quarter ||
-        1;
-
-      logger.info(
-        "[parseGameData] Extracted Period-based quarter scores",
-        quarterScores
-      );
-    }
-
-    if (apiGame?.IsOvertime || apiGame?.HomeScoreOvertime !== undefined) {
-      logger.info("[parseGameData] Adding overtime scores");
-      quarterScores.ot = {
-        home: apiGame?.HomeScoreOvertime ?? null,
-        away: apiGame?.AwayScoreOvertime ?? null,
-      };
-    }
-
-    let gameStatus = "unknown";
-    const statusMap = {
-      NS: "scheduled", // Not Started
-      Q1: "active", // 1st Quarter
-      Q2: "active", // 2nd Quarter
-      Q3: "active", // 3rd Quarter
-      Q4: "active", // 4th Quarter
-      OT: "active", // Overtime
-      HT: "active", // Halftime
-      FT: "completed", // Full Time
-      AOT: "completed", // After Overtime
-      PST: "cancelled", // Postponed
-      CANC: "cancelled", // Cancelled
-      SUSP: "cancelled", // Suspended
+    // Total score
+    const totalScore = {
+      home: scores?.home?.total ?? 0,
+      away: scores?.away?.total ?? 0,
     };
 
-    if (apiGame?.status?.short) {
-      gameStatus = statusMap[apiGame.status.short] || "unknown";
-    } else if (typeof apiGame?.Status === "string") {
-      gameStatus = apiGame.Status.toLowerCase();
+    // Teams
+    const parsedTeams = {
+      home: teams?.home?.name ?? "",
+      away: teams?.away?.name ?? "",
+    };
+
+    // Start time
+    let startTime = null;
+    if (game?.date?.date && game?.date?.time) {
+      startTime = new Date(`${game.date.date}T${game.date.time}:00Z`);
     }
 
-    logger.info("[parseGameData] Normalized game status", { gameStatus });
-
-    const parsed = {
-      apiSportsId: apiGame?.id || apiGame?.GameKey || null,
+    return {
+      apiSportsId: game?.id,
       status: gameStatus,
-      currentPeriod: apiGame?.periods?.current || apiGame?.Quarter || 0,
+      currentQuarter: Object.keys(quarterScores).length || 1,
       quarterScores,
-      currentQuarter,
-      totalScore: {
-        home: apiGame?.HomeScore ?? apiGame?.HomeTeamScore ?? 0,
-        away: apiGame?.AwayScore ?? apiGame?.AwayTeamScore ?? 0,
-      },
-      teams: {
-        home: apiGame?.HomeTeam || apiGame?.teams?.home?.name || "",
-        away: apiGame?.AwayTeam || apiGame?.teams?.away?.name || "",
-      },
-      startTime:
-        apiGame?.Date || apiGame?.date
-          ? new Date(apiGame?.Date || apiGame?.date)
-          : null,
+      totalScore,
+      teams: parsedTeams,
+      startTime,
       lastUpdate: new Date().toISOString(),
     };
-
-    logger.info("[parseGameData] Final parsed object", {
-      apiSportsId: parsed.apiSportsId,
-      status: parsed.status,
-      currentQuarter: parsed.currentQuarter,
-      currentPeriod: parsed.currentPeriod,
-    });
-
-    return parsed;
   }
 
   /**

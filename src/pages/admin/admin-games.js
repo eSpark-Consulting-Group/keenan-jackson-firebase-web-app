@@ -680,7 +680,13 @@ export default function AdminGames() {
                       </label>
                       <input
                         type="datetime-local"
-                        value={gameForm.startTime}
+                        value={
+                          gameForm.startTime
+                            ? new Date(gameForm.startTime)
+                                .toISOString()
+                                .slice(0, 16) // "2021-09-12T23:30"
+                            : ""
+                        }
                         onChange={(e) =>
                           setGameForm({
                             ...gameForm,

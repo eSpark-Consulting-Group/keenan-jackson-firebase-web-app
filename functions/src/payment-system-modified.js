@@ -43,7 +43,7 @@ async function sendTelegramNotification(chatId, message) {
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // Example send function
-export const sendMail = async ({ to, subject, html }) => {
+const sendMail = async ({ to, subject, html }) => {
   const msg = {
     to,
     from: process.env.SENDGRID_FROM_EMAIL,
@@ -1410,4 +1410,5 @@ module.exports = {
   handleFailedPayment,
   handleRefund,
   grantTelegramAccess,
+  sendMail,
 };
