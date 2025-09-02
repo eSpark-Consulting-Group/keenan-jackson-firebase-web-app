@@ -36,6 +36,7 @@ import { Link } from "react-router-dom";
 export default function AdminPayouts() {
   const [loading, setLoading] = useState(true);
   const [payouts, setPayouts] = useState([]);
+  console.log("Payouts:", payouts);
   const [stats, setStats] = useState({
     pendingCount: 0,
     pendingAmount: 0,
