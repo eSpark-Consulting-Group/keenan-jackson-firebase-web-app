@@ -839,7 +839,7 @@ const handlePaymentMethodClick = (payout) => {
           )}
           
           {Object.entries(selectedPaymentMethod).map(([key, value]) => {
-            if (["type", "id", "createdAt", "updatedAt"].includes(key)) return null;
+            if (["type", "id", "createdAt", "updatedAt","displayInfo"].includes(key)) return null;
             return (
               <div key={key} className="flex justify-between items-center bg-gray-50 p-2 rounded-md">
                 <span className="font-semibold">{key.charAt(0).toUpperCase() + key.slice(1)}:{" "}</span>
