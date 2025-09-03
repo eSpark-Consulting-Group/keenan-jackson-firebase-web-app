@@ -1156,7 +1156,7 @@ exports.requestInstantPayout = functions.https.onCall(async (data, context) => {
       );
     }
 
-    if (game.payoutStatus === "completed") {
+    if (game.status === "completed") {
       throw new functions.https.HttpsError(
         "already-exists",
         "Payout already processed"
@@ -1174,7 +1174,7 @@ exports.requestInstantPayout = functions.https.onCall(async (data, context) => {
 
     // Update game with payout info
     await gameDoc.ref.update({
-      payoutStatus: "completed",
+      status: "completed",
       payoutType: "instant",
       payoutId: result.payoutId,
       instantPayoutFee: result.fee,

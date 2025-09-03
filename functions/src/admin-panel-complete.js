@@ -441,7 +441,7 @@ exports.markQuarterWinners = functions.https.onCall(async (data, context) => {
     //         sport: game.sport,
     //         createdAt: admin.firestore.FieldValue.serverTimestamp(),
     //         markedBy: adminId,
-    //         payoutStatus: "pending",
+    //         status: "pending_payout",
     //         notificationStatus: "pending",
     //       });
 
@@ -627,7 +627,7 @@ exports.getPendingPayouts = functions.https.onCall(async (data, context) => {
     const winners = await admin
       .firestore()
       .collection("winners")
-      .where("payoutStatus", "==", "pending")
+      .where("status", "==", "pending_payout")
       .where("createdAt", ">=", startDate)
       .where("createdAt", "<=", endDate)
       .get();
@@ -1807,7 +1807,7 @@ async function exportWinners(filters) {
       score: winner.score,
       prizeAmount: winner.prizeAmount,
       tier: winner.tier,
-      payoutStatus: winner.payoutStatus,
+      status: winner.status,
       payoutType: winner.payoutType || "batch",
       payoutPercentage: winner.payoutPercentage,
       instantPayoutFee: winner.instantPayoutFee || 0,

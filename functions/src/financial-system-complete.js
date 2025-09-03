@@ -84,7 +84,7 @@ exports.processInstantPayout = functions.https.onCall(async (data, context) => {
     }
     
     // Check if already paid
-    if (winner.payoutStatus !== PAYOUT_STATUS.PENDING) {
+    if (winner.status !== PAYOUT_STATUS.PENDING) {
       throw new functions.https.HttpsError('failed-precondition', 'Payout already processed');
     }
     
@@ -141,7 +141,7 @@ exports.processInstantPayout = functions.https.onCall(async (data, context) => {
     
     // Update winner status
     await winnerDoc.ref.update({
-      payoutStatus: PAYOUT_STATUS.PAID_INSTANT,
+      status: PAYOUT_STATUS.PAID_INSTANT,
       payoutId: payoutRef.id,
       instantPayoutFee,
       paidAt: admin.firestore.FieldValue.serverTimestamp()
@@ -382,7 +382,7 @@ async function processScheduledPayouts(batchDay, daysBackStart, daysBackEnd) {
       .collection('winners')
       .where('createdAt', '>=', startDate)
       .where('createdAt', '<=', endDate)
-      .where('payoutStatus', '==', PAYOUT_STATUS.PENDING)
+      .where('status', '==', PAYOUT_STATUS.PENDING)
       .get();
     
     if (winners.empty) {
@@ -475,7 +475,7 @@ async function processScheduledPayouts(batchDay, daysBackStart, daysBackEnd) {
       for (const win of userData.wins) {
         const winnerRef = admin.firestore().collection('winners').doc(win.winnerId);
         batch.update(winnerRef, {
-          payoutStatus: PAYOUT_STATUS.QUEUED,
+          status: PAYOUT_STATUS.QUEUED,
           payoutId: payoutRef.id,
           batchId: batchRef.id
         });
@@ -573,7 +573,7 @@ exports.confirmRelayPayouts = functions.https.onCall(async (data, context) => {
         for (const win of payout.winDetails) {
           const winnerRef = admin.firestore().collection('winners').doc(win.winnerId);
           batch.update(winnerRef, {
-            payoutStatus: PAYOUT_STATUS.COMPLETED,
+            status: PAYOUT_STATUS.COMPLETED,
             paidAt: admin.firestore.FieldValue.serverTimestamp()
           });
         }
@@ -595,7 +595,7 @@ exports.confirmRelayPayouts = functions.https.onCall(async (data, context) => {
         for (const win of payout.winDetails) {
           const winnerRef = admin.firestore().collection('winners').doc(win.winnerId);
           batch.update(winnerRef, {
-            payoutStatus: PAYOUT_STATUS.PENDING,
+            status: PAYOUT_STATUS.PENDING,
             payoutId: null,
             batchId: null
           });
@@ -1489,7 +1489,7 @@ exports.dailyFinancialHealthCheck = functions.pubsub
     
     const oldPayouts = await admin.firestore()
       .collection('winners')
-      .where('payoutStatus', '==', PAYOUT_STATUS.PENDING)
+      .where('status', '==', PAYOUT_STATUS.PENDING)
       .where('createdAt', '<', weekAgo)
       .get();
     
@@ -1503,7 +1503,7 @@ exports.dailyFinancialHealthCheck = functions.pubsub
     const balance = await getMercuryBalance();
     const pendingPayouts = await admin.firestore()
       .collection('winners')
-      .where('payoutStatus', '==', PAYOUT_STATUS.PENDING)
+      .where('status', '==', PAYOUT_STATUS.PENDING)
       .get();
     
     let totalPending = 0;

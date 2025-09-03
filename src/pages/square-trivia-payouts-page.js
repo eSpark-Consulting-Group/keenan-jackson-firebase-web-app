@@ -53,7 +53,7 @@ export default function Payouts() {
   const [payouts, setPayouts] = useState([]);
   console.log("payouts:", payouts);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all"); // all, pending, completed
+  const [filter, setFilter] = useState("all"); // all, pending, completed, failed, processing
   const [selectedPayout, setSelectedPayout] = useState(null);
   const [showInstantPayoutModal, setShowInstantPayoutModal] = useState(false);
   const [processingInstant, setProcessingInstant] = useState(false);
@@ -330,7 +330,7 @@ export default function Payouts() {
       case "pending_payout":
         return "bg-yellow-100 text-yellow-800";
       case "processing":
-        return "bg-blue-100 text-blue-800";
+        return "bg-purple-100 text-purple-800";
       case "completed":
         return "bg-green-100 text-green-800";
       case "failed":
@@ -342,7 +342,7 @@ export default function Payouts() {
   const getPayouttypeColor = (status) => {
     switch (status) {
       case "instant":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-purple-100 text-purple-800";
       default:
         return "bg-blue-100 text-blue-800";
     }
@@ -352,6 +352,7 @@ export default function Payouts() {
     if (filter === "all") return true;
     if (filter === "pending") return payout.status === "pending_payout";
     if (filter === "completed") return payout.status === "completed";
+    if (filter === "processing") return payout.status === "processing";
     if (filter === "failed") return payout.status === "failed";
     return true;
   });
@@ -556,6 +557,17 @@ export default function Payouts() {
                   {payouts.filter((p) => p.status === "pending_payout").length})
                 </button>
                 <button
+                  onClick={() => setFilter("processing")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    filter === "processing"
+                      ? "bg-purple-100 text-purple-700"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  Processing (
+                  {payouts.filter((p) => p.status === "processing").length})
+                </button>
+                <button
                   onClick={() => setFilter("failed")}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     filter === "failed"
@@ -602,7 +614,7 @@ export default function Payouts() {
             transition={{ delay: 0.3 }}
             className="space-y-4"
           >
-            {payouts.map((payout, index) => (
+            {filteredPayouts.map((payout, index) => (
               <motion.div
                 key={payout.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -671,7 +683,7 @@ export default function Payouts() {
                     <div className="mt-3 ml-8">
                       <button
                         onClick={() => toggleExpand(payout.id)}
-                        className="flex items-center text-sm text-purple-600 hover:text-purple-800 font-medium"
+                        className="flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium"
                       >
                         {expandedId === payout.id ? (
                           <>
@@ -768,7 +780,7 @@ export default function Payouts() {
 
                   {/* RIGHT SIDE ACTIONS */}
                   <div className="ml-6 flex flex-col items-end gap-2">
-                    {/* {payout.payoutStatus === "pending" && ( */}
+                    {/* {payout.status === "pending_payout" && ( */}
                     <button
                       onClick={() => handleInstantPayout(payout)}
                       disabled={
