@@ -62,8 +62,6 @@ export default function Payouts() {
   const [defaultPayoutMethod, setDefaultPayoutMethod] = useState(null);
   const [selectedPayoutMethod, setSelectedPayoutMethod] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   const generatePDF = () => {
     const creationDate = new Date().toLocaleDateString();
@@ -435,44 +433,6 @@ export default function Payouts() {
     );
   }
 
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentPayouts = filteredPayouts.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
-  const totalPages = Math.ceil(filteredPayouts.length / itemsPerPage);
-  const generatePageNumbers = () => {
-    const delta = 1; // how many pages to show around current
-    const range = [];
-    const rangeWithDots = [];
-    let l;
-
-    for (let i = 1; i <= totalPages; i++) {
-      if (
-        i === 1 ||
-        i === totalPages ||
-        (i >= currentPage - delta && i <= currentPage + delta)
-      ) {
-        range.push(i);
-      }
-    }
-
-    for (let i of range) {
-      if (l) {
-        if (i - l === 2) {
-          rangeWithDots.push(l + 1);
-        } else if (i - l !== 1) {
-          rangeWithDots.push("...");
-        }
-      }
-      rangeWithDots.push(i);
-      l = i;
-    }
-
-    return rangeWithDots;
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -612,7 +572,8 @@ export default function Payouts() {
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
-                  Failed ({payouts.filter((p) => p.status === "failed").length})
+                  Failed (
+                  {payouts.filter((p) => p.status === "failed").length})
                 </button>
                 <button
                   onClick={() => setFilter("completed")}
@@ -623,7 +584,8 @@ export default function Payouts() {
                   }`}
                 >
                   Completed (
-                  {payouts.filter((p) => p.status === "completed").length})
+                  {payouts.filter((p) => p.status === "completed").length}
+                  )
                 </button>
               </div>
             </div>
@@ -642,14 +604,14 @@ export default function Payouts() {
         </motion.div>
 
         {/* Payouts List */}
-        {currentPayouts.length > 0 ? (
+        {filteredPayouts.length > 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
             className="space-y-4"
           >
-            {currentPayouts.map((payout, index) => (
+            {filteredPayouts.map((payout, index) => (
               <motion.div
                 key={payout.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -877,68 +839,6 @@ export default function Payouts() {
             )}
           </motion.div>
         )}
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center mt-6 space-x-1">
-            {/* First */}
-            <button
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-              className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
-            >
-              {"First"}
-            </button>
-
-            {/* Previous */}
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
-            >
-              {"Prev"}
-            </button>
-
-            {/* Page Numbers */}
-            {generatePageNumbers().map((page, idx) =>
-              page === "..." ? (
-                <span key={idx} className="px-2 py-1 text-gray-500">
-                  ...
-                </span>
-              ) : (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentPage(page)}
-                  className={`px-3 py-1 rounded ${
-                    currentPage === page
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 hover:bg-gray-300"
-                  }`}
-                >
-                  {page}
-                </button>
-              )
-            )}
-
-            {/* Next */}
-            <button
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-              disabled={currentPage === totalPages}
-              className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
-            >
-              {"Next"}
-            </button>
-
-            {/* Last */}
-            <button
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages}
-              className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
-            >
-              {"Last"}
-            </button>
-          </div>
-        )}
 
         {/* Standard Payout Info */}
         <motion.div
@@ -1066,6 +966,9 @@ export default function Payouts() {
                             <p className="text-sm text-gray-600">
                               {getPayoutMethodIdentifier(method.type, method) ||
                                 "No details available"}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {method.displayInfo}
                             </p>
                           </div>
                           {method.id === defaultPayoutMethod && (
