@@ -72,7 +72,7 @@ const handlePaymentMethodClick = (payout) => {
   } else {
     // Instant payout uses payout?.selectedpaymentMethod directly
     method = payout?.user?.paymentMethods?.find(
-      (m) => m?.id === payout.selectedPayoutMethod
+      (m) => m?.id === payout.payoutMethodId
     );
   }
 

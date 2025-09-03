@@ -196,20 +196,20 @@ export const PAYMENT_METHODS = {
     fee: "Network fees apply",
     fields: [
       {
-        name: "wallet",
-        label: "Wallet Address",
-        type: "text",
-        required: true,
-        autoComplete: "off",
-        placeholder: "e.g. 0x1234...abcd",
-      },
-      {
         name: "network",
         label: "Network",
         type: "text",
         required: true,
         autoComplete: "off",
         placeholder: "e.g. Ethereum, Solana",
+      },
+      {
+        name: "wallet",
+        label: "Wallet Address",
+        type: "text",
+        required: true,
+        autoComplete: "off",
+        placeholder: "e.g. 0x1234...abcd",
       },
     ],
   },

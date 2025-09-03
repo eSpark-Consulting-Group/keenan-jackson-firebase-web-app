@@ -752,6 +752,7 @@ const winningUser = query(
     tierId,
     prizeAmount,
     answerTime,
+    payoutMethodId: null,
     payoutType: "standard",
     status: "pending_payout",
     createdAt: admin.firestore.FieldValue.serverTimestamp(),

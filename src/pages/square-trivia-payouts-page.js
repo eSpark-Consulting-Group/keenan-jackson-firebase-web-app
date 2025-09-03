@@ -25,7 +25,6 @@ import {
   Send,
   Coins,
 } from "lucide-react";
-// import { useAuth } from "../contexts/AuthContext";
 import {
   db,
   collections,
@@ -43,7 +42,6 @@ import {
   getDoc,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
-// import PayoutMethods from "../components/PayoutMethods";
 import { useAuth } from "../contexts/authcontext";
 import PayoutMethods from "../components/Payouts/payment-methods";
 import jsPDF from "jspdf";
@@ -227,33 +225,16 @@ export default function Payouts() {
     }
   };
 
-  const handleInstantPayout = async (payout) => {
+  const handleInstantPayout = (payout) => {
     if (!payoutMethods || payoutMethods.length === 0) {
       toast.error("Please add a payment method first");
       setShowPayoutMethods(true);
       return;
     }
 
-    try {
-      // ✅ Update in Firestore
-      await updateDoc(doc(db, collections.winners, payout.id), {
-        payoutType: "instant",
-        payoutMethodId: selectedPayoutMethod,
-      });
-
-      // ✅ Update local state
-      const updatedPayout = { ...payout, payoutType: "instant" };
-      setSelectedPayout(updatedPayout);
-      setPayouts((prev) =>
-        prev.map((p) => (p.id === payout.id ? updatedPayout : p))
-      );
-
-      // ✅ Open modal
-      setShowInstantPayoutModal(true);
-    } catch (error) {
-      console.error("Error updating payoutType:", error);
-      toast.error("Failed to set payout as instant");
-    }
+    // ✅ Just select payout and open modal (don’t update Firestore yet)
+    setSelectedPayout(payout);
+    setShowInstantPayoutModal(true);
   };
 
   const confirmInstantPayout = async () => {
@@ -265,7 +246,13 @@ export default function Payouts() {
     setProcessingInstant(true);
 
     try {
-      // Call cloud function to process instant payout
+      // ✅ First update Firestore with instant + chosen method
+      await updateDoc(doc(db, collections.winners, selectedPayout.id), {
+        payoutType: "instant",
+        payoutMethodId: selectedPayoutMethod,
+      });
+
+      // ✅ Then call cloud function
       const response = await callFunction("processInstantPayout", {
         payoutId: selectedPayout.id,
         userId: user.uid,
@@ -277,7 +264,6 @@ export default function Payouts() {
           "Instant payout processed! Funds will arrive within minutes."
         );
 
-        // Update local state
         const updatedPayouts = payouts.map((p) =>
           p.id === selectedPayout.id
             ? {
@@ -285,13 +271,13 @@ export default function Payouts() {
                 status: "processing",
                 isInstant: true,
                 instantFee: response.data.fee,
+                payoutType: "instant",
                 payoutMethodId: selectedPayoutMethod,
               }
             : p
         );
         setPayouts(updatedPayouts);
 
-        // Reload data
         await loadPayouts();
       } else {
         toast.error(response.data.error || "Failed to process instant payout");
@@ -573,8 +559,7 @@ export default function Payouts() {
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
-                  Failed (
-                  {payouts.filter((p) => p.status === "failed").length})
+                  Failed ({payouts.filter((p) => p.status === "failed").length})
                 </button>
                 <button
                   onClick={() => setFilter("completed")}
@@ -585,8 +570,7 @@ export default function Payouts() {
                   }`}
                 >
                   Completed (
-                  {payouts.filter((p) => p.status === "completed").length}
-                  )
+                  {payouts.filter((p) => p.status === "completed").length})
                 </button>
               </div>
             </div>
@@ -951,8 +935,8 @@ export default function Payouts() {
                               setSelectedPayoutMethod(e.target.value)
                             }
                             className="sr-only"
-                            placeholder="Select payout method"
                           />
+
                           <Icon
                             className={`h-5 w-5 mr-3 ${
                               selectedPayoutMethod === method.id
