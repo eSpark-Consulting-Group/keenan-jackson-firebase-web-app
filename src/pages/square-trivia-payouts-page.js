@@ -62,8 +62,6 @@ export default function Payouts() {
   const [defaultPayoutMethod, setDefaultPayoutMethod] = useState(null);
   const [selectedPayoutMethod, setSelectedPayoutMethod] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
-  console.log("payoutMethods:", payoutMethods);
-  console.log("userData:", payoutMethods);
 
   const generatePDF = () => {
     const creationDate = new Date().toLocaleDateString();
@@ -156,7 +154,6 @@ export default function Payouts() {
     completedAmount: 0,
     instantPayouts: 0,
   });
-  console.log("stats:", userData);
   useEffect(() => {
     if (user) {
       loadPayouts();

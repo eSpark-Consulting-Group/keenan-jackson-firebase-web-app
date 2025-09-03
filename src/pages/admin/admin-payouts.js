@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Zap,
   Eye,
+  DollarSign,
 } from "lucide-react";
 import {
   db,
@@ -68,7 +69,7 @@ export default function AdminPayouts() {
         constraints.unshift(where("status", "==", filterOptions.status));
       }
       if (filterOptions.payoutType !== "all") {
-        constraints.unshift(where("payoutType", "==", 'isntant'));
+        constraints.unshift(where("payoutType", "==", "isntant"));
       }
 
       if (filterOptions.dateRange !== "all") {
@@ -282,9 +283,9 @@ export default function AdminPayouts() {
       payout.user?.displayName
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      payout.payoutType.toLowerCase().includes(searchTerm.toLowerCase())||
-      payout.status.toLowerCase().includes(searchTerm.toLowerCase())||
-      payout.tierId.toLowerCase().includes(searchTerm.toLowerCase())||
+      payout.payoutType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payout.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payout.tierId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payout.id.toLowerCase().includes(searchTerm.toLowerCase());
 
     return matchesSearch;
@@ -482,7 +483,10 @@ export default function AdminPayouts() {
             <select
               value={filterOptions.payoutType}
               onChange={(e) =>
-                setFilterOptions({ ...filterOptions, payoutType: e.target.value })
+                setFilterOptions({
+                  ...filterOptions,
+                  payoutType: e.target.value,
+                })
               }
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
@@ -591,6 +595,9 @@ export default function AdminPayouts() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Payment info
+                  </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
@@ -664,6 +671,22 @@ export default function AdminPayouts() {
                         <div className="text-sm text-gray-500">
                           {payout.createdAt?.toDate?.().toLocaleTimeString()}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() =>
+                            navigator.clipboard.writeText(
+                              payout.paymentMethod || "Default Payment"
+                            )
+                          }
+                        >
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-green-100 text-green-800`}
+                          >
+                            <DollarSign className="h-3 w-3 mr-1" />
+                            {payout.paymentMethod || "Default Payment"}
+                          </span>
+                        </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">

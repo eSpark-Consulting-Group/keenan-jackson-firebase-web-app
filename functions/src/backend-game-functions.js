@@ -10,8 +10,8 @@ const {
   handleFailedPayment,
   handleRefund,
 } = require("./payment-system-modified");
-const { logger } = require("firebase-functions");
 const { default: axios } = require("axios");
+const { query, collection, where } = require("firebase/firestore");
 
 // Initialize admin if not already done
 if (!admin.apps.length) {
@@ -736,10 +736,15 @@ async function processWinner(winnerData) {
   };
 
   const prizeAmount = tierAmounts[tierId]?.quarter || 0;
-
+const winningUser = query(
+      collection(db, "users"),
+      where("userId", "==", userId)
+    );
+    functions.logger.info("User Query:", { winningUser });
   // Create winner record
   const winnerRef = await db.collection("winners").add({
     userId,
+    user: winningUser,
     gameId,
     boardId,
     quarter,
