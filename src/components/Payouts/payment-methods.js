@@ -464,9 +464,6 @@ export default function PaymentMethods({
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {method.displayInfo}
-                      </p>
                       <p className="text-xs text-gray-500 mt-1">
                         Processing: {methodConfig?.processingTime} •{" "}
                         {methodConfig?.fee}

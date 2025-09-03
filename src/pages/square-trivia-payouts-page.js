@@ -967,9 +967,6 @@ export default function Payouts() {
                               {getPayoutMethodIdentifier(method.type, method) ||
                                 "No details available"}
                             </p>
-                            <p className="text-sm text-gray-600">
-                              {method.displayInfo}
-                            </p>
                           </div>
                           {method.id === defaultPayoutMethod && (
                             <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">
