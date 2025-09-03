@@ -238,6 +238,7 @@ export default function Payouts() {
       // ✅ Update in Firestore
       await updateDoc(doc(db, collections.winners, payout.id), {
         payoutType: "instant",
+        payoutMethodId: selectedPayoutMethod,
       });
 
       // ✅ Update local state

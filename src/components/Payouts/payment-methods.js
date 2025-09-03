@@ -226,7 +226,7 @@ export default function PaymentMethods({
   const [defaultMethod, setDefaultMethod] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingMethod, setEditingMethod] = useState(null);
-  const [selectedType, setSelectedType] = useState("ach");
+  const [selectedType, setSelectedType] = useState(null);
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
 
@@ -391,7 +391,6 @@ export default function PaymentMethods({
     setEditingMethod(null);
     setFormData({});
     setErrors({});
-    setSelectedType("ach");
   };
 
   const handleEditMethod = (method) => {
