@@ -284,7 +284,7 @@ export default function Payouts() {
       }
     } catch (error) {
       console.error("Error processing instant payout:", error);
-      toast.error("Failed to process instant payout");
+      window.location.reload();
     } finally {
       setProcessingInstant(false);
       setShowInstantPayoutModal(false);
