@@ -62,26 +62,29 @@ export default function AdminPayouts() {
     loadPayouts();
   }, [filterOptions]);
 
-const handlePaymentMethodClick = (payout) => {
-  let method = null;
-  if (payout.payoutType == "standard") {
-    // Find default payment method from user
-    method = payout?.user?.paymentMethods?.find(
-      (m) => m.id === payout?.user.defaultPaymentMethod
-    );
-  } else {
-    // Instant payout uses payout?.selectedpaymentMethod directly
-    method = payout?.user?.paymentMethods?.find(
-      (m) => m?.id === payout.payoutMethodId
-    );
-  }
+  const handlePaymentMethodClick = (payout) => {
+    let method = null;
+    if (payout.payoutType == "standard") {
+      // Find default payment method from user
+      method = payout?.user?.paymentMethods?.find(
+        (m) => m.id === payout?.user.defaultPaymentMethod
+      );
+    } else {
+      // Instant payout uses payout?.selectedpaymentMethod directly
+      method = payout?.user?.paymentMethods?.find(
+        (m) => m?.id === payout.payoutMethodId
+      );
+    }
 
-  setSelectedPaymentMethod(
-    method || { payoutType: "unknown", displayInfo: "No payment method found" }
-  );
-  setSelectedUser(payout?.user || null);
-  setShowPaymentModal(true);
-};
+    setSelectedPaymentMethod(
+      method || {
+        payoutType: "unknown",
+        displayInfo: "No payment method found",
+      }
+    );
+    setSelectedUser(payout?.user || null);
+    setShowPaymentModal(true);
+  };
 
   const loadPayouts = async () => {
     try {
@@ -326,7 +329,7 @@ const handlePaymentMethodClick = (payout) => {
       <span
         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
           payoutType === "instant"
-            ? "bg-yellow-100 text-yellow-800"
+            ? "bg-purple-100 text-purple-800"
             : "bg-blue-100 text-blue-800"
         }`}
       >
@@ -701,11 +704,13 @@ const handlePaymentMethodClick = (payout) => {
                         <button
                           onClick={() => handlePaymentMethodClick(payout)}
                         >
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-green-100 text-green-800">
+                          <span
+                            className={
+                              "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-green-100 text-green-800"
+                            }
+                          >
                             <DollarSign className="h-3 w-3 mr-1" />
-                            {payout.payoutType === "standard"
-                              ? "View Default"
-                              : payout?.paymentMethod || "N/A"}
+                            {"Payment Method"}
                           </span>
                         </button>
                       </td>
@@ -811,67 +816,84 @@ const handlePaymentMethodClick = (payout) => {
           </div>
         </div>
       </div>
-{showPaymentModal && selectedPaymentMethod && (
-  <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-    <div className="bg-white rounded-xl shadow-xl p-6 w-100 max-h-[80vh] overflow-auto">
-      
-      {/* Winner Info */}
-      <div className="mb-6 border-b pb-4">
-        <h2 className="text-xl font-bold mb-2">🏆 Winner Details</h2>
-        {selectedUser ? (
-          <div className="space-y-1 text-gray-700">
-            <p><span className="font-semibold">Name:</span> {selectedUser.displayName || "Unknown User"}</p>
-            <p className="text-sm text-gray-500"><span className="font-semibold">Email:</span> {selectedUser.email}</p>
-          </div>
-        ) : (
-          <p className="text-gray-500">No user information available</p>
-        )}
-      </div>
+      {showPaymentModal && selectedPaymentMethod && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-100 max-h-[80vh] overflow-auto">
+            {/* Winner Info */}
+            <div className="mb-6 border-b pb-4">
+              <h2 className="text-xl font-bold mb-2">🏆 Winner Details</h2>
+              {selectedUser ? (
+                <div className="space-y-1 text-gray-700">
+                  <p>
+                    <span className="font-semibold">Name:</span>{" "}
+                    {selectedUser.displayName || "Unknown User"}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    <span className="font-semibold">Email:</span>{" "}
+                    {selectedUser.email}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-gray-500">No user information available</p>
+              )}
+            </div>
 
-      {/* Payment Method Info */}
-      <div className="mb-6">
-        <h2 className="text-xl font-bold mb-3">💳 Payment Method</h2>
-        <div className="space-y-2 text-gray-700">
-          {selectedPaymentMethod.type && (
-            <p>
-              <span className="font-semibold">Type:</span> {selectedPaymentMethod.type}
-            </p>
-          )}
-          
-          {Object.entries(selectedPaymentMethod).map(([key, value]) => {
-            if (["type", "id", "createdAt", "updatedAt","displayInfo"].includes(key)) return null;
-            return (
-              <div key={key} className="flex justify-between items-center bg-gray-50 p-2 rounded-md">
-                <span className="font-semibold">{key.charAt(0).toUpperCase() + key.slice(1)}:{" "}</span>
-                <span>{value}</span>
-                <button
-                  onClick={() => navigator.clipboard.writeText(value)}
-                  className="ml-2 text-blue-600 hover:text-blue-800 text-sm"
-                  title="Copy"
-                >
-                  📋
-                </button>
+            {/* Payment Method Info */}
+            <div className="mb-6">
+              <h2 className="text-xl font-bold mb-3">💳 Payment Method</h2>
+              <div className="space-y-2 text-gray-700">
+                {selectedPaymentMethod.type && (
+                  <p>
+                    <span className="font-semibold">Type:</span>{" "}
+                    {selectedPaymentMethod.type}
+                  </p>
+                )}
+
+                {Object.entries(selectedPaymentMethod).map(([key, value]) => {
+                  if (
+                    [
+                      "type",
+                      "id",
+                      "createdAt",
+                      "updatedAt",
+                      "displayInfo",
+                    ].includes(key)
+                  )
+                    return null;
+                  return (
+                    <div
+                      key={key}
+                      className="flex justify-between items-center bg-gray-50 p-2 rounded-md"
+                    >
+                      <span className="font-semibold">
+                        {key.charAt(0).toUpperCase() + key.slice(1)}:{" "}
+                      </span>
+                      <span>{value}</span>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(value)}
+                        className="ml-2 text-blue-600 hover:text-blue-800 text-sm"
+                        title="Copy"
+                      >
+                        📋
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+
+            {/* Close Button */}
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-
-      {/* Close Button */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => setShowPaymentModal(false)}
-          className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
-        >
-          Close
-        </button>
-      </div>
-
-    </div>
-  </div>
-)}
-
-
+      )}
     </div>
   );
 }
