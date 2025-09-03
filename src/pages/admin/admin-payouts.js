@@ -273,36 +273,50 @@ export default function AdminPayouts() {
   };
 
   const exportForRelay = () => {
-    const exportData = payouts
-      .filter((p) => p.status === "pending" || p.status === "processing")
-      .map((payout) => ({
-        email: payout?.user?.email || payout.email,
-        amount: payout.amount,
-        reference: payout.id,
-        name: payout?.user?.displayName || "Square Trivia Winner",
-      }));
+  const exportData = payouts
+    .filter((p) => p.status === "pending" || p.status === "processing")
+    .map((payout) => ({
+      name: payout?.user?.displayName || "Square Trivia Winner",
+      email: payout?.user?.email || payout.email,
+      userId: payout.userId || "N/A",
+      amount: payout.prizeAmount,
+      reference: payout.id,
+      payoutType: payout.payoutType,
+      createdAt: payout.createdAt?.toDate?.().toISOString() || "",
+    }));
 
-    const csv = [
-      ["email", "amount", "reference", "name"],
-      ...exportData.map((row) => [
-        row.email,
-        row.amount,
-        row.reference,
-        row.name,
-      ]),
-    ]
-      .map((row) => row.join(","))
-      .join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `relay-payouts-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-
-    toast.success(`Exported ${exportData.length} payouts for Relay`);
+  // Escape CSV values
+  const escapeCSV = (value) => {
+    if (value == null) return "";
+    const str = String(value);
+    if (/[",\n]/.test(str)) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
   };
+
+  // Build CSV dynamically from object keys
+  const headers = Object.keys(exportData[0] || {});
+  const csv = [
+    headers,
+    ...exportData.map((row) => headers.map((key) => escapeCSV(row[key]))),
+  ]
+    .map((row) => row.join(","))
+    .join("\n");
+
+  // Add BOM for Excel
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = window.URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `relay-payouts-${new Date().toISOString().split("T")[0]}.csv`;
+  a.click();
+  a.remove();
+
+  toast.success(`Exported ${exportData.length} payouts for Relay`);
+};
+
 
   const filteredPayouts = payouts.filter((payout) => {
     const matchesSearch =
