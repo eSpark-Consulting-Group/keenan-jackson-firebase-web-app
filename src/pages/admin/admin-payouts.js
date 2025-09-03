@@ -37,6 +37,10 @@ import { Link } from "react-router-dom";
 export default function AdminPayouts() {
   const [loading, setLoading] = useState(true);
   const [payouts, setPayouts] = useState([]);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  console.log("Selected Payment Method:", selectedPaymentMethod);
   console.log("Payouts:", payouts);
   const [stats, setStats] = useState({
     pendingCount: 0,
@@ -57,6 +61,27 @@ export default function AdminPayouts() {
   useEffect(() => {
     loadPayouts();
   }, [filterOptions]);
+
+const handlePaymentMethodClick = (payout) => {
+  let method = null;
+  if (payout.payoutType == "standard") {
+    // Find default payment method from user
+    method = payout?.user?.paymentMethods?.find(
+      (m) => m.id === payout?.user.defaultPaymentMethod
+    );
+  } else {
+    // Instant payout uses payout?.selectedpaymentMethod directly
+    method = payout?.user?.paymentMethods?.find(
+      (m) => m?.id === payout.selectedPayoutMethod
+    );
+  }
+
+  setSelectedPaymentMethod(
+    method || { payoutType: "unknown", displayInfo: "No payment method found" }
+  );
+  setSelectedUser(payout?.user || null);
+  setShowPaymentModal(true);
+};
 
   const loadPayouts = async () => {
     try {
@@ -248,10 +273,10 @@ export default function AdminPayouts() {
     const exportData = payouts
       .filter((p) => p.status === "pending" || p.status === "processing")
       .map((payout) => ({
-        email: payout.user?.email || payout.email,
+        email: payout?.user?.email || payout.email,
         amount: payout.amount,
         reference: payout.id,
-        name: payout.user?.displayName || "Square Trivia Winner",
+        name: payout?.user?.displayName || "Square Trivia Winner",
       }));
 
     const csv = [
@@ -279,8 +304,8 @@ export default function AdminPayouts() {
   const filteredPayouts = payouts.filter((payout) => {
     const matchesSearch =
       searchTerm === "" ||
-      payout.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payout.user?.displayName
+      payout?.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payout?.user?.displayName
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
       payout.payoutType.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -634,12 +659,12 @@ export default function AdminPayouts() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            <Link to={`/admin/users/${payout.userId}`}>
-                              {payout.user?.displayName || "Unknown User"}
+                            <Link to={`/admin/users/${payout?.userId}`}>
+                              {payout?.user?.displayName || "Unknown User"}
                             </Link>
                           </div>
                           <div className="text-sm text-gray-500">
-                            {payout.user?.email || payout.email}
+                            {payout?.user?.email || payout.email}
                           </div>
                         </div>
                       </td>
@@ -674,17 +699,13 @@ export default function AdminPayouts() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
-                          onClick={() =>
-                            navigator.clipboard.writeText(
-                              payout.paymentMethod || "Default Payment"
-                            )
-                          }
+                          onClick={() => handlePaymentMethodClick(payout)}
                         >
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-green-100 text-green-800`}
-                          >
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-green-100 text-green-800">
                             <DollarSign className="h-3 w-3 mr-1" />
-                            {payout.paymentMethod || "Default Payment"}
+                            {payout.payoutType === "standard"
+                              ? "View Default"
+                              : payout?.paymentMethod || "N/A"}
                           </span>
                         </button>
                       </td>
@@ -790,6 +811,67 @@ export default function AdminPayouts() {
           </div>
         </div>
       </div>
+{showPaymentModal && selectedPaymentMethod && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div className="bg-white rounded-xl shadow-xl p-6 w-100 max-h-[80vh] overflow-auto">
+      
+      {/* Winner Info */}
+      <div className="mb-6 border-b pb-4">
+        <h2 className="text-xl font-bold mb-2">🏆 Winner Details</h2>
+        {selectedUser ? (
+          <div className="space-y-1 text-gray-700">
+            <p><span className="font-semibold">Name:</span> {selectedUser.displayName || "Unknown User"}</p>
+            <p className="text-sm text-gray-500"><span className="font-semibold">Email:</span> {selectedUser.email}</p>
+          </div>
+        ) : (
+          <p className="text-gray-500">No user information available</p>
+        )}
+      </div>
+
+      {/* Payment Method Info */}
+      <div className="mb-6">
+        <h2 className="text-xl font-bold mb-3">💳 Payment Method</h2>
+        <div className="space-y-2 text-gray-700">
+          {selectedPaymentMethod.type && (
+            <p>
+              <span className="font-semibold">Type:</span> {selectedPaymentMethod.type}
+            </p>
+          )}
+          
+          {Object.entries(selectedPaymentMethod).map(([key, value]) => {
+            if (["type", "id", "createdAt", "updatedAt"].includes(key)) return null;
+            return (
+              <div key={key} className="flex justify-between items-center bg-gray-50 p-2 rounded-md">
+                <span className="font-semibold">{key.charAt(0).toUpperCase() + key.slice(1)}:{" "}</span>
+                <span>{value}</span>
+                <button
+                  onClick={() => navigator.clipboard.writeText(value)}
+                  className="ml-2 text-blue-600 hover:text-blue-800 text-sm"
+                  title="Copy"
+                >
+                  📋
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Close Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowPaymentModal(false)}
+          className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+        >
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+)}
+
+
     </div>
   );
 }
