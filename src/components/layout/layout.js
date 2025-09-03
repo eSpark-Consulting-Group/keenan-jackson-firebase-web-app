@@ -84,9 +84,15 @@ export default function Layout({ children }) {
           <div className="flex justify-between h-16">
             {/* Logo and main nav */}
             <div className="flex items-center">
-              <Link to="/" className="flex items-center">
-                <Brain className="h-8 w-8 text-blue-600 mr-2" />
-                <span className="text-xl font-bold text-gray-900">
+              <Link to="/" className="flex items-center min-w-0">
+                <Brain
+                  className="h-6 w-6 text-blue-600 flex-shrink-0 mr-1
+    max-[320px]:h-5 max-[320px]:w-5"
+                />
+                <span
+                  className="text-base font-bold text-gray-900 truncate
+      max-[320px]:text-sm max-[320px]:max-w-[100px]"
+                >
                   Square Trivia
                 </span>
               </Link>
@@ -237,7 +243,8 @@ export default function Layout({ children }) {
               {/* Mobile menu button */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden ml-4 p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+                className="md:hidden ml-2 p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100
+    max-[320px]:-ml-1"
               >
                 {mobileMenuOpen ? (
                   <X className="h-6 w-6" />

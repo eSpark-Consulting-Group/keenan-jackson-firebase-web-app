@@ -451,7 +451,7 @@ export default function AdminPayouts() {
               onChange={(e) =>
                 setFilterOptions({ ...filterOptions, type: e.target.value })
               }
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">All Types</option>
               <option value="instant">Instant</option>
@@ -466,7 +466,7 @@ export default function AdminPayouts() {
                   dateRange: e.target.value,
                 })
               }
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="today">Today</option>
               <option value="7days">Last 7 Days</option>
@@ -583,7 +583,8 @@ export default function AdminPayouts() {
                         <div>
                           <div className="text-sm font-medium text-gray-900">
                             <a href={`/admin/users/${payout.userId}`}>
-                            {payout.user?.displayName || "Unknown User"}</a>
+                              {payout.user?.displayName || "Unknown User"}
+                            </a>
                           </div>
                           <div className="text-sm text-gray-500">
                             {payout.user?.email || payout.email}
@@ -645,16 +646,16 @@ export default function AdminPayouts() {
                           )}
                           {payout.status === "processing" && (
                             <>
-                            <button
-                              onClick={() =>
-                                updatePayoutStatus(payout.id, "completed")
-                              }
-                              className="text-green-600 hover:text-green-900"
-                              title="Mark as Completed"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </button>
-                            <button
+                              <button
+                                onClick={() =>
+                                  updatePayoutStatus(payout.id, "completed")
+                                }
+                                className="text-green-600 hover:text-green-900"
+                                title="Mark as Completed"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </button>
+                              <button
                                 onClick={() =>
                                   updatePayoutStatus(payout.id, "failed")
                                 }
@@ -664,21 +665,21 @@ export default function AdminPayouts() {
                                 <XCircle className="h-4 w-4" />
                               </button>
                             </>
-                            
                           )}
                           {payout.status === "failed" && (
-                             <button
-                                onClick={() =>
-                                  updatePayoutStatus(payout.id, "processing")
-                                }
-                                className="text-blue-600 hover:text-blue-900"
-                                title="Start Processing Again"
-                              >
-                                <Send className="h-4 w-4" />
-                              </button>
+                            <button
+                              onClick={() =>
+                                updatePayoutStatus(payout.id, "processing")
+                              }
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Start Processing Again"
+                            >
+                              <Send className="h-4 w-4" />
+                            </button>
                           )}
-                            <a href={`/admin/payouts/${payout.id}`}>
-                              <Eye className="h-4 w-4" /></a>
+                          <a href={`/admin/payouts/${payout.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </a>
                         </div>
                       </td>
                     </tr>

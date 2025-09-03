@@ -554,33 +554,36 @@ export default function LandingPage() {
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="flex justify-center gap-8 mb-8">
+            <div
+              className="flex justify-center gap-8 mb-8 flex-wrap
+          max-[320px]:flex-col max-[320px]:gap-2"
+            >
               <Link
                 to="/legal"
-                className="hover:text-emerald-400 transition-colors"
+                className="hover:text-emerald-400 transition-colors max-[320px]:text-sm"
               >
                 Terms of Service
               </Link>
               <Link
                 to="/legal"
-                className="hover:text-emerald-400 transition-colors"
+                className="hover:text-emerald-400 transition-colors max-[320px]:text-sm"
               >
                 Privacy Policy
               </Link>
               <Link
                 to="/support"
-                className="hover:text-emerald-400 transition-colors"
+                className="hover:text-emerald-400 transition-colors max-[320px]:text-sm"
               >
                 Support
               </Link>
               <Link
                 to="/contact"
-                className="hover:text-emerald-400 transition-colors"
+                className="hover:text-emerald-400 transition-colors max-[320px]:text-sm"
               >
                 Contact
               </Link>
             </div>
-            <p className="text-gray-400">
+            <p className="text-gray-400 max-[320px]:text-xs max-[320px]:px-2">
               © 2025 Square Trivia. All rights reserved. 18+ only.
             </p>
           </div>
