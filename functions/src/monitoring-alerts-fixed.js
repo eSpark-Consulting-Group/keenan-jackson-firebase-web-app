@@ -1532,8 +1532,8 @@ async function sendAlert(level, subject, message, metadata = {}) {
       : ["admin@squaretrivia.com"];
 
   // Send email
-  const emailPromise = mailTransport.sendMail({
-    from: "Square Trivia Alerts <alerts@squaretrivia.com>",
+  const emailPromise = sendMail({
+    // from: "Square Trivia Alerts <alerts@squaretrivia.com>",
     to: recipients.join(","),
     subject: `[${level.toUpperCase()}] ${subject}`,
     text: `
@@ -1641,8 +1641,8 @@ async function sendPerformanceReport(report, date) {
     message += `- Platform Revenue (fees): $${paymentMetrics.totalPlatformRevenue}\n`;
   }
 
-  await mailTransport.sendMail({
-    from: "Square Trivia Monitoring <monitoring@squaretrivia.com>",
+  await sendMail({
+    // from: "Square Trivia Monitoring <monitoring@squaretrivia.com>",
     to: "admin@squaretrivia.com",
     subject: "Daily Performance Report",
     text: message,

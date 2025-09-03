@@ -14,14 +14,14 @@ const bot = new TelegramBot(functions.config().telegram.bot_token, {
   polling: false,
 });
 
-// Initialize mail transport
-const mailTransport = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
+// // Initialize mail transport
+// const mailTransport = nodemailer.createTransport({
+//   service: "gmail",
+//   auth: {
+//     user: process.env.EMAIL_USER,
+//     pass: process.env.EMAIL_PASSWORD,
+//   },
+// });
 
 const sgMail = require("@sendgrid/mail");
 
@@ -40,15 +40,16 @@ async function sendTelegramNotification(chatId, message) {
 }
 
 // Set API key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+sgMail.setApiKey(process.env.REACT_SENDGRID_API_KEY);
 
 // Example send function
 const sendMail = async ({ to, subject, html }) => {
   const msg = {
     to,
-    from: process.env.SENDGRID_FROM_EMAIL, // must be a verified sender in SendGrid
+    from: process.env.REACT_SENDGRID_FROM_EMAIL,
     subject,
     html,
+    text: html.replace(/<[^>]+>/g, ""), // Fallback to plain text
   };
 
   try {
@@ -63,7 +64,6 @@ const sendMail = async ({ to, subject, html }) => {
     }
   }
 };
-
 // =====================================
 // CONSTANTS (from Artifact #1)
 // =====================================
@@ -75,6 +75,7 @@ const sendMail = async ({ to, subject, html }) => {
 //   tier_500: { amount: 500, name: '$500 Tier', telegramGroupId: functions.config().telegram.tier_500_group_id, payoutPercentage: 0.80 },
 //   tier_1000: { amount: 1000, name: '$1000 Tier', telegramGroupId: functions.config().telegram.tier_1000_group_id, payoutPercentage: 0.80 }
 // };
+
 const TIER_CONFIG = {
   tier_25: {
     amount: 25,
@@ -876,7 +877,7 @@ async function sendPaymentConfirmation(userId, donationId, tier) {
         <p><strong>Tier:</strong> ${TIER_CONFIG[tier].name}</p>
         <p><strong>Amount:</strong> $${TIER_CONFIG[tier].amount}</p>
         <p><strong>Access Period:</strong> 30 days</p>
-        <p><strong>Telegram Username:</strong> @${donation.telegramUsername}</p>
+        ${donation.telegramUsername ? `<p><strong>Telegram Username:</strong> @${donation.telegramUsername}</p>` : ""}
       </div>
       
       <h3>What's Next?</h3>
@@ -914,7 +915,7 @@ async function sendPaymentFailureNotification(userId, donationId) {
   const user = userDoc.data();
 
   const mailOptions = {
-    from: "Square Trivia <noreply@squaretrivia.com>",
+    // from: "Square Trivia <noreply@squaretrivia.com>",
     to: user.email,
     subject: "Payment Failed - Square Trivia",
     html: `
@@ -931,7 +932,7 @@ async function sendPaymentFailureNotification(userId, donationId) {
     `,
   };
 
-  await mailTransport.sendMail(mailOptions);
+  await sendMail(mailOptions);
 }
 
 async function sendRefundNotification(
@@ -944,7 +945,7 @@ async function sendRefundNotification(
   const user = userDoc.data();
 
   const mailOptions = {
-    from: "Square Trivia <noreply@squaretrivia.com>",
+    // from: "Square Trivia <noreply@squaretrivia.com>",
     to: user.email,
     subject: "Refund Processed - Square Trivia",
     html: `
@@ -958,12 +959,12 @@ async function sendRefundNotification(
     `,
   };
 
-  await mailTransport.sendMail(mailOptions);
+  await sendMail(mailOptions);
 }
 
 async function sendFreeEntryConfirmation(email, tier) {
   const mailOptions = {
-    from: "Square Trivia <noreply@squaretrivia.com>",
+    // from: "Square Trivia <noreply@squaretrivia.com>",
     to: email,
     subject: `Free Entry Confirmed - ${TIER_CONFIG[tier].name} Access`,
     html: `
@@ -974,7 +975,7 @@ async function sendFreeEntryConfirmation(email, tier) {
     `,
   };
 
-  await mailTransport.sendMail(mailOptions);
+  await sendMail(mailOptions);
 }
 
 async function sendInstantPayoutConfirmation(
@@ -990,7 +991,7 @@ async function sendInstantPayoutConfirmation(
   const user = userDoc.data();
 
   const mailOptions = {
-    from: "Square Trivia <noreply@squaretrivia.com>",
+    // from: "Square Trivia <noreply@squaretrivia.com>",
     to: user.email,
     subject: "Instant Payout Processed - Square Trivia",
     html: `
@@ -1038,7 +1039,7 @@ async function sendInstantPayoutConfirmation(
     `,
   };
 
-  await mailTransport.sendMail(mailOptions);
+  await sendMail(mailOptions);
 }
 
 // =====================================
@@ -1405,6 +1406,7 @@ exports.cleanupExpiredAccess = functions.pubsub
   });
 
 module.exports = {
+  sendMail,
   handleSuccessfulPayment,
   handleFailedPayment,
   handleRefund,

@@ -4,6 +4,9 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
+const { sendMail } = require("./payment-system-modified");
+const { DUMMY_GAMES } = require("./constants-configuration-fixed");
+// const { DUMMY_GAMES } = require("./constants-configuration-fixed");
 
 // =====================================
 // CONSTANTS - Configure these during deployment
@@ -168,11 +171,12 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
 
     const url = `https://api.sportsdata.io${config.endpoint}/${year}/${week}`;
 
-    const response = await axios.get(url, {
-      params: { key: process.env.REACT_APP_APISPORTS_KEY },
-    });
+    // const response = await axios.get(url, {
+    //   params: { key: process.env.REACT_APP_APISPORTS_KEY },
+    // });
 
-    let games = response.data || [];
+    // let games = response.data || [];
+    const games = DUMMY_GAMES;
 
     if (teamName) {
       const searchTerm = teamName.toLowerCase();
@@ -190,17 +194,17 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
       awayTeam: game.AwayTeam,
       startTime: sport === "NFL" ? game?.Date : game?.DateTime,
       status: game.Status,
+
       venue:
         sport === "NFL"
           ? game.StadiumDetails?.Name
-          : game.Stadium?.Name || "TBD",
+          : game.Stadium?.Name || "TBA",
       week: game.Week,
       scores: {
         home: sport === "NFL" ? game.HomeScore : game.HomeTeamScore,
         away: sport === "NFL" ? game.AwayScore : game.AwayTeamScore,
       },
     }));
-
     console.log(`Admin ${adminId} searched ${sport} games`);
     return {
       success: true,
@@ -752,7 +756,7 @@ exports.generateRelayCSV = functions.https.onCall(async (data, context) => {
 
       // Update winner status
       batch.update(winnerDoc.ref, {
-        payoutStatus: "processing",
+        status: "processing",
         payoutType: "batch",
         relayBatchId: relayBatchRef.id,
         processingStartedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -829,7 +833,7 @@ exports.markRelayBatchProcessed = functions.https.onCall(
           .collection("winners")
           .doc(payout.winnerId);
         batch.update(winnerRef, {
-          payoutStatus: "completed",
+          status: "completed",
           payoutCompletedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
       }
@@ -1552,7 +1556,7 @@ exports.getAdminStats = functions.https.onCall(async (data, context) => {
     // Winner and payout stats
     const winners = await admin.firestore().collection("winners").get();
     const pendingPayouts = winners.docs.filter(
-      (doc) => doc.data().payoutStatus === "pending"
+      (doc) => doc.data().status === "pending_payout"
     );
     const instantPayouts = winners.docs.filter(
       (doc) => doc.data().payoutType === "instant"
@@ -1786,8 +1790,8 @@ async function exportWinners(filters) {
     query = query.where("tier", "==", filters.tier);
   }
 
-  if (filters.payoutStatus) {
-    query = query.where("payoutStatus", "==", filters.payoutStatus);
+  if (filters.status) {
+    query = query.where("status", "==", filters.status);
   }
 
   const snapshot = await query.get();
@@ -1881,8 +1885,8 @@ async function sendAdminEmail(email, subject, message) {
     },
   });
 
-  await mailTransport.sendMail({
-    from: "Square Trivia Admin <admin@squaretrivia.com>",
+  await sendMail({
+    // from: "Square Trivia Admin <admin@squaretrivia.com>",
     to: email,
     subject,
     html: `

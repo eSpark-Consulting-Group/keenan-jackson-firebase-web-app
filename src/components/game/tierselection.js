@@ -254,7 +254,7 @@ export default function TierSelection({
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-8 ">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">
           Select Your Entry Tier
@@ -281,8 +281,8 @@ export default function TierSelection({
           return (
             <div
               key={tier.id}
-              className={`relative rounded-lg border-2 transition-all cursor-pointer
-                ${isSelected ? `${tier.borderColor} ${tier.bgColor}` : "border-gray-200 hover:border-gray-300"}
+              className={`relative rounded-lg border-2 transition-all cursor-pointer box-shadow-md
+                ${isSelected ? `${tier.borderColor} ${tier.bgColor}` : "border-gray-200 hover:border-gray-300 bg-white "}
                 ${isSoldOut ? "opacity-60 cursor-not-allowed" : ""}
               `}
               onClick={() => !isSoldOut && handleTierSelection(tier)}

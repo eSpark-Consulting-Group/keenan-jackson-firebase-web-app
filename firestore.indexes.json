@@ -121,7 +121,7 @@
       "collectionGroup": "winners",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "payoutStatus", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "ASCENDING" }
       ]
     },

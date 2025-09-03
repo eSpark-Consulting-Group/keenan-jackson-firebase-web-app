@@ -258,7 +258,8 @@ export default function SquareGrid({
               {getSquareContent(position, status, row, col)}
 
               {isWinning &&
-                game?.quarterScores[latest]?.winnerUserId === userData?.id && (
+                game?.quarterScores?.[`q${game?.currentQuarter}`]
+                  ?.winnerUserId === userData?.id && (
                   <div className="absolute top-0 right-0 -mt-1 -mr-1">
                     <div className="relative">
                       <Trophy className="h-4 w-4 text-yellow-600" />

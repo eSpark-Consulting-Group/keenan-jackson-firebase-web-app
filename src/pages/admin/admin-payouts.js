@@ -31,10 +31,12 @@ import {
   getDoc,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
+import { Link } from "react-router-dom";
 
 export default function AdminPayouts() {
   const [loading, setLoading] = useState(true);
   const [payouts, setPayouts] = useState([]);
+  console.log("Payouts:", payouts);
   const [stats, setStats] = useState({
     pendingCount: 0,
     pendingAmount: 0,
@@ -677,9 +679,8 @@ export default function AdminPayouts() {
                               <Send className="h-4 w-4" />
                             </button>
                           )}
-                          <a href={`/admin/payouts/${payout.id}`}>
-                            <Eye className="h-4 w-4" />
-                          </a>
+                            <Link to={`/admin/payouts/${payout.id}`}>
+                              <Eye className="h-4 w-4" /></Link>
                         </div>
                       </td>
                     </tr>

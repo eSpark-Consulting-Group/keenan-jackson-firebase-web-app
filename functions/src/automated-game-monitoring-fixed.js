@@ -15,6 +15,8 @@ const {
   ERROR_MESSAGES,
   FEATURE_FLAGS,
   VALIDATION_RULES,
+  DUMMY_GAMES,
+  // DUMMY_GAMES,
 } = require("./constants-configuration-fixed");
 
 const {
@@ -91,89 +93,127 @@ class ApiSportsService {
   /**
    * Fetch game score from API-Sports
    */
-  async fetchGameScore(gameKey, sport, game) {
-    logger.info(
-      `[fetchGameScore] Called with gameKey=${gameKey}, sport=${sport}`
-    );
+  /**
+   * Fetch game score from API-Sports
+   */
+  /**
+   * Fetch game score from API-Sports
+   */
+  async fetchGameScore(gameKey, sport, week = 1) {
+    logger.info(`[fetchGameScore] Called`, { gameKey, sport, week });
+
     if (!gameKey) {
       logger.error("[fetchGameScore] No externalGameId provided");
       throw new Error("No external GameKey provided");
     }
-    // Use mock data in test mode
+
     if (FEATURE_FLAGS.MOCK_API_SPORTS) {
-      return this.getMockGameData(apiSportsId, sport);
+      logger.warn("[fetchGameScore] Using MOCK data", { gameKey, sport, week });
+      return this.getMockGameData(gameKey, sport); // (apiSportsId -> gameKey)
     }
+
     const config = SPORTS_CONFIG[sport];
     if (!config) {
-      logger.error(`[fetchGameScore] Unknown sport: ${sport}`);
+      logger.error(`[fetchGameScore] Unknown sport`, { sport });
       throw new Error(`Unknown sport: ${sport}`);
     }
-    // Parse season year and game?.week from GameKey (SportsData.io encodes it)
-    // const year = parseInt(gameKey.substring(0, 4), 10); // e.g. 2025
-    const year = new Date(new Date()).getFullYear();
-    // const week = parseInt(gameKey.substring(4, 6), 10); // e.g. 10 (Week 10)
-    logger.info(
-      `[fetchGameScore] Parsed year=${year}, game?.week=${game?.week}`
-    );
-    // Build endpoint (NFL vs CFB differs slightly)
-    // const url = `https://api.sportsdata.io${config.endpoint}/${year}/${game?.week}`;
-    const url = `https://api.sportsdata.io${config.endpoint}/${year}/${game?.week}?key=${process.env.REACT_APP_APISPORTS_KEY}`;
 
-    logger.info(`[fetchGameScore] Built URL: ${url}`);
+    const year = new Date().getFullYear();
+    logger.info(`[fetchGameScore] Parsed year/week`, { year, week });
+
+    const url = `https://api.sportsdata.io${config.endpoint}/${year}/${week}?key=${process.env.REACT_APP_APISPORTS_KEY}`;
+    logger.info(`[fetchGameScore] Built URL`, { url, gameKey, sport, week });
+
     try {
-      logger.info(
-        "[fetchGameScore] Making API request...",
-        process.env.REACT_APP_APISPORTS_KEY
-      );
-
-      // const games = await this.makeRequest(url, {
-      //   params: { key: process.env.REACT_APP_APISPORTS_KEY },
-      // });
+      logger.info("[fetchGameScore] Making API request…", {
+        usingKey: !!process.env.REACT_APP_APISPORTS_KEY,
+        gameKey,
+        sport,
+        week,
+      });
 
       // const games = await this.makeRequest(url);
-      const response = await axios.get(url);
-      logger.info("Response here", response);
-      const games = response?.data;
-      logger.info("games here", games);
+      // const { data: games } = await axios.get(url);
+      const games = DUMMY_GAMES;
+      logger.info("[fetchGameScore] API returned", {
+        gameKey,
+        sport,
+        week,
+        count: Array.isArray(games) ? games.length : -1,
+      });
 
-      if (!games || !Array.isArray(games)) {
+      if (!Array.isArray(games)) {
         logger.error("[fetchGameScore] Unexpected API response format", {
-          games,
+          type: typeof games,
         });
         throw new Error("Invalid response format from API");
       }
-      logger.info(
-        `[fetchGameScore] Received ${games.length} games for ${sport} ${year} game?.week ${game?.week}`
-      );
-      logger.info("[fetchGameScore] API returned games", {
-        gameKey,
-        gamesCount: games.length,
-        games, // full array
-      });
+
       const game = games.find((g) => g?.GameKey == gameKey);
       if (!game) {
-        logger.warn(
-          `[fetchGameScore] Game not found: gameKey=${gameKey}, year=${year}, game?.week=${game?.week}`
-        );
-        throw new Error(
-          `Game ${gameKey} not found for ${sport} in ${year} game?.week ${game?.week}`
-        );
+        logger.warn("[fetchGameScore] Game not found in API response", {
+          gameKey,
+          availableKeys: games
+            .map((g) => g?.GameKey)
+            .filter(Boolean)
+            .slice(0, 50), // avoid huge logs
+          sport,
+          year,
+          week,
+        });
+
+        // SAFE STUB so the pipeline doesn’t crash
+        const notFoundStub = {
+          apiSportsId: gameKey,
+          status: "unknown",
+          currentPeriod: 0,
+          quarterScores: {},
+          currentQuarter: 1,
+          totalScore: { home: 0, away: 0 },
+          teams: { home: "", away: "" },
+          startTime: null,
+          lastUpdate: new Date().toISOString(),
+          _notFound: true,
+        };
+        logger.info("[fetchGameScore] Returning notFound stub", {
+          gameKey,
+          sport,
+          week,
+        });
+        return notFoundStub;
+
+        // OR: throw to skip this game entirely
+        // throw new Error(`Game ${gameKey} not found for ${sport} ${year} week ${week}`);
       }
-      logger.info(
-        `[fetchGameScore] Found game: ${game.HomeTeam} vs ${game.AwayTeam}, status=${game.Status}`
-      );
+
+      logger.info("[fetchGameScore] Found game", {
+        gameKey,
+        home: game?.HomeTeam,
+        away: game?.AwayTeam,
+        sport,
+        year,
+        week,
+      });
+
       const parsed = this.parseGameData(game, sport);
-      logger.info("[fetchGameScore] Successfully parsed game data", parsed);
+      logger.info("[fetchGameScore] Successfully parsed game data", {
+        gameKey,
+        sport,
+        week,
+        status: parsed?.status,
+        currentQuarter: parsed?.currentQuarter,
+      });
       return parsed;
     } catch (error) {
       logger.error("[fetchGameScore] Error fetching game score", {
-        error: error.message,
-        stack: error.stack,
+        error: error?.message,
+        stack: error?.stack,
         gameKey,
         sport,
+        week,
         url,
       });
-      logError(error, { context: "fetchGameScore", gameKey, sport });
+      logError(error, { context: "fetchGameScore", gameKey, sport, week, url });
       throw error;
     }
   }
@@ -182,53 +222,116 @@ class ApiSportsService {
    * Parse API response into standard format
    */
   parseGameData(apiGame, sport) {
-    const isBasketball = sport === "NBA" || sport === "NCAA_BB";
-    logger.info(`Incoming update: ${apiGame}`);
-    // Extract quarter scores
-    let quarterScores = {};
-
-    // Case 1: NFL style (flat fields)
-    if (apiGame?.HomeScoreQuarter1 !== undefined) {
-      quarterScores = {
-        q1: {
-          home: apiGame.HomeScoreQuarter1 ?? null,
-          away: apiGame.AwayScoreQuarter1 ?? null,
-        },
-        q2: {
-          home: apiGame.HomeScoreQuarter2 ?? null,
-          away: apiGame.AwayScoreQuarter2 ?? null,
-        },
-        q3: {
-          home: apiGame.HomeScoreQuarter3 ?? null,
-          away: apiGame.AwayScoreQuarter3 ?? null,
-        },
-        q4: {
-          home: apiGame.HomeScoreQuarter4 ?? null,
-          away: apiGame.AwayScoreQuarter4 ?? null,
-        },
+    // HARD GUARD: avoid crashes if caller passes undefined
+    if (!apiGame || typeof apiGame !== "object") {
+      logger.error("[parseGameData] apiGame is missing/invalid", {
+        sport,
+        typeofApiGame: typeof apiGame,
+      });
+      return {
+        apiSportsId: null,
+        status: "unknown",
+        currentPeriod: 0,
+        quarterScores: {},
+        currentQuarter: 1,
+        totalScore: { home: 0, away: 0 },
+        teams: { home: "", away: "" },
+        startTime: null,
+        lastUpdate: new Date().toISOString(),
+        _parseWarning: "apiGame_missing",
       };
     }
 
-    // Case 2: NCAA style (Periods array)
-    else if (apiGame?.Periods?.length) {
+    let currentQuarter = 1;
+    const isBasketball = sport === "NBA" || sport === "NCAA_BB";
+
+    logger.info("[parseGameData] Incoming raw game object", {
+      sport,
+      keys: Object.keys(apiGame || {}),
+      gameKey: apiGame?.GameKey || apiGame?.id,
+      status: apiGame?.Status || apiGame?.status,
+      scoreQuarter: apiGame?.HomeScoreQuarter1,
+    });
+
+    let quarterScores = {};
+
+    if (apiGame?.HomeScoreQuarter1 !== undefined) {
+      logger.info("[parseGameData] Detected NFL-style game object");
+      quarterScores = {
+        q1: {
+          home: apiGame?.HomeScoreQuarter1 ?? null,
+          away: apiGame?.AwayScoreQuarter1 ?? null,
+        },
+        q2: {
+          home: apiGame?.HomeScoreQuarter2 ?? null,
+          away: apiGame?.AwayScoreQuarter2 ?? null,
+        },
+        q3: {
+          home: apiGame?.HomeScoreQuarter3 ?? null,
+          away: apiGame?.AwayScoreQuarter3 ?? null,
+        },
+        q4: {
+          home: apiGame?.HomeScoreQuarter4 ?? null,
+          away: apiGame?.AwayScoreQuarter4 ?? null,
+        },
+      };
+
+      const quarterFlags = [
+        { key: "Has1stQuarterStarted", number: 1 },
+        { key: "Has2ndQuarterStarted", number: 2 },
+        { key: "Has3rdQuarterStarted", number: 3 },
+        { key: "Has4thQuarterStarted", number: 4 },
+      ];
+
+      for (const q of quarterFlags) {
+        if (apiGame[q.key]) {
+          currentQuarter = q.number;
+        } else {
+          break;
+        }
+      }
+
+      console.log("Current Quarter =", currentQuarter);
+
+      logger.info(
+        "[parseGameData] Extracted NFL-style quarter scores",
+        quarterScores
+      );
+    } else if (apiGame?.Periods?.length) {
+      logger.info(
+        "[parseGameData] Detected NCAA-style game object with Periods",
+        {
+          periodsCount: apiGame?.Periods?.length,
+        }
+      );
+
       quarterScores = apiGame.Periods.reduce((acc, p, idx) => {
         acc[`q${idx + 1}`] = {
-          home: p.HomeScore ?? null,
-          away: p.AwayScore ?? null,
+          home: p?.HomeScore ?? null,
+          away: p?.AwayScore ?? null,
         };
         return acc;
       }, {});
+      currentQuarter =
+        apiGame?.periods?.current ||
+        apiGame?.Periods?.length ||
+        apiGame?.Quarter ||
+        1;
+
+      logger.info(
+        "[parseGameData] Extracted Period-based quarter scores",
+        quarterScores
+      );
     }
 
-    // Check for overtime
-    if (apiGame?.IsOvertime) {
+    if (apiGame?.IsOvertime || apiGame?.HomeScoreOvertime !== undefined) {
+      logger.info("[parseGameData] Adding overtime scores");
       quarterScores.ot = {
-        home: apiGame?.HomeScoreOvertime,
-        away: apiGame?.AwayScoreOvertime,
+        home: apiGame?.HomeScoreOvertime ?? null,
+        away: apiGame?.AwayScoreOvertime ?? null,
       };
     }
 
-    // Determine game status
     let gameStatus = "unknown";
     const statusMap = {
       NS: "scheduled", // Not Started
@@ -245,24 +348,43 @@ class ApiSportsService {
       SUSP: "cancelled", // Suspended
     };
 
-    gameStatus = statusMap[apiGame.status?.short] || "unknown";
+    if (apiGame?.status?.short) {
+      gameStatus = statusMap[apiGame.status.short] || "unknown";
+    } else if (typeof apiGame?.Status === "string") {
+      gameStatus = apiGame.Status.toLowerCase();
+    }
 
-    return {
-      apiSportsId: apiGame.id,
+    logger.info("[parseGameData] Normalized game status", { gameStatus });
+
+    const parsed = {
+      apiSportsId: apiGame?.id || apiGame?.GameKey || null,
       status: gameStatus,
-      currentPeriod: apiGame.periods?.current || 0,
+      currentPeriod: apiGame?.periods?.current || apiGame?.Quarter || 0,
       quarterScores,
+      currentQuarter,
       totalScore: {
         home: apiGame?.HomeScore ?? apiGame?.HomeTeamScore ?? 0,
         away: apiGame?.AwayScore ?? apiGame?.AwayTeamScore ?? 0,
       },
       teams: {
-        home: apiGame?.HomeTeam || "",
-        away: apiGame?.AwayTeam || "",
+        home: apiGame?.HomeTeam || apiGame?.teams?.home?.name || "",
+        away: apiGame?.AwayTeam || apiGame?.teams?.away?.name || "",
       },
-      startTime: apiGame.date ? new Date(apiGame.date) : null,
+      startTime:
+        apiGame?.Date || apiGame?.date
+          ? new Date(apiGame?.Date || apiGame?.date)
+          : null,
       lastUpdate: new Date().toISOString(),
     };
+
+    logger.info("[parseGameData] Final parsed object", {
+      apiSportsId: parsed.apiSportsId,
+      status: parsed.status,
+      currentQuarter: parsed.currentQuarter,
+      currentPeriod: parsed.currentPeriod,
+    });
+
+    return parsed;
   }
 
   /**
@@ -354,9 +476,11 @@ const monitorLiveGames = functions.pubsub
         const batch = activeGames.docs.slice(i, i + MAX_CONCURRENT);
         const batchPromises = batch.map((gameDoc) =>
           monitorSingleGame(db, gameDoc).catch((error) => {
+            console.error("RAW monitorSingleGame error:", error);
+
             logError(error, {
               context: "monitorSingleGame",
-              gameId: gameDoc.id,
+              gameId: gameDoc?.id,
             });
             return null;
           })
@@ -372,14 +496,14 @@ const monitorLiveGames = functions.pubsub
       const successful = gamePromises.filter((r) => r?.success).length;
       const failed = gamePromises.length - successful;
 
-      await db.collection("systemLogs").add({
-        type: "game_monitoring",
-        timestamp: getTimestamp(),
-        duration,
-        gamesProcessed: activeGames.size,
-        successful,
-        failed,
-      });
+      // await db.collection("systemLogs").add({
+      //   type: "game_monitoring",
+      //   timestamp: getTimestamp(),
+      //   duration,
+      //   gamesProcessed: activeGames.size,
+      //   successful,
+      //   failed,
+      // });
     } catch (error) {
       logError(error, { context: "monitorLiveGames" });
 
@@ -396,7 +520,7 @@ const monitorLiveGames = functions.pubsub
  * Monitor a single game
  */
 async function monitorSingleGame(db, gameDoc) {
-  const gameId = gameDoc.id;
+  const gameId = gameDoc?.id;
   const game = gameDoc.data();
   logger.info(`[monitorSingleGame] Starting monitoring for gameId=${gameId}`);
   logger.debug(
@@ -417,7 +541,8 @@ async function monitorSingleGame(db, gameDoc) {
       `[monitorSingleGame] Fetching scores for gameId=${gameId}, externalGameId=${game.externalGameId}, sport=${game.sport}`
     );
     const fetchScores = measurePerformance(
-      () => apiSportsService.fetchGameScore(game.externalGameId, "NFL", game),
+      () =>
+        apiSportsService.fetchGameScore(game.externalGameId, "NFL", game?.week),
       "fetchGameScore"
     );
     const liveData = await fetchScores();
@@ -429,6 +554,7 @@ async function monitorSingleGame(db, gameDoc) {
       lastApiCheck: getTimestamp(),
       lastApiStatus: liveData.status,
       apiCheckCount: admin.firestore.FieldValue.increment(1),
+      currentQuarter: liveData.currentQuarter || game?.currentQuarter || 1,
     };
     // Check if game status changed
     if (liveData.status !== game.status) {
@@ -474,29 +600,32 @@ async function monitorSingleGame(db, gameDoc) {
         `[monitorSingleGame] Processing ${quarter} for game ${gameId}: ${quarterScore.home}-${quarterScore.away}`
       );
       try {
-        const winners = await processQuarterWinners(
-          db,
-          gameId,
-          quarter,
-          quarterScore,
-          game
-        );
+        // const winners = await processQuarterWinners(
+        //   db,
+        //   gameId,
+        //   quarter,
+        //   quarterScore,
+        //   game
+        // );
+        // logger.info(
+        //   `[monitorSingleGame] Processing ${winners.length} winners for game ${gameId}, quarter=${quarter}  winners=${winners}`
+        // );
         // Mark quarter as processed
-        updates[`quarterScores.${quarter}.processed`] = true;
+        // updates[`quarterScores.${quarter}.processed`] = true;
         updates[`quarterScores.${quarter}.home`] = quarterScore.home;
         updates[`quarterScores.${quarter}.away`] = quarterScore.away;
-        winnersProcessed += winners.length;
+        // winnersProcessed += winners.length;
         logger.info(
-          `[monitorSingleGame] Processed ${quarter} for game ${gameId}, winners count=${winners.length}`
+          `[monitorSingleGame] Processed ${quarter} for game ${gameId}, winners`
         );
         // Send notifications (async - don't wait)
-        notifyWinners(db, winners).catch((error) => {
-          logger.error(
-            `[monitorSingleGame] Error sending notifications for game ${gameId}, quarter=${quarter}`,
-            { error }
-          );
-          logError(error, { context: "notifyWinners", gameId, quarter });
-        });
+        // notifyWinners(db, winners).catch((error) => {
+        //   logger.error(
+        //     `[monitorSingleGame] Error sending notifications for game ${gameId}, quarter=${quarter}`,
+        //     { error }
+        //   );
+        //   logError(error, { context: "notifyWinners", gameId, quarter });
+        // });
       } catch (error) {
         logger.error(
           `[monitorSingleGame] Error processing winners for game ${gameId}, quarter=${quarter}`,
