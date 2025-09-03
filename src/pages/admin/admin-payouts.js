@@ -182,11 +182,25 @@ export default function AdminPayouts() {
 
       await updateDoc(doc(db, collections.winners, payoutId), updateData);
 
-      toast.success(`Payout marked as ${newStatus}`);
+      // ✅ Show nice toast messages
+      switch (newStatus) {
+        case "processing":
+          toast.success("Payout is now processing 🚀");
+          break;
+        case "completed":
+          toast.success("Payout marked as completed ✅");
+          break;
+        case "failed":
+          toast.error("Payout marked as failed ❌");
+          break;
+        default:
+          toast.success(`Payout updated: ${newStatus}`);
+      }
+
       loadPayouts();
     } catch (error) {
       console.error("Error updating payout:", error);
-      toast.error("Failed to update payout status");
+      toast.error("⚠️ Failed to update payout status");
     }
   };
 
@@ -203,12 +217,23 @@ export default function AdminPayouts() {
     }
 
     try {
-      const updates = selectedPayouts.map((payoutId) =>
-        updatePayoutStatus(payoutId, newStatus)
+      await Promise.all(
+        selectedPayouts.map((payoutId) =>
+          updateDoc(doc(db, collections.winners, payoutId), {
+            status: newStatus,
+            updatedAt: new Date(),
+            ...(newStatus === "completed" && { completedAt: new Date() }),
+            ...(newStatus === "processing" && {
+              processingStartedAt: new Date(),
+            }),
+          })
+        )
       );
 
-      await Promise.all(updates);
+      // ✅ One toast instead of multiple
+      toast.success(`${selectedPayouts.length} payouts marked as ${newStatus}`);
       setSelectedPayouts([]);
+      loadPayouts();
     } catch (error) {
       console.error("Error bulk updating:", error);
       toast.error("Failed to update some payouts");
@@ -489,10 +514,22 @@ export default function AdminPayouts() {
             </div>
             <div className="flex gap-2">
               <button
+                onClick={() => bulkUpdateStatus("pending_payout")}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-sm hover:text-white"
+              >
+                Mark as Pending
+              </button>
+              <button
                 onClick={() => bulkUpdateStatus("processing")}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm hover:text-white"
               >
                 Mark as Processing
+              </button>
+              <button
+                onClick={() => bulkUpdateStatus("pending_payout")}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm hover:text-white"
+              >
+                Mark as Failed
               </button>
               <button
                 onClick={() => bulkUpdateStatus("completed")}
@@ -585,7 +622,8 @@ export default function AdminPayouts() {
                         <div>
                           <div className="text-sm font-medium text-gray-900">
                             <Link to={`/admin/users/${payout.userId}`}>
-                            {payout.user?.displayName || "Unknown User"}</Link>
+                              {payout.user?.displayName || "Unknown User"}
+                            </Link>
                           </div>
                           <div className="text-sm text-gray-500">
                             {payout.user?.email || payout.email}
@@ -647,16 +685,16 @@ export default function AdminPayouts() {
                           )}
                           {payout.status === "processing" && (
                             <>
-                            <button
-                              onClick={() =>
-                                updatePayoutStatus(payout.id, "completed")
-                              }
-                              className="text-green-600 hover:text-green-900"
-                              title="Mark as Completed"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </button>
-                            <button
+                              <button
+                                onClick={() =>
+                                  updatePayoutStatus(payout.id, "completed")
+                                }
+                                className="text-green-600 hover:text-green-900"
+                                title="Mark as Completed"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </button>
+                              <button
                                 onClick={() =>
                                   updatePayoutStatus(payout.id, "failed")
                                 }
@@ -666,21 +704,21 @@ export default function AdminPayouts() {
                                 <XCircle className="h-4 w-4" />
                               </button>
                             </>
-                            
                           )}
                           {payout.status === "failed" && (
-                             <button
-                                onClick={() =>
-                                  updatePayoutStatus(payout.id, "processing")
-                                }
-                                className="text-blue-600 hover:text-blue-900"
-                                title="Start Processing Again"
-                              >
-                                <Send className="h-4 w-4" />
-                              </button>
+                            <button
+                              onClick={() =>
+                                updatePayoutStatus(payout.id, "processing")
+                              }
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Start Processing Again"
+                            >
+                              <Send className="h-4 w-4" />
+                            </button>
                           )}
-                            <Link to={`/admin/payouts/${payout.id}`}>
-                              <Eye className="h-4 w-4" /></Link>
+                          <Link to={`/admin/payouts/${payout.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
                         </div>
                       </td>
                     </tr>
