@@ -102,53 +102,139 @@ class ApiSportsService {
   async fetchGameScore(gameId, sport, week = 1) {
     // logger.info(`[fetchGameScore] Called`, { gameId, sport, week });
 
-    if (!gameId) {
-      // logger.error("[fetchGameScore] No gameId provided");
-      throw new Error("No gameId provided");
-    }
+    if (!gameId) throw new Error("No gameId provided");
 
     const config = SPORTS_CONFIG[sport];
-    const year = 2021; // or dynamically: new Date().getFullYear()
+    const year = new Date().getFullYear();
 
     try {
-      // logger.info(`[fetchGameScore] Making API request`, {
-      //   sport,
-      //   year,
-      //   leagueId: config.leagueId,
-      // });
+      let apiGame = null;
 
-      // console.log("KEEEYYY: ", process.env.REACT_APP_APISPORTS_KEY);
+      if (sport === "NFL") {
+        // --- NFL: Single game from API-Sports ---
+        const url = `https://v1.american-football.api-sports.io/games`;
+        logger.info(`[fetchGameScore][NFL] Fetching single game`, {
+          url,
+          gameId,
+        });
 
-      // const url = `https://v1.american-football.api-sports.io/games`;
-      // const response = await axios.get(url, {
-      //   params: {
-      //     league: config.leagueId,
-      //     season: year,
-      //   },
-      //   headers: {
-      //     "x-apisports-key": process.env.REACT_APP_APISPORTS_KEY,
-      //   },
-      // });
+        const response = await axios.get(url, {
+          params: { id: gameId },
+          headers: {
+            "x-apisports-key": process.env.REACT_APP_APISPORTS_KEY,
+          },
+        });
 
-      // logger.info("RESPONSE: ", { response: response?.data });
+        logger.info(`[fetchGameScore][NFL] API raw response length`, {
+          count: response.data?.response?.length,
+        });
 
-      const gamesList = DUMMY_GAMES || [];
-      logger.info(`[fetchGameScore] API returned games count`, {
-        count: gamesList,
-      });
+        apiGame = response.data?.response?.[0] || null;
+      } else if (sport === "CFB") {
+        // --- CFB: Single game from ESPN ---
+        const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary`;
+        logger.info(`[fetchGameScore][CFB] Fetching single game`, {
+          url,
+          gameId,
+        });
 
-      const apiGame = gamesList.find(
-        (g) => g.game.id.toString() === gameId.toString()
-      );
-      logger.info("API GAME: ", { response: apiGame });
+        const response = await axios.get(url, {
+          params: { event: gameId },
+          headers: { accept: "application/json" },
+        });
+
+        logger.info(`[fetchGameScore][CFB] Got response keys`, {
+          keys: Object.keys(response.data || {}),
+        });
+
+        const competition = response.data.header?.competitions?.[0];
+        if (competition) {
+          const status = competition.status.type;
+          const venue = competition.venue || {};
+          const home = competition.competitors.find(
+            (t) => t.homeAway === "home"
+          );
+          const away = competition.competitors.find(
+            (t) => t.homeAway === "away"
+          );
+
+          apiGame = {
+            game: {
+              id: gameId,
+              stage: "Regular Season",
+              week: `Week ${response.data.header.week}`,
+              date: {
+                timezone: "UTC",
+                date: competition.date.split("T")[0],
+                time: competition.date.split("T")[1].slice(0, 5),
+                timestamp: Math.floor(
+                  new Date(competition.date).getTime() / 1000
+                ),
+              },
+              venue: {
+                name: venue.fullName || null,
+                city: venue.address?.city || null,
+              },
+              status: {
+                short:
+                  status.state === "post"
+                    ? "FT"
+                    : status.state === "pre"
+                      ? "NS"
+                      : "Q1",
+                long: status.description,
+                timer: null,
+              },
+            },
+            teams: {
+              home: {
+                id: home.team.id,
+                name: home.team.displayName,
+                logo: home.team.logo,
+              },
+              away: {
+                id: away.team.id,
+                name: away.team.displayName,
+                logo: away.team.logo,
+              },
+            },
+            scores: {
+              home: {
+                quarter_1: home.linescores?.[0]?.value ?? 0,
+                quarter_2: home.linescores?.[1]?.value ?? 0,
+                quarter_3: home.linescores?.[2]?.value ?? 0,
+                quarter_4: home.linescores?.[3]?.value ?? 0,
+                overtime: home.linescores?.[4]?.value ?? null,
+                total: Number(home.score) || 0,
+              },
+              away: {
+                quarter_1: away.linescores?.[0]?.value ?? 0,
+                quarter_2: away.linescores?.[1]?.value ?? 0,
+                quarter_3: away.linescores?.[2]?.value ?? 0,
+                quarter_4: away.linescores?.[3]?.value ?? 0,
+                overtime: away.linescores?.[4]?.value ?? null,
+                total: Number(away.score) || 0,
+              },
+            },
+          };
+
+          logger.info(`[fetchGameScore][CFB] Parsed game object created`, {
+            id: apiGame.game.id,
+            week: apiGame.game.week,
+            status: apiGame.game.status,
+          });
+        } else {
+          logger.warn(
+            `[fetchGameScore][CFB] No competition found in response`,
+            {
+              gameId,
+            }
+          );
+        }
+      }
 
       if (!apiGame) {
-        // logger.warn("[fetchGameScore] Game not found in API response", {
-        //   gameId,
-        //   availableGameIds: gamesList.map((g) => g.game.id).slice(0, 50),
-        //   sport,
-        // });
-
+        logger.warn(`[fetchGameScore] No game found`, { sport, gameId });
         return {
           apiSportsId: gameId,
           status: "unknown",
@@ -162,31 +248,16 @@ class ApiSportsService {
         };
       }
 
-      // logger.info("[fetchGameScore] Game found, parsing data", {
-      //   gameId,
-      //   home: apiGame.game.teams.home.name,
-      //   away: apiGame.game.teams.away.name,
-      //   status: apiGame.game.status?.long,
-      // });
-
       const parsed = this.parseGameData(apiGame, sport);
-
-      // logger.info("[fetchGameScore] Parsed game data successfully", {
-      //   gameId,
-      //   status: parsed.status,
-      //   currentQuarter: parsed.currentQuarter,
-      //   totalScore: parsed.totalScore,
-      //   startTime: parsed.startTime,
-      // });
+      logger.info(`[fetchGameScore] Parsed game data ready`, {
+        gameId,
+        sport,
+        status: parsed.status,
+      });
 
       return parsed;
     } catch (error) {
-      // logger.error("[fetchGameScore] Error fetching game score", {
-      //   error: error?.message,
-      //   stack: error?.stack,
-      //   gameId,
-      //   sport,
-      // });
+      logger.error(`[fetchGameScore] Error`, { gameId, sport, error });
       throw error;
     }
   }
@@ -205,7 +276,7 @@ class ApiSportsService {
 
     // Map status
     const statusMap = {
-      NS: "scheduled",
+      // NS: "scheduled",
       Q1: "active",
       Q2: "active",
       Q3: "active",
@@ -219,7 +290,7 @@ class ApiSportsService {
       SUSP: "cancelled",
     };
     const statusShort = game?.status?.short;
-    const gameStatus = statusMap[statusShort] || "unknown";
+    const gameStatus = statusMap[statusShort];
 
     // Parse quarter scores
     const quarterScores = {};
@@ -272,7 +343,7 @@ class ApiSportsService {
 
     return {
       apiSportsId: game?.id,
-      status: gameStatus,
+      // status: gameStatus,
       currentQuarter,
       quarterScores,
       totalScore,
@@ -730,6 +801,9 @@ const activateNext7DaysGames = functions.pubsub
     const sevenDaysAhead = new Date(now.toDate()); // if getNow() returns Firestore.Timestamp
     sevenDaysAhead.setDate(sevenDaysAhead.getDate() + 7);
 
+    console.log("NOW:", now.toDate());
+    console.log("7 DAYS AHEAD:", sevenDaysAhead);
+
     try {
       // Find upcoming games that start within the next 7 days
       const upcomingGames = await db
@@ -748,6 +822,12 @@ const activateNext7DaysGames = functions.pubsub
       const batch = db.batch();
 
       upcomingGames.forEach((doc) => {
+        console.log(
+          "GAME:",
+          doc.id,
+          doc.data().gameDate.toDate(),
+          doc.data().status
+        );
         batch.update(doc.ref, {
           status: GAME_CONFIG.STATUS.ACTIVE,
           scheduledActivationTime: getTimestamp(), // optional custom field

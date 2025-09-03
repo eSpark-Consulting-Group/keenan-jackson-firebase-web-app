@@ -301,7 +301,7 @@ export default function AdminGames() {
 
         const getMinWeek = (sport) => {
           if (sport === "NFL") return 1;
-          if (sport === "CFB") return 0;
+          if (sport === "CFB") return 1;
           return 0;
         };
 

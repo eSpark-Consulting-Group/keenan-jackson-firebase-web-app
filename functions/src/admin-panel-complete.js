@@ -160,40 +160,134 @@ function getWeekNumber(date) {
 
 exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
   const adminId = requireAdmin(context);
-  const { sport, teamName, week } = data;
+  const { sport, teamName, week, year = new Date().getFullYear() } = data;
 
-  if (!sport || !API_SPORTS_CONFIG[sport]) {
-    throw new functions.https.HttpsError("invalid-argument", "Invalid sport");
+  if (!sport) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Sport is required"
+    );
   }
 
   try {
-    // const config = API_SPORTS_CONFIG[sport];
-    // const year = 2021; // hardcoded year
+    let games = [];
 
-    // // API-Football endpoint for games (adjust league/season as per config)
-    // const url = `https://v1.american-football.api-sports.io/games`;
+    if (sport === "NFL") {
+      // --- NFL via API-Sports ---
+      const config = API_SPORTS_CONFIG[sport];
+      const url = `https://v1.american-football.api-sports.io/games`;
 
-    // const response = await axios.get(url, {
-    //   params: {
-    //     league: config.leagueId, // from your config
-    //     season: year,
-    //   },
-    //   headers: {
-    //     "x-apisports-key": process.env.REACT_APP_APISPORTS_KEY,
-    //   },
-    // });
+      const response = await axios.get(url, {
+        params: { league: config.leagueId, season: year },
+        headers: { "x-apisports-key": process.env.REACT_APP_APISPORTS_KEY },
+      });
 
-    // let games = response.data?.response || [];
-    let games = DUMMY_GAMES;
-    logger.info("GOT GAMES: ", { data: games });
+      games = response.data?.response || [];
 
-    // ✅ Filter only Regular Season games
-    games = games.filter((g) => g.game.stage === "Regular Season");
+      // filter Regular Season
+      games = games.filter((g) => g.game.stage === "Regular Season");
+    }
 
-    // ✅ If week provided, filter by numeric week
+    if (sport === "CFB") {
+      // --- CFB via ESPN ---
+      const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard`;
+      const response = await axios.get(url, {
+        params: { week, year, seasontype: 2 }, // 2 = regular season
+        headers: { accept: "application/json" },
+      });
+
+      const now = Math.floor(Date.now() / 1000); // current UTC timestamp
+
+      games = response.data.events
+        .map((event) => {
+          const competition = event.competitions[0];
+          const status = competition.status.type;
+          const venue = competition.venue || {};
+          const home = competition.competitors.find(
+            (t) => t.homeAway === "home"
+          );
+          const away = competition.competitors.find(
+            (t) => t.homeAway === "away"
+          );
+
+          const timestamp = Math.floor(
+            new Date(competition.date).getTime() / 1000
+          );
+
+          return {
+            game: {
+              id: event.id,
+              stage: "Regular Season",
+              week: `Week ${response.data.week.number}`,
+              date: {
+                timezone: "UTC",
+                date: competition.date.split("T")[0],
+                time: competition.date.split("T")[1].slice(0, 5),
+                timestamp,
+              },
+              venue: {
+                name: venue.fullName || null,
+                city: venue.address?.city || null,
+              },
+              status: {
+                short: status.state === "post" ? "FT" : status.name,
+                long: status.description,
+                timer: null,
+              },
+            },
+            league: {
+              id: "cfb",
+              name: "College Football",
+              season: String(year),
+              logo: "https://a.espncdn.com/redesign/assets/img/logos/espn/college-football.png",
+              country: {
+                name: "USA",
+                code: "US",
+                flag: "https://media.api-sports.io/flags/us.svg",
+              },
+            },
+            teams: {
+              home: {
+                id: home.team.id,
+                name: home.team.displayName,
+                logo: home.team.logo,
+              },
+              away: {
+                id: away.team.id,
+                name: away.team.displayName,
+                logo: away.team.logo,
+              },
+            },
+            scores: {
+              home: {
+                quarter_1: home.linescores?.[0]?.value ?? 0,
+                quarter_2: home.linescores?.[1]?.value ?? 0,
+                quarter_3: home.linescores?.[2]?.value ?? 0,
+                quarter_4: home.linescores?.[3]?.value ?? 0,
+                overtime: home.linescores?.[4]?.value ?? null,
+                total: Number(home.score) || 0,
+              },
+              away: {
+                quarter_1: away.linescores?.[0]?.value ?? 0,
+                quarter_2: away.linescores?.[1]?.value ?? 0,
+                quarter_3: away.linescores?.[2]?.value ?? 0,
+                quarter_4: away.linescores?.[3]?.value ?? 0,
+                overtime: away.linescores?.[4]?.value ?? null,
+                total: Number(away.score) || 0,
+              },
+            },
+          };
+        })
+        // ✅ filter out past games (only upcoming or live or recently finished)
+        .filter(
+          (g) => g.game.date.timestamp >= now || g.game.status.short !== "FT"
+        );
+    }
+
+    // ✅ Week filter
     if (week) {
       games = games.filter((g) => {
-        const weekStr = g.game.week; // "Week 5"
+        const weekStr = g.game.week;
         const weekNum = weekStr
           ? parseInt(weekStr.replace("Week", "").trim())
           : null;
@@ -211,20 +305,17 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
       );
     }
 
-    // ✅ Format games to match old API shape
+    // ✅ Normalize into old shape
     const formattedGames = games.map((game) => {
       const weekStr = game.game.week;
       const weekNum = weekStr
         ? parseInt(weekStr.replace("Week", "").trim())
         : null;
 
-      logger.info("Returning: ", { data: game });
       let startTime = null;
       if (game?.game?.date?.timestamp) {
-        // safest: use timestamp
         startTime = new Date(game.game.date.timestamp * 1000).toISOString();
       } else if (game?.game?.date?.date && game?.game?.date?.time) {
-        // fallback: combine date + time
         startTime = new Date(
           `${game.game.date.date}T${game.game.date.time}:00Z`
         ).toISOString();
@@ -234,10 +325,10 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
         apiSportsId: game.game.id?.toString(),
         homeTeam: game.teams.home?.name,
         awayTeam: game.teams.away?.name,
-        startTime, // ✅ now includes full datetime
+        startTime,
         status: game.game.status?.long,
         venue: game.game.venue?.name || "TBA",
-        week: weekNum, // 👈 same as old week
+        week: weekNum,
         scores: {
           home: game.scores.home?.total ?? null,
           away: game.scores.away?.total ?? null,
@@ -245,9 +336,10 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
       };
     });
 
-    console.log(
-      `Admin ${adminId} searched ${sport} games for week ${week || "ALL"}`
-    );
+    console.log(`Admin ${adminId} searched ${sport} games`, {
+      week: week || "ALL",
+      total: formattedGames.length,
+    });
 
     return {
       success: true,
@@ -255,8 +347,14 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
       total: formattedGames.length,
     };
   } catch (error) {
-    console.error("API-Football search error:", error?.response?.data || error);
-    throw new functions.https.HttpsError("internal", "Failed to search games");
+    console.error(
+      `${sport.toUpperCase()} search error:`,
+      error?.response?.data || error
+    );
+    throw new functions.https.HttpsError(
+      "internal",
+      `Failed to search ${sport} games`
+    );
   }
 });
 
