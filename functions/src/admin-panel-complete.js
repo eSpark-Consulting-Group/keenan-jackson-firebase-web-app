@@ -185,7 +185,7 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
 
     // let games = response.data?.response || [];
     let games = DUMMY_GAMES;
-    // logger.info("GOT GAMES: ", { data: response?.data });
+    logger.info("GOT GAMES: ", { data: games });
 
     // ✅ Filter only Regular Season games
     games = games.filter((g) => g.game.stage === "Regular Season");

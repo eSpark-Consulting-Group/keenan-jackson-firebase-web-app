@@ -195,13 +195,8 @@ class ApiSportsService {
    * Parse API response into standard format
    */
   parseGameData(apiGame, sport) {
-    // apiGame is structured like:
-    // {
-    //   game: {...},
-    //   league: {...},
-    //   teams: {...},
-    //   scores: {...}
-    // }
+    logger.info("API GAME IN PARSE GAME ", { apiGame });
+
     const game = apiGame.game;
     const teams = apiGame.teams;
     const scores = apiGame.scores;
@@ -223,18 +218,22 @@ class ApiSportsService {
       CANC: "cancelled",
       SUSP: "cancelled",
     };
-    const gameStatus = statusMap[game?.status?.short] || "unknown";
+    const statusShort = game?.status?.short;
+    const gameStatus = statusMap[statusShort] || "unknown";
 
     // Parse quarter scores
     const quarterScores = {};
+    let scoredQuarters = 0;
+
     ["quarter_1", "quarter_2", "quarter_3", "quarter_4", "overtime"].forEach(
       (q, idx) => {
-        if (scores?.home?.[q] !== undefined) {
+        if (scores?.home?.[q] !== null && scores?.home?.[q] !== undefined) {
           const key = q === "overtime" ? "ot" : `q${idx + 1}`;
           quarterScores[key] = {
             home: scores.home[q] ?? null,
             away: scores.away[q] ?? null,
           };
+          scoredQuarters++;
         }
       }
     );
@@ -257,10 +256,24 @@ class ApiSportsService {
       startTime = new Date(`${game.date.date}T${game.date.time}:00Z`);
     }
 
+    // 🔑 Current Quarter based on status.short
+    let currentQuarter = 0;
+    if (statusShort === "Q1") currentQuarter = 1;
+    else if (statusShort === "Q2" || statusShort === "HT") currentQuarter = 2;
+    else if (statusShort === "Q3") currentQuarter = 3;
+    else if (
+      statusShort === "Q4" ||
+      statusShort === "OT" ||
+      statusShort === "AOT" ||
+      statusShort === "FT"
+    )
+      currentQuarter = 4;
+    else currentQuarter = scoredQuarters || 1; // fallback
+
     return {
       apiSportsId: game?.id,
       status: gameStatus,
-      currentQuarter: Object.keys(quarterScores).length || 1,
+      currentQuarter,
       quarterScores,
       totalScore,
       teams: parsedTeams,

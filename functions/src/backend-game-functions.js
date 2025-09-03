@@ -308,11 +308,11 @@ exports.determineWinners = functions.pubsub
     console.log("🏁 Starting determineWinners scheduled function...");
 
     try {
-      // 1) Fetch active games
+      // 1) Fetch active/in-progress games
       console.log("🔎 Fetching active games...");
       const gamesSnapshot = await db
         .collection("games")
-        .where("status", "in", ["active", "in_progress"])
+        .where("status", "in", ["active", "in_progress", "completed"])
         .get();
 
       if (gamesSnapshot.empty) {
@@ -321,92 +321,110 @@ exports.determineWinners = functions.pubsub
       }
       console.log(`✅ Found ${gamesSnapshot.size} active games`);
 
-      // 2) Process each game independently
       const perGameTasks = gamesSnapshot.docs.map(async (gameDoc) => {
         const game = gameDoc.data();
         const gameId = gameDoc.id;
 
+        console.log("🎮 Processing Game", { gameId, status: game.status });
         console.log(
-          "🎮 Processing Game",
-          JSON.stringify({ gameId, status: game.status })
+          "Full quarterScores",
+          JSON.stringify(game.quarterScores, null, 2)
         );
 
-        const quarters = ["q1", "q2", "q3", "q4"];
-        for (const quarter of quarters) {
-          console.log("➡️ Checking quarter", { gameId, quarter });
+        // Decide which quarter (if any) just finished
+        let quarterToProcess = null;
+        if (game.currentQuarter === 2) quarterToProcess = "q1";
+        else if (game.currentQuarter === 3) quarterToProcess = "q2";
+        else if (game.currentQuarter === 4 && game.status !== "completed")
+          quarterToProcess = "q3";
+        else if (game.currentQuarter === 4 && game.status === "completed")
+          quarterToProcess = "q4";
 
-          const quarterScore = game.quarterScores?.[quarter];
-          console.log("   Quarter score", { gameId, quarter, quarterScore });
-
-          // Skip if quarter doesn't exist, has no scores yet, or already processed
-          if (!quarterScore) {
-            console.log("   ⚠️ Skipping quarter (no data)", {
-              gameId,
-              quarter,
-            });
-            continue;
-          }
-          if (quarterScore.processed) {
-            console.log("   ✅ Already processed, skipping", {
-              gameId,
-              quarter,
-            });
-            continue;
-          }
-
-          // Compute winning positions (always 2-digit strings)
-          const homeLastDigit = Math.abs(Number(quarterScore.home)) % 10;
-          const awayLastDigit = Math.abs(Number(quarterScore.away)) % 10;
-
-          const winningPositions = [
-            `${homeLastDigit}${awayLastDigit}`.padStart(2, "0"), // "50"
-            `${awayLastDigit}${homeLastDigit}`.padStart(2, "0"), // "05"
-          ];
-          console.log("   🧮 Computed winning digits", {
+        if (!quarterToProcess) {
+          console.log("⏭️ No finished quarter to process yet", {
             gameId,
-            quarter,
-            homeLastDigit,
-            awayLastDigit,
-            winningPositions,
+            currentQuarter: game.currentQuarter,
+            status: game.status,
           });
+          return;
+        }
 
-          // 2a) Fetch boards for this game
-          console.log("   🔎 Fetching boards", { gameId });
-          const boardsSnapshot = await db
-            .collection("boards")
-            .where("gameId", "==", gameId)
-            .get();
+        const quarterScore = game.quarterScores?.[quarterToProcess];
+        console.log("➡️ Quarter to process", {
+          gameId,
+          quarterToProcess,
+          quarterScore,
+        });
 
-          console.log("   ✅ Boards found", {
+        if (!quarterScore) {
+          console.log("⚠️ No score for finished quarter", {
             gameId,
-            count: boardsSnapshot.size,
+            quarterToProcess,
           });
+          return;
+        }
+        if (quarterScore.processed) {
+          console.log("✅ Quarter already processed, skipping", {
+            gameId,
+            quarterToProcess,
+          });
+          return;
+        }
 
-          const actions = []; // collect async tasks
+        // Compute winning positions (always strings)
+        const homeLastDigit = Math.abs(Number(quarterScore.home)) % 10;
+        const awayLastDigit = Math.abs(Number(quarterScore.away)) % 10;
 
-          // Iterate through boards
-          for (const boardDoc of boardsSnapshot.docs) {
-            const board = boardDoc.data();
-            const boardId = boardDoc.id;
-            console.log("📝 Processing Board", { gameId, boardId });
+        const winningPositions = [
+          `${homeLastDigit}${awayLastDigit}`.padStart(2, "0"),
+          `${awayLastDigit}${homeLastDigit}`.padStart(2, "0"),
+        ];
+        console.log("🧮 Computed winning digits", {
+          gameId,
+          quarterToProcess,
+          homeLastDigit,
+          awayLastDigit,
+          winningPositions,
+        });
 
-            for (const position of winningPositions) {
-              console.log("      ➡️ Checking position", { gameId, position });
-              const square = board.squares?.[position];
-              console.log("         Square data", { gameId, position, square });
+        // Fetch boards
+        const boardsSnapshot = await db
+          .collection("boards")
+          .where("gameId", "==", gameId)
+          .get();
 
-              if (!square || !square.claims || square.claims.length === 0) {
-                console.log("         ⚠️ No claims for square, skipping", {
-                  gameId,
-                  position,
-                });
-                continue;
-              }
+        console.log("✅ Boards found", {
+          gameId,
+          count: boardsSnapshot.size,
+        });
 
-              // If only 1 claim → solo winner
-              if (square.claims.length === 1) {
-                const onlyClaim = square.claims[0];
+        const actions = [];
+        const winnerUserIds = [];
 
+        for (const boardDoc of boardsSnapshot.docs) {
+          const board = boardDoc.data();
+          const boardId = boardDoc.id;
+          console.log("📝 Processing Board", { gameId, boardId });
+
+          for (const position of winningPositions) {
+            console.log("➡️ Checking position", { gameId, position });
+            const square = board.squares?.[position];
+            console.log("Square data", { gameId, position, square });
+
+            if (!square || !square.claims || square.claims.length === 0) {
+              console.log("⚠️ No claims for square, skipping", {
+                gameId,
+                position,
+              });
+              continue;
+            }
+
+            if (square.claims.length === 1) {
+              const onlyClaim = square.claims[0];
+              winnerUserIds.push(onlyClaim.userId);
+
+              // Telegram notify
+              try {
                 const winnerUserSnap = await db
                   .collection("users")
                   .doc(onlyClaim.userId)
@@ -415,52 +433,48 @@ exports.determineWinners = functions.pubsub
                   winnerUserSnap.exists && winnerUserSnap.data().telegramChatId
                     ? winnerUserSnap.data().telegramChatId
                     : null;
-
                 if (winnerTelegramId) {
                   await sendTelegramNotification(
                     winnerTelegramId,
-                    `🎉 Congratulations! 🎉 You’ve won in *Quarter ${quarter.toUpperCase()}* Great job beating the competition! 🏆🔥`
+                    `🎉 Congratulations! 🎉 You’ve won in *Quarter ${quarterToProcess.toUpperCase()}* 🏆🔥`
                   );
                 }
+              } catch (err) {
+                console.error("Telegram notify failed", err);
+              }
 
-                console.log("         🏆 Solo winner found", {
+              console.log("🏆 Solo winner found", {
+                gameId,
+                boardId,
+                quarter: quarterToProcess,
+                position,
+                userId: onlyClaim.userId,
+                answerTime: onlyClaim.answerTime,
+              });
+
+              actions.push(async () => {
+                await processWinner({
+                  userId: onlyClaim.userId,
                   gameId,
                   boardId,
-                  quarter,
+                  quarter: quarterToProcess,
                   position,
-                  userId: onlyClaim.userId,
+                  tierId: board.tierId,
                   answerTime: onlyClaim.answerTime,
+                  isSoloWin: true,
                 });
+              });
+            } else {
+              // Multiple claims → sort by fastest
+              const sorted = [...square.claims].sort(
+                (a, b) => a.answerTime - b.answerTime
+              );
+              const winner = sorted[0];
+              const loser = sorted[1];
+              winnerUserIds.push(winner.userId);
 
-                actions.push(async () => {
-                  await processWinner({
-                    userId: onlyClaim.userId,
-                    gameId,
-                    boardId,
-                    quarter,
-                    position,
-                    tierId: board.tierId,
-                    answerTime: onlyClaim.answerTime,
-                    isSoloWin: true,
-                  });
-                });
-              } else {
-                // Multiple claims → sort by fastest
-                console.log("         ⚔️ Multiple claimants found", {
-                  gameId,
-                  position,
-                  claims: square.claims.map((c) => ({
-                    userId: c.userId,
-                    answerTime: c.answerTime,
-                  })),
-                });
-
-                const sorted = [...square.claims].sort(
-                  (a, b) => a.answerTime - b.answerTime
-                );
-                const winner = sorted[0];
-                const loser = sorted[1];
-
+              // Telegram notify
+              try {
                 const winnerUserSnap = await db
                   .collection("users")
                   .doc(winner.userId)
@@ -469,122 +483,105 @@ exports.determineWinners = functions.pubsub
                   winnerUserSnap.exists && winnerUserSnap.data().telegramChatId
                     ? winnerUserSnap.data().telegramChatId
                     : null;
-
                 if (winnerTelegramId) {
                   await sendTelegramNotification(
                     winnerTelegramId,
-                    `🎉 Congratulations! 🎉\n\nYou’ve won in *Quarter ${quarter.toUpperCase()}*\n\nGreat job beating the competition! 🏆🔥`
+                    `🎉 Congratulations! 🎉\n\nYou’ve won in *Quarter ${quarterToProcess.toUpperCase()}* 🏆🔥`
                   );
                 }
-
-                console.log("         🏆 Winner", {
-                  gameId,
-                  boardId,
-                  quarter,
-                  position,
-                  userId: winner.userId,
-                  answerTime: winner.answerTime,
-                });
-                console.log("         ❌ Loser", {
-                  gameId,
-                  boardId,
-                  quarter,
-                  position,
-                  userId: loser.userId,
-                  answerTime: loser.answerTime,
-                });
-
-                actions.push(async () => {
-                  // Winner
-                  await processWinner({
-                    userId: winner.userId,
-                    gameId,
-                    boardId,
-                    quarter,
-                    position,
-                    tierId: board.tierId,
-                    answerTime: winner.answerTime,
-                    isSoloWin: false,
-                    opponentTime: loser.answerTime,
-                  });
-
-                  // Loser
-                  await processLoser({
-                    userId: loser.userId,
-                    gameId,
-                    boardId,
-                    quarter,
-                    position,
-                    tierId: board.tierId,
-                    answerTime: loser.answerTime,
-                    winnerTime: winner.answerTime,
-                    winnerId: winner.userId,
-                  });
-
-                  // Remove loser from board
-                  const updatedClaims = square.claims.filter(
-                    (c) => c.userId !== loser.userId
-                  );
-                  console.log(
-                    "         🔄 Updating board after loser removal",
-                    {
-                      gameId,
-                      boardId,
-                      position,
-                      updatedClaims,
-                    }
-                  );
-
-                  await db
-                    .collection("boards")
-                    .doc(boardId)
-                    .update({
-                      [`squares.${position}.claims`]: updatedClaims,
-                      claimedSquares: admin.firestore.FieldValue.increment(-1),
-                    });
-                });
-              }
-            }
-          }
-
-          // 2b) Execute actions & mark quarter processed
-          if (actions.length > 0) {
-            console.log("   ✅ Winner/loser actions found", {
-              gameId,
-              quarter,
-              actionsCount: actions.length,
-            });
-
-            for (const act of actions) {
-              try {
-                console.log("▶️ Executing action", { gameId, quarter });
-                await act();
-                console.log("      ✅ Action completed", { gameId, quarter });
               } catch (err) {
-                console.error("      💥 Action failed", {
-                  gameId,
-                  quarter,
-                  error: err,
-                });
+                console.error("Telegram notify failed", err);
               }
-            }
 
-            console.log("   🔖 Marking quarter as processed", {
-              gameId,
-              quarter,
-            });
-            await gameDoc.ref.update({
-              [`quarterScores.${quarter}.processed`]: true,
-              [`quarterScores.${quarter}.processedAt`]:
-                admin.firestore.FieldValue.serverTimestamp(),
-              [`quarterScores.${quarter}.winningPositions`]: winningPositions,
-            });
-          } else {
-            console.log("   ⚠️ No winners, leaving unprocessed", {
-              gameId,
-              quarter,
-            });
+              console.log("🏆 Winner", {
+                gameId,
+                boardId,
+                quarter: quarterToProcess,
+                position,
+                userId: winner.userId,
+                answerTime: winner.answerTime,
+              });
+              console.log("❌ Loser", {
+                gameId,
+                boardId,
+                quarter: quarterToProcess,
+                position,
+                userId: loser.userId,
+                answerTime: loser.answerTime,
+              });
+
+              actions.push(async () => {
+                // Winner
+                await processWinner({
+                  userId: winner.userId,
+                  gameId,
+                  boardId,
+                  quarter: quarterToProcess,
+                  position,
+                  tierId: board.tierId,
+                  answerTime: winner.answerTime,
+                  isSoloWin: false,
+                  opponentTime: loser.answerTime,
+                });
+
+                // Loser
+                await processLoser({
+                  userId: loser.userId,
+                  gameId,
+                  boardId,
+                  quarter: quarterToProcess,
+                  position,
+                  tierId: board.tierId,
+                  answerTime: loser.answerTime,
+                  winnerTime: winner.answerTime,
+                  winnerId: winner.userId,
+                });
+
+                // Remove loser from board
+                const updatedClaims = square.claims.filter(
+                  (c) => c.userId !== loser.userId
+                );
+                await db
+                  .collection("boards")
+                  .doc(boardId)
+                  .update({
+                    [`squares.${position}.claims`]: updatedClaims,
+                    claimedSquares: admin.firestore.FieldValue.increment(-1),
+                  });
+              });
+            }
           }
+        }
+
+        if (actions.length > 0) {
+          console.log("✅ Winner/loser actions found", {
+            gameId,
+            quarterToProcess,
+            actionsCount: actions.length,
+          });
+
+          await Promise.all(actions.map((fn) => fn()));
+
+          console.log("🔖 Marking quarter as processed", {
+            gameId,
+            quarterToProcess,
+            winningPositions,
+            winnerUserIds,
+          });
+
+          await gameDoc.ref.update({
+            [`quarterScores.${quarterToProcess}.processed`]: true,
+            [`quarterScores.${quarterToProcess}.processedAt`]:
+              admin.firestore.FieldValue.serverTimestamp(),
+            [`quarterScores.${quarterToProcess}.winningPositions`]:
+              winningPositions.map(String),
+            [`quarterScores.${quarterToProcess}.winnerUserIds`]: winnerUserIds,
+          });
+        } else {
+          console.log("⚠️ No winners, leaving unprocessed", {
+            gameId,
+            quarterToProcess,
+          });
         }
       });
 
@@ -627,16 +624,20 @@ async function cleanupOldClaims(boardId, board, currentQuarter, game) {
       if (!fastest || fastestClaim.answerTime < fastest.time) {
         fastest = {
           userId: fastestClaim.userId,
-          time: fastestClaim.answerTime, // store under "time" for consistency
+          time: fastestClaim.answerTime,
           quarter: fastestClaim.currentQuarter,
         };
       }
     }
 
-    // 2. Delete if any claim is from an older quarter
-    const hasOldClaim = square.claims.some(
-      (c) => c.currentQuarter < currentQuarter
-    );
+    // 2. Delete only if claims are from a processed older quarter
+    const hasOldClaim = square.claims.some((c) => {
+      const qKey = `q${c.currentQuarter}`;
+      return (
+        c.currentQuarter < currentQuarter &&
+        game.quarterScores?.[qKey]?.processed === true
+      );
+    });
 
     if (hasOldClaim) {
       updates[`squares.${position}`] = admin.firestore.FieldValue.delete();
@@ -650,8 +651,23 @@ async function cleanupOldClaims(boardId, board, currentQuarter, game) {
     await db.collection("boards").doc(boardId).update(updates);
   }
 
-  // 3. Only add winner when Q4 is processed
+  // 3. Only add fastest winner once when Q4 is processed
   if (game.quarterScores?.q4?.processed && fastest) {
+    const existingFastest = await db
+      .collection("winners")
+      .where("boardId", "==", boardId)
+      .where("gameId", "==", board.gameId)
+      .where("isFastest", "==", true)
+      .limit(1)
+      .get();
+
+    if (!existingFastest.empty) {
+      console.log(
+        `⚠️ Fastest winner already exists for board ${boardId}, skipping.`
+      );
+      return;
+    }
+
     const tierId = board.tierId;
     const prizeAmount = tierAmounts[tierId]?.quarter || 0;
 
@@ -667,11 +683,12 @@ async function cleanupOldClaims(boardId, board, currentQuarter, game) {
       status: "pending_payout",
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       isTelegramSend: false,
+      isFastest: true, // ✅ mark fastest winners
     };
 
     await db.collection("winners").add(winnerDoc);
 
-    console.log(`🏆 Winner added for board ${boardId}`, winnerDoc);
+    console.log(`🏆 Fastest winner added for board ${boardId}`, winnerDoc);
   }
 }
 
