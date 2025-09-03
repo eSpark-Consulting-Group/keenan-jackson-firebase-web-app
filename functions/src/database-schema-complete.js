@@ -328,7 +328,7 @@ const WinnerSchema = {
   payoutMethod: null, // string
   payoutDetails: {}, // object - transaction details
   payoutCompletedAt: null, // Timestamp
-  payoutType: '', // string - 'instant' or 'batch'
+  payoutType: 'standard', // string - 'instant' or 'batch' or 'standard'
   instantPayoutFee: 0, // number - fee amount if instant payout
   relayBatchId: null, // string - reference to relay batch if applicable
   

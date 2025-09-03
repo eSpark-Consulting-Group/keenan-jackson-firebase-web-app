@@ -47,7 +47,7 @@ export default function AdminPayouts() {
   });
   const [filterOptions, setFilterOptions] = useState({
     status: "all",
-    type: "all",
+    payoutType: "all",
     dateRange: "7days",
   });
   const [searchTerm, setSearchTerm] = useState("");
@@ -66,6 +66,9 @@ export default function AdminPayouts() {
 
       if (filterOptions.status !== "all") {
         constraints.unshift(where("status", "==", filterOptions.status));
+      }
+      if (filterOptions.payoutType !== "all") {
+        constraints.unshift(where("payoutType", "==", 'isntant'));
       }
 
       if (filterOptions.dateRange !== "all") {
@@ -279,27 +282,30 @@ export default function AdminPayouts() {
       payout.user?.displayName
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
+      payout.payoutType.toLowerCase().includes(searchTerm.toLowerCase())||
+      payout.status.toLowerCase().includes(searchTerm.toLowerCase())||
+      payout.tierId.toLowerCase().includes(searchTerm.toLowerCase())||
       payout.id.toLowerCase().includes(searchTerm.toLowerCase());
 
     return matchesSearch;
   });
 
-  const getPayoutTypeIcon = (type) => {
-    return type === "instant" ? Zap : Clock;
+  const getPayoutTypeIcon = (payoutType) => {
+    return payoutType === "instant" ? Zap : Clock;
   };
 
-  const getPayoutTypeBadge = (type) => {
-    const Icon = getPayoutTypeIcon(type);
+  const getPayoutTypeBadge = (payoutType) => {
+    const Icon = getPayoutTypeIcon(payoutType);
     return (
       <span
         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          type === "instant"
+          payoutType === "instant"
             ? "bg-yellow-100 text-yellow-800"
             : "bg-blue-100 text-blue-800"
         }`}
       >
         <Icon className="h-3 w-3 mr-1" />
-        {type === "instant" ? "Instant" : "Standard"}
+        {payoutType === "instant" ? "Instant" : "Standard"}
       </span>
     );
   };
@@ -476,7 +482,7 @@ export default function AdminPayouts() {
             <select
               value={filterOptions.payoutType}
               onChange={(e) =>
-                setFilterOptions({ ...filterOptions, type: e.target.value })
+                setFilterOptions({ ...filterOptions, payoutType: e.target.value })
               }
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
