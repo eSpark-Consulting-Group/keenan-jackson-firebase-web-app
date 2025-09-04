@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Zap,
   Eye,
+  DollarSign,
 } from "lucide-react";
 import {
   db,
@@ -32,10 +33,15 @@ import {
 } from "firebase/firestore";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
+import { getFunctions, httpsCallable } from "firebase/functions";
 
 export default function AdminPayouts() {
   const [loading, setLoading] = useState(true);
   const [payouts, setPayouts] = useState([]);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  console.log("Selected Payment Method:", selectedPaymentMethod);
   console.log("Payouts:", payouts);
   const [stats, setStats] = useState({
     pendingCount: 0,
@@ -47,7 +53,7 @@ export default function AdminPayouts() {
   });
   const [filterOptions, setFilterOptions] = useState({
     status: "all",
-    type: "all",
+    payoutType: "all",
     dateRange: "7days",
   });
   const [searchTerm, setSearchTerm] = useState("");
@@ -56,6 +62,30 @@ export default function AdminPayouts() {
   useEffect(() => {
     loadPayouts();
   }, [filterOptions]);
+
+  const handlePaymentMethodClick = (payout) => {
+    let method = null;
+    if (payout.payoutType == "standard") {
+      // Find default payment method from user
+      method = payout?.user?.paymentMethods?.find(
+        (m) => m.id === payout?.user.defaultPaymentMethod
+      );
+    } else {
+      // Instant payout uses payout?.selectedpaymentMethod directly
+      method = payout?.user?.paymentMethods?.find(
+        (m) => m?.id === payout.payoutMethodId
+      );
+    }
+
+    setSelectedPaymentMethod(
+      method || {
+        payoutType: "unknown",
+        displayInfo: "No payment method found",
+      }
+    );
+    setSelectedUser(payout?.user || null);
+    setShowPaymentModal(true);
+  };
 
   const loadPayouts = async () => {
     try {
@@ -66,6 +96,9 @@ export default function AdminPayouts() {
 
       if (filterOptions.status !== "all") {
         constraints.unshift(where("status", "==", filterOptions.status));
+      }
+      if (filterOptions.payoutType !== "all") {
+        constraints.unshift(where("payoutType", "==", "isntant"));
       }
 
       if (filterOptions.dateRange !== "all") {
@@ -182,11 +215,25 @@ export default function AdminPayouts() {
 
       await updateDoc(doc(db, collections.winners, payoutId), updateData);
 
-      toast.success(`Payout marked as ${newStatus}`);
+      // ✅ Show nice toast messages
+      switch (newStatus) {
+        case "processing":
+          toast.success("Payout is now processing 🚀");
+          break;
+        case "completed":
+          toast.success("Payout marked as completed ✅");
+          break;
+        case "failed":
+          toast.error("Payout marked as failed ❌");
+          break;
+        default:
+          toast.success(`Payout updated: ${newStatus}`);
+      }
+
       loadPayouts();
     } catch (error) {
       console.error("Error updating payout:", error);
-      toast.error("Failed to update payout status");
+      toast.error("⚠️ Failed to update payout status");
     }
   };
 
@@ -203,78 +250,102 @@ export default function AdminPayouts() {
     }
 
     try {
-      const updates = selectedPayouts.map((payoutId) =>
-        updatePayoutStatus(payoutId, newStatus)
+      await Promise.all(
+        selectedPayouts.map((payoutId) =>
+          updateDoc(doc(db, collections.winners, payoutId), {
+            status: newStatus,
+            updatedAt: new Date(),
+            ...(newStatus === "completed" && { completedAt: new Date() }),
+            ...(newStatus === "processing" && {
+              processingStartedAt: new Date(),
+            }),
+          })
+        )
       );
 
-      await Promise.all(updates);
+      // ✅ One toast instead of multiple
+      toast.success(`${selectedPayouts.length} payouts marked as ${newStatus}`);
       setSelectedPayouts([]);
+      loadPayouts();
     } catch (error) {
       console.error("Error bulk updating:", error);
       toast.error("Failed to update some payouts");
     }
   };
 
-  const exportForRelay = () => {
-    const exportData = payouts
+ const exportForRelay = async () => {
+  try {
+    // Collect payoutIds of all eligible payouts
+    const payoutIds = payouts
       .filter((p) => p.status === "pending" || p.status === "processing")
-      .map((payout) => ({
-        email: payout.user?.email || payout.email,
-        amount: payout.amount,
-        reference: payout.id,
-        name: payout.user?.displayName || "Square Trivia Winner",
-      }));
+      .map((p) => p.id);
 
-    const csv = [
-      ["email", "amount", "reference", "name"],
-      ...exportData.map((row) => [
-        row.email,
-        row.amount,
-        row.reference,
-        row.name,
-      ]),
-    ]
-      .map((row) => row.join(","))
-      .join("\n");
+    if (payoutIds.length === 0) {
+      toast.error("No payouts available to export");
+      return;
+    }
 
-    const blob = new Blob([csv], { type: "text/csv" });
+    // ✅ Call the backend function
+    const functions = getFunctions();
+    const generateRelayCSV = httpsCallable(functions, "generateRelayCSV");
+
+    const { data } = await generateRelayCSV({ payoutIds });
+
+    // data.csv is returned from your function
+    const blob = new Blob(["\uFEFF" + data.csv], {
+      type: "text/csv;charset=utf-8;",
+    });
     const url = window.URL.createObjectURL(blob);
+
     const a = document.createElement("a");
     a.href = url;
     a.download = `relay-payouts-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
+    a.remove();
 
-    toast.success(`Exported ${exportData.length} payouts for Relay`);
-  };
+    toast.success(
+      `Exported ${data.summary.payoutCount} payouts (Total: ${formatCurrency(
+        data.summary.totalAmount
+      )})`
+    );
+  } catch (error) {
+    console.error("Export for Relay failed:", error);
+    toast.error("Failed to generate Relay CSV");
+  }
+};
+
 
   const filteredPayouts = payouts.filter((payout) => {
     const matchesSearch =
       searchTerm === "" ||
-      payout.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payout.user?.displayName
+      payout?.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payout?.user?.displayName
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
+      payout.payoutType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payout.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payout.tierId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payout.id.toLowerCase().includes(searchTerm.toLowerCase());
 
     return matchesSearch;
   });
 
-  const getPayoutTypeIcon = (type) => {
-    return type === "instant" ? Zap : Clock;
+  const getPayoutTypeIcon = (payoutType) => {
+    return payoutType === "instant" ? Zap : Clock;
   };
 
-  const getPayoutTypeBadge = (type) => {
-    const Icon = getPayoutTypeIcon(type);
+  const getPayoutTypeBadge = (payoutType) => {
+    const Icon = getPayoutTypeIcon(payoutType);
     return (
       <span
         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          type === "instant"
-            ? "bg-yellow-100 text-yellow-800"
+          payoutType === "instant"
+            ? "bg-purple-100 text-purple-800"
             : "bg-blue-100 text-blue-800"
         }`}
       >
         <Icon className="h-3 w-3 mr-1" />
-        {type === "instant" ? "Instant" : "Standard"}
+        {payoutType === "instant" ? "Instant" : "Standard"}
       </span>
     );
   };
@@ -451,7 +522,10 @@ export default function AdminPayouts() {
             <select
               value={filterOptions.payoutType}
               onChange={(e) =>
-                setFilterOptions({ ...filterOptions, type: e.target.value })
+                setFilterOptions({
+                  ...filterOptions,
+                  payoutType: e.target.value,
+                })
               }
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
@@ -489,10 +563,22 @@ export default function AdminPayouts() {
             </div>
             <div className="flex gap-2">
               <button
+                onClick={() => bulkUpdateStatus("pending_payout")}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-sm hover:text-white"
+              >
+                Mark as Pending
+              </button>
+              <button
                 onClick={() => bulkUpdateStatus("processing")}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm hover:text-white"
               >
                 Mark as Processing
+              </button>
+              <button
+                onClick={() => bulkUpdateStatus("pending_payout")}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm hover:text-white"
+              >
+                Mark as Failed
               </button>
               <button
                 onClick={() => bulkUpdateStatus("completed")}
@@ -548,6 +634,9 @@ export default function AdminPayouts() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Payment info
+                  </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
@@ -584,11 +673,12 @@ export default function AdminPayouts() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            <Link to={`/admin/users/${payout.userId}`}>
-                            {payout.user?.displayName || "Unknown User"}</Link>
+                            <Link to={`/admin/users/${payout?.userId}`}>
+                              {payout?.user?.displayName || "Unknown User"}
+                            </Link>
                           </div>
                           <div className="text-sm text-gray-500">
-                            {payout.user?.email || payout.email}
+                            {payout?.user?.email || payout.email}
                           </div>
                         </div>
                       </td>
@@ -621,6 +711,20 @@ export default function AdminPayouts() {
                           {payout.createdAt?.toDate?.().toLocaleTimeString()}
                         </div>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => handlePaymentMethodClick(payout)}
+                        >
+                          <span
+                            className={
+                              "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-green-100 text-green-800"
+                            }
+                          >
+                            <DollarSign className="h-3 w-3 mr-1" />
+                            {"Payment Method"}
+                          </span>
+                        </button>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">
                           {payout.status === "pending_payout" && (
@@ -647,16 +751,16 @@ export default function AdminPayouts() {
                           )}
                           {payout.status === "processing" && (
                             <>
-                            <button
-                              onClick={() =>
-                                updatePayoutStatus(payout.id, "completed")
-                              }
-                              className="text-green-600 hover:text-green-900"
-                              title="Mark as Completed"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </button>
-                            <button
+                              <button
+                                onClick={() =>
+                                  updatePayoutStatus(payout.id, "completed")
+                                }
+                                className="text-green-600 hover:text-green-900"
+                                title="Mark as Completed"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </button>
+                              <button
                                 onClick={() =>
                                   updatePayoutStatus(payout.id, "failed")
                                 }
@@ -666,21 +770,21 @@ export default function AdminPayouts() {
                                 <XCircle className="h-4 w-4" />
                               </button>
                             </>
-                            
                           )}
                           {payout.status === "failed" && (
-                             <button
-                                onClick={() =>
-                                  updatePayoutStatus(payout.id, "processing")
-                                }
-                                className="text-blue-600 hover:text-blue-900"
-                                title="Start Processing Again"
-                              >
-                                <Send className="h-4 w-4" />
-                              </button>
+                            <button
+                              onClick={() =>
+                                updatePayoutStatus(payout.id, "processing")
+                              }
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Start Processing Again"
+                            >
+                              <Send className="h-4 w-4" />
+                            </button>
                           )}
-                            <Link to={`/admin/payouts/${payout.id}`}>
-                              <Eye className="h-4 w-4" /></Link>
+                          <Link to={`/admin/payouts/${payout.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
                         </div>
                       </td>
                     </tr>
@@ -723,6 +827,84 @@ export default function AdminPayouts() {
           </div>
         </div>
       </div>
+      {showPaymentModal && selectedPaymentMethod && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-100 max-h-[80vh] overflow-auto">
+            {/* Winner Info */}
+            <div className="mb-6 border-b pb-4">
+              <h2 className="text-xl font-bold mb-2">🏆 Winner Details</h2>
+              {selectedUser ? (
+                <div className="space-y-1 text-gray-700">
+                  <p>
+                    <span className="font-semibold">Name:</span>{" "}
+                    {selectedUser.displayName || "Unknown User"}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    <span className="font-semibold">Email:</span>{" "}
+                    {selectedUser.email}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-gray-500">No user information available</p>
+              )}
+            </div>
+
+            {/* Payment Method Info */}
+            <div className="mb-6">
+              <h2 className="text-xl font-bold mb-3">💳 Payment Method</h2>
+              <div className="space-y-2 text-gray-700">
+                {selectedPaymentMethod.type && (
+                  <p>
+                    <span className="font-semibold">Type:</span>{" "}
+                    {selectedPaymentMethod.type}
+                  </p>
+                )}
+
+                {Object.entries(selectedPaymentMethod).map(([key, value]) => {
+                  if (
+                    [
+                      "type",
+                      "id",
+                      "createdAt",
+                      "updatedAt",
+                      "displayInfo",
+                    ].includes(key)
+                  )
+                    return null;
+                  return (
+                    <div
+                      key={key}
+                      className="flex justify-between items-center bg-gray-50 p-2 rounded-md"
+                    >
+                      <span className="font-semibold">
+                        {key.charAt(0).toUpperCase() + key.slice(1)}:{" "}
+                      </span>
+                      <span>{value}</span>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(value)}
+                        className="ml-2 text-blue-600 hover:text-blue-800 text-sm"
+                        title="Copy"
+                      >
+                        📋
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Close Button */}
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

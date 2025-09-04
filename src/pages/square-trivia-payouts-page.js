@@ -25,7 +25,6 @@ import {
   Send,
   Coins,
 } from "lucide-react";
-// import { useAuth } from "../contexts/AuthContext";
 import {
   db,
   collections,
@@ -43,7 +42,6 @@ import {
   getDoc,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
-// import PayoutMethods from "../components/PayoutMethods";
 import { useAuth } from "../contexts/authcontext";
 import PayoutMethods from "../components/Payouts/payment-methods";
 import jsPDF from "jspdf";
@@ -53,7 +51,7 @@ export default function Payouts() {
   const [payouts, setPayouts] = useState([]);
   console.log("payouts:", payouts);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all"); // all, pending, completed
+  const [filter, setFilter] = useState("all"); // all, pending, completed, failed, processing
   const [selectedPayout, setSelectedPayout] = useState(null);
   const [showInstantPayoutModal, setShowInstantPayoutModal] = useState(false);
   const [processingInstant, setProcessingInstant] = useState(false);
@@ -62,8 +60,8 @@ export default function Payouts() {
   const [defaultPayoutMethod, setDefaultPayoutMethod] = useState(null);
   const [selectedPayoutMethod, setSelectedPayoutMethod] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
-  console.log("payoutMethods:", payoutMethods);
-  console.log("userData:", payoutMethods);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const generatePDF = () => {
     const creationDate = new Date().toLocaleDateString();
@@ -156,7 +154,6 @@ export default function Payouts() {
     completedAmount: 0,
     instantPayouts: 0,
   });
-  console.log("stats:", userData);
   useEffect(() => {
     if (user) {
       loadPayouts();
@@ -230,32 +227,16 @@ export default function Payouts() {
     }
   };
 
-  const handleInstantPayout = async (payout) => {
+  const handleInstantPayout = (payout) => {
     if (!payoutMethods || payoutMethods.length === 0) {
       toast.error("Please add a payment method first");
       setShowPayoutMethods(true);
       return;
     }
 
-    try {
-      // ✅ Update in Firestore
-      await updateDoc(doc(db, collections.winners, payout.id), {
-        payoutType: "instant",
-      });
-
-      // ✅ Update local state
-      const updatedPayout = { ...payout, payoutType: "instant" };
-      setSelectedPayout(updatedPayout);
-      setPayouts((prev) =>
-        prev.map((p) => (p.id === payout.id ? updatedPayout : p))
-      );
-
-      // ✅ Open modal
-      setShowInstantPayoutModal(true);
-    } catch (error) {
-      console.error("Error updating payoutType:", error);
-      toast.error("Failed to set payout as instant");
-    }
+    // ✅ Just select payout and open modal (don’t update Firestore yet)
+    setSelectedPayout(payout);
+    setShowInstantPayoutModal(true);
   };
 
   const confirmInstantPayout = async () => {
@@ -267,7 +248,13 @@ export default function Payouts() {
     setProcessingInstant(true);
 
     try {
-      // Call cloud function to process instant payout
+      // ✅ First update Firestore with instant + chosen method
+      await updateDoc(doc(db, collections.winners, selectedPayout.id), {
+        payoutType: "instant",
+        payoutMethodId: selectedPayoutMethod,
+      });
+
+      // ✅ Then call cloud function
       const response = await callFunction("processInstantPayout", {
         payoutId: selectedPayout.id,
         userId: user.uid,
@@ -279,7 +266,6 @@ export default function Payouts() {
           "Instant payout processed! Funds will arrive within minutes."
         );
 
-        // Update local state
         const updatedPayouts = payouts.map((p) =>
           p.id === selectedPayout.id
             ? {
@@ -287,20 +273,20 @@ export default function Payouts() {
                 status: "processing",
                 isInstant: true,
                 instantFee: response.data.fee,
+                payoutType: "instant",
                 payoutMethodId: selectedPayoutMethod,
               }
             : p
         );
         setPayouts(updatedPayouts);
 
-        // Reload data
         await loadPayouts();
       } else {
         toast.error(response.data.error || "Failed to process instant payout");
       }
     } catch (error) {
       console.error("Error processing instant payout:", error);
-      toast.error("Failed to process instant payout");
+      window.location.reload();
     } finally {
       setProcessingInstant(false);
       setShowInstantPayoutModal(false);
@@ -330,7 +316,7 @@ export default function Payouts() {
       case "pending_payout":
         return "bg-yellow-100 text-yellow-800";
       case "processing":
-        return "bg-blue-100 text-blue-800";
+        return "bg-purple-100 text-purple-800";
       case "completed":
         return "bg-green-100 text-green-800";
       case "failed":
@@ -342,7 +328,7 @@ export default function Payouts() {
   const getPayouttypeColor = (status) => {
     switch (status) {
       case "instant":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-purple-100 text-purple-800";
       default:
         return "bg-blue-100 text-blue-800";
     }
@@ -352,6 +338,7 @@ export default function Payouts() {
     if (filter === "all") return true;
     if (filter === "pending") return payout.status === "pending_payout";
     if (filter === "completed") return payout.status === "completed";
+    if (filter === "processing") return payout.status === "processing";
     if (filter === "failed") return payout.status === "failed";
     return true;
   });
@@ -434,6 +421,44 @@ export default function Payouts() {
       </div>
     );
   }
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentPayouts = filteredPayouts.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+  const totalPages = Math.ceil(filteredPayouts.length / itemsPerPage);
+  const generatePageNumbers = () => {
+    const delta = 1; // how many pages to show around current
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+
+    for (let i = 1; i <= totalPages; i++) {
+      if (
+        i === 1 ||
+        i === totalPages ||
+        (i >= currentPage - delta && i <= currentPage + delta)
+      ) {
+        range.push(i);
+      }
+    }
+
+    for (let i of range) {
+      if (l) {
+        if (i - l === 2) {
+          rangeWithDots.push(l + 1);
+        } else if (i - l !== 1) {
+          rangeWithDots.push("...");
+        }
+      }
+      rangeWithDots.push(i);
+      l = i;
+    }
+
+    return rangeWithDots;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -545,7 +570,10 @@ export default function Payouts() {
                   All ({payouts.length})
                 </button>
                 <button
-                  onClick={() => setFilter("pending")}
+                  onClick={() => {
+                    setFilter("pending");
+                    setCurrentPage(1);
+                  }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     filter === "pending"
                       ? "bg-yellow-100 text-yellow-700"
@@ -556,18 +584,37 @@ export default function Payouts() {
                   {payouts.filter((p) => p.status === "pending_payout").length})
                 </button>
                 <button
-                  onClick={() => setFilter("failed")}
+                  onClick={() => {
+                    setFilter("processing");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    filter === "processing"
+                      ? "bg-purple-100 text-purple-700"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  Processing (
+                  {payouts.filter((p) => p.status === "processing").length})
+                </button>
+                <button
+                  onClick={() => {
+                    setFilter("failed");
+                    setCurrentPage(1);
+                  }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     filter === "failed"
                       ? "bg-red-100 text-red-700"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
-                  Failed (
-                  {payouts.filter((p) => p.status === "failed").length})
+                  Failed ({payouts.filter((p) => p.status === "failed").length})
                 </button>
                 <button
-                  onClick={() => setFilter("completed")}
+                  onClick={() => {
+                    setFilter("completed");
+                    setCurrentPage(1);
+                  }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     filter === "completed"
                       ? "bg-green-100 text-green-700"
@@ -575,8 +622,7 @@ export default function Payouts() {
                   }`}
                 >
                   Completed (
-                  {payouts.filter((p) => p.status === "completed").length}
-                  )
+                  {payouts.filter((p) => p.status === "completed").length})
                 </button>
               </div>
             </div>
@@ -595,14 +641,14 @@ export default function Payouts() {
         </motion.div>
 
         {/* Payouts List */}
-        {filteredPayouts.length > 0 ? (
+        {currentPayouts.length > 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
             className="space-y-4"
           >
-            {payouts.map((payout, index) => (
+            {currentPayouts.map((payout, index) => (
               <motion.div
                 key={payout.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -671,7 +717,7 @@ export default function Payouts() {
                     <div className="mt-3 ml-8">
                       <button
                         onClick={() => toggleExpand(payout.id)}
-                        className="flex items-center text-sm text-purple-600 hover:text-purple-800 font-medium"
+                        className="flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium"
                       >
                         {expandedId === payout.id ? (
                           <>
@@ -768,7 +814,7 @@ export default function Payouts() {
 
                   {/* RIGHT SIDE ACTIONS */}
                   <div className="ml-6 flex flex-col items-end gap-2">
-                    {/* {payout.payoutStatus === "pending" && ( */}
+                    {/* {payout.status === "pending_payout" && ( */}
                     <button
                       onClick={() => handleInstantPayout(payout)}
                       disabled={
@@ -792,12 +838,11 @@ export default function Payouts() {
                     </button>
 
                     {/* )} */}
-
-                    {payout.status === "completed" && (
+                    {/* {payout.status === "completed" && (
                       <button className="text-gray-400 hover:text-gray-600">
                         <Download className="h-5 w-5" />
                       </button>
-                    )}
+                    )} */}
                   </div>
                 </div>
               </motion.div>
@@ -829,6 +874,100 @@ export default function Payouts() {
               </Link>
             )}
           </motion.div>
+        )}
+        {totalPages > 1 && (
+          <div className="flex justify-between items-center mt-6">
+            {/* Pagination Buttons */}
+            <div className="flex items-center space-x-2">
+              {/* First */}
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
+              >
+                {"First"}
+              </button>
+
+              {/* Previous */}
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
+              >
+                {"Prev"}
+              </button>
+
+              {/* Page Numbers */}
+              {generatePageNumbers().map((page, idx) =>
+                page === "..." ? (
+                  <span key={idx} className="px-2 py-1 text-gray-500">
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-3 py-1 rounded ${
+                      currentPage === page
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-200 hover:bg-gray-300"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
+
+              {/* Next */}
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
+              >
+                {"Next"}
+              </button>
+
+              {/* Last */}
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
+              >
+                {"Last"}
+              </button>
+            </div>
+
+            {/* Items Per Page Dropdown */}
+            <div className="flex items-center space-x-3">
+              <label
+                htmlFor="itemsPerPage"
+                className="text-lg font-normal text-gray-600"
+              >
+                Per page:
+              </label>
+              <select
+                id="itemsPerPage"
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1); // reset to first page when changing items per page
+                }}
+                className="w-24 px-3 py-2 border text-md font-normal border-gray-300 rounded-lg shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              >
+                {[5, 10, 20, 30, 40, 50, 100].map((num) => (
+                  <option
+                    key={num}
+                    value={num}
+                    className="text-gray-700 text-lg font-normal"
+                  >
+                    {num}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         )}
 
         {/* Standard Payout Info */}
@@ -941,8 +1080,8 @@ export default function Payouts() {
                               setSelectedPayoutMethod(e.target.value)
                             }
                             className="sr-only"
-                            placeholder="Select payout method"
                           />
+
                           <Icon
                             className={`h-5 w-5 mr-3 ${
                               selectedPayoutMethod === method.id
@@ -957,9 +1096,6 @@ export default function Payouts() {
                             <p className="text-sm text-gray-600">
                               {getPayoutMethodIdentifier(method.type, method) ||
                                 "No details available"}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              {method.displayInfo}
                             </p>
                           </div>
                           {method.id === defaultPayoutMethod && (

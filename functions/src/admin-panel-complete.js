@@ -14,12 +14,12 @@ const { DUMMY_GAMES } = require("./constants-configuration-fixed");
 
 // Payment tier configuration with payout percentages
 const TIER_CONFIG = {
-  tier_25: { amount: 25, name: "$25 Tier", payoutPercentage: 0.77 },
-  tier_50: { amount: 50, name: "$50 Tier", payoutPercentage: 0.77 },
-  tier_100: { amount: 100, name: "$100 Tier", payoutPercentage: 0.77 },
-  tier_250: { amount: 250, name: "$250 Tier", payoutPercentage: 0.8 },
-  tier_500: { amount: 500, name: "$500 Tier", payoutPercentage: 0.8 },
-  tier_1000: { amount: 1000, name: "$1000 Tier", payoutPercentage: 0.8 },
+  tier_25: { amount: 25, name: "$25 Tier", payoutPercentage: 0.64 },
+  tier_50: { amount: 50, name: "$50 Tier", payoutPercentage: 0.64 },
+  tier_100: { amount: 100, name: "$100 Tier", payoutPercentage: 0.64 },
+  tier_250: { amount: 250, name: "$250 Tier", payoutPercentage: 0.72 },
+  tier_500: { amount: 500, name: "$500 Tier", payoutPercentage: 0.72 },
+  tier_1000: { amount: 1000, name: "$1000 Tier", payoutPercentage: 0.72 },
 };
 
 // Game type definitions - Configure based on your league structure
@@ -441,7 +441,7 @@ exports.markQuarterWinners = functions.https.onCall(async (data, context) => {
     //         sport: game.sport,
     //         createdAt: admin.firestore.FieldValue.serverTimestamp(),
     //         markedBy: adminId,
-    //         payoutStatus: "pending",
+    //         status: "pending_payout",
     //         notificationStatus: "pending",
     //       });
 
@@ -627,7 +627,7 @@ exports.getPendingPayouts = functions.https.onCall(async (data, context) => {
     const winners = await admin
       .firestore()
       .collection("winners")
-      .where("payoutStatus", "==", "pending")
+      .where("status", "==", "pending_payout")
       .where("createdAt", ">=", startDate)
       .where("createdAt", "<=", endDate)
       .get();
@@ -1807,7 +1807,7 @@ async function exportWinners(filters) {
       score: winner.score,
       prizeAmount: winner.prizeAmount,
       tier: winner.tier,
-      payoutStatus: winner.payoutStatus,
+      status: winner.status,
       payoutType: winner.payoutType || "batch",
       payoutPercentage: winner.payoutPercentage,
       instantPayoutFee: winner.instantPayoutFee || 0,
