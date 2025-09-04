@@ -33,6 +33,7 @@ import {
 } from "firebase/firestore";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
+import { getFunctions, httpsCallable } from "firebase/functions";
 
 export default function AdminPayouts() {
   const [loading, setLoading] = useState(true);
@@ -272,49 +273,45 @@ export default function AdminPayouts() {
     }
   };
 
-  const exportForRelay = () => {
-  const exportData = payouts
-    .filter((p) => p.status === "pending" || p.status === "processing")
-    .map((payout) => ({
-      name: payout?.user?.displayName || "Square Trivia Winner",
-      email: payout?.user?.email || payout.email,
-      userId: payout.userId || "N/A",
-      amount: payout.prizeAmount,
-      reference: payout.id,
-      payoutType: payout.payoutType,
-      createdAt: payout.createdAt?.toDate?.().toISOString() || "",
-    }));
+ const exportForRelay = async () => {
+  try {
+    // Collect payoutIds of all eligible payouts
+    const payoutIds = payouts
+      .filter((p) => p.status === "pending" || p.status === "processing")
+      .map((p) => p.id);
 
-  // Escape CSV values
-  const escapeCSV = (value) => {
-    if (value == null) return "";
-    const str = String(value);
-    if (/[",\n]/.test(str)) {
-      return `"${str.replace(/"/g, '""')}"`;
+    if (payoutIds.length === 0) {
+      toast.error("No payouts available to export");
+      return;
     }
-    return str;
-  };
 
-  // Build CSV dynamically from object keys
-  const headers = Object.keys(exportData[0] || {});
-  const csv = [
-    headers,
-    ...exportData.map((row) => headers.map((key) => escapeCSV(row[key]))),
-  ]
-    .map((row) => row.join(","))
-    .join("\n");
+    // ✅ Call the backend function
+    const functions = getFunctions();
+    const generateRelayCSV = httpsCallable(functions, "generateRelayCSV");
 
-  // Add BOM for Excel
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-  const url = window.URL.createObjectURL(blob);
+    const { data } = await generateRelayCSV({ payoutIds });
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `relay-payouts-${new Date().toISOString().split("T")[0]}.csv`;
-  a.click();
-  a.remove();
+    // data.csv is returned from your function
+    const blob = new Blob(["\uFEFF" + data.csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = window.URL.createObjectURL(blob);
 
-  toast.success(`Exported ${exportData.length} payouts for Relay`);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `relay-payouts-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    a.remove();
+
+    toast.success(
+      `Exported ${data.summary.payoutCount} payouts (Total: ${formatCurrency(
+        data.summary.totalAmount
+      )})`
+    );
+  } catch (error) {
+    console.error("Export for Relay failed:", error);
+    toast.error("Failed to generate Relay CSV");
+  }
 };
 
 
