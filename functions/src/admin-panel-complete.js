@@ -174,15 +174,16 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
 
     if (sport === "NFL") {
       // --- NFL via API-Sports ---
-      const config = API_SPORTS_CONFIG[sport];
-      const url = `https://v1.american-football.api-sports.io/games`;
+      // const config = API_SPORTS_CONFIG[sport];
+      // const url = `https://v1.american-football.api-sports.io/games`;
 
-      const response = await axios.get(url, {
-        params: { league: config.leagueId, season: year },
-        headers: { "x-apisports-key": process.env.REACT_APP_APISPORTS_KEY },
-      });
+      // const response = await axios.get(url, {
+      //   params: { league: config.leagueId, season: year },
+      //   headers: { "x-apisports-key": process.env.REACT_APP_APISPORTS_KEY },
+      // });
 
-      games = response.data?.response || [];
+      // games = response.data?.response || [];
+      games = DUMMY_GAMES || [];
 
       // filter Regular Season
       games = games.filter((g) => g.game.stage === "Regular Season");

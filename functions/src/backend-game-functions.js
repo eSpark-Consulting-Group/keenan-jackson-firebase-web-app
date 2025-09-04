@@ -634,7 +634,8 @@ async function cleanupOldClaims(boardId, board, currentQuarter, game) {
     const hasOldClaim = square.claims.some((c) => {
       const qKey = `q${c.currentQuarter}`;
       return (
-        c.currentQuarter < currentQuarter &&
+        (c.currentQuarter < currentQuarter || // older quarters
+          (c.currentQuarter === 4 && game.status === "completed")) && // Q4 when game over
         game.quarterScores?.[qKey]?.processed === true
       );
     });

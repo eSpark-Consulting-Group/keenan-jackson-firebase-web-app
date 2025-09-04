@@ -112,24 +112,25 @@ class ApiSportsService {
 
       if (sport === "NFL") {
         // --- NFL: Single game from API-Sports ---
-        const url = `https://v1.american-football.api-sports.io/games`;
-        logger.info(`[fetchGameScore][NFL] Fetching single game`, {
-          url,
-          gameId,
-        });
+        // const url = `https://v1.american-football.api-sports.io/games`;
+        // logger.info(`[fetchGameScore][NFL] Fetching single game`, {
+        //   url,
+        //   gameId,
+        // });
 
-        const response = await axios.get(url, {
-          params: { id: gameId },
-          headers: {
-            "x-apisports-key": process.env.REACT_APP_APISPORTS_KEY,
-          },
-        });
+        // const response = await axios.get(url, {
+        //   params: { id: gameId },
+        //   headers: {
+        //     "x-apisports-key": process.env.REACT_APP_APISPORTS_KEY,
+        //   },
+        // });
 
-        logger.info(`[fetchGameScore][NFL] API raw response length`, {
-          count: response.data?.response?.length,
-        });
+        // logger.info(`[fetchGameScore][NFL] API raw response length`, {
+        //   count: response.data?.response?.length,
+        // });
 
-        apiGame = response.data?.response?.[0] || null;
+        // apiGame = response.data?.response?.[0] || null;
+        apiGame = DUMMY_GAMES || null;
       } else if (sport === "CFB") {
         // --- CFB: Single game from ESPN ---
         const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary`;
@@ -265,18 +266,21 @@ class ApiSportsService {
   /**
    * Parse API response into standard format
    */
-  parseGameData(apiGame, sport) {
+  async parseGameData(apiGame, sport) {
     logger.info("API GAME IN PARSE GAME ", { apiGame });
 
     const game = apiGame.game;
     const teams = apiGame.teams;
     const scores = apiGame.scores;
+    // const game = apiGame[0]?.game;
+    // const teams = apiGame[0]?.teams;
+    // const scores = apiGame[0]?.scores;
 
     logger.info("GAMMME parse Game: ", { game, teams, scores });
 
     // Map status
     const statusMap = {
-      // NS: "scheduled",
+      NS: "scheduled",
       Q1: "active",
       Q2: "active",
       Q3: "active",
@@ -290,7 +294,33 @@ class ApiSportsService {
       SUSP: "cancelled",
     };
     const statusShort = game?.status?.short;
-    const gameStatus = statusMap[statusShort];
+    let gameStatus = statusMap[statusShort];
+
+    logger.info("GAME STATUS: ", { gameStatus, id: game?.id });
+
+    const db = admin.firestore();
+
+    const snapshot = await db
+      .collection("games")
+      .where("externalGameId", "==", String(game?.id))
+      .get();
+
+    if (snapshot.empty) {
+      logger.info("No active game found", {
+        id: game?.id,
+        type: typeof game?.id,
+      });
+    } else {
+      // If you expect only one match, take the first doc
+      const activeGameDoc = snapshot.docs[0];
+      const activeGameData = activeGameDoc.data();
+
+      if (activeGameData?.status === "active" && gameStatus === "scheduled") {
+        gameStatus = "active";
+      }
+      logger.info("GAME FOUND ", { activeGameData, id: game?.id });
+    }
+    logger.info("GAME STATUS 2: ", { gameStatus, id: game?.id });
 
     // Parse quarter scores
     const quarterScores = {};
@@ -343,7 +373,7 @@ class ApiSportsService {
 
     return {
       apiSportsId: game?.id,
-      // status: gameStatus,
+      status: gameStatus,
       currentQuarter,
       quarterScores,
       totalScore,
@@ -518,7 +548,7 @@ async function monitorSingleGame(db, gameDoc) {
     // Update game with latest data
     const updates = {
       lastApiCheck: getTimestamp(),
-      lastApiStatus: liveData.status,
+      lastApiStatus: game?.status?.short ?? null,
       apiCheckCount: admin.firestore.FieldValue.increment(1),
       currentQuarter: liveData.currentQuarter || game?.currentQuarter || 1,
     };
@@ -808,7 +838,7 @@ const activateNext7DaysGames = functions.pubsub
       // Find upcoming games that start within the next 7 days
       const upcomingGames = await db
         .collection("games")
-        .where("status", "==", GAME_CONFIG.STATUS.UPCOMING)
+        // .where("status", "==", GAME_CONFIG.STATUS.UPCOMING)
         .where("gameDate", ">=", now)
         .where("gameDate", "<=", sevenDaysAhead)
         .get();
