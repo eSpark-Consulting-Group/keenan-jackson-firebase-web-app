@@ -61,7 +61,7 @@ export default function Payouts() {
   const [selectedPayoutMethod, setSelectedPayoutMethod] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const generatePDF = () => {
     const creationDate = new Date().toLocaleDateString();
@@ -570,7 +570,10 @@ export default function Payouts() {
                   All ({payouts.length})
                 </button>
                 <button
-                  onClick={() => setFilter("pending")}
+                  onClick={() => {
+                    setFilter("pending");
+                    setCurrentPage(1);
+                  }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     filter === "pending"
                       ? "bg-yellow-100 text-yellow-700"
@@ -581,7 +584,10 @@ export default function Payouts() {
                   {payouts.filter((p) => p.status === "pending_payout").length})
                 </button>
                 <button
-                  onClick={() => setFilter("processing")}
+                  onClick={() => {
+                    setFilter("processing");
+                    setCurrentPage(1);
+                  }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     filter === "processing"
                       ? "bg-purple-100 text-purple-700"
@@ -592,7 +598,10 @@ export default function Payouts() {
                   {payouts.filter((p) => p.status === "processing").length})
                 </button>
                 <button
-                  onClick={() => setFilter("failed")}
+                  onClick={() => {
+                    setFilter("failed");
+                    setCurrentPage(1);
+                  }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     filter === "failed"
                       ? "bg-red-100 text-red-700"
@@ -602,7 +611,10 @@ export default function Payouts() {
                   Failed ({payouts.filter((p) => p.status === "failed").length})
                 </button>
                 <button
-                  onClick={() => setFilter("completed")}
+                  onClick={() => {
+                    setFilter("completed");
+                    setCurrentPage(1);
+                  }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     filter === "completed"
                       ? "bg-green-100 text-green-700"
@@ -826,12 +838,11 @@ export default function Payouts() {
                     </button>
 
                     {/* )} */}
-
-                    {payout.status === "completed" && (
+                    {/* {payout.status === "completed" && (
                       <button className="text-gray-400 hover:text-gray-600">
                         <Download className="h-5 w-5" />
                       </button>
-                    )}
+                    )} */}
                   </div>
                 </div>
               </motion.div>
@@ -865,65 +876,97 @@ export default function Payouts() {
           </motion.div>
         )}
         {totalPages > 1 && (
-          <div className="flex justify-center items-center mt-6 space-x-1">
-            {/* First */}
-            <button
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-              className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
-            >
-              {"First"}
-            </button>
+          <div className="flex justify-between items-center mt-6">
+            {/* Pagination Buttons */}
+            <div className="flex items-center space-x-2">
+              {/* First */}
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
+              >
+                {"First"}
+              </button>
 
-            {/* Previous */}
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
-            >
-              {"Prev"}
-            </button>
+              {/* Previous */}
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
+              >
+                {"Prev"}
+              </button>
 
-            {/* Page Numbers */}
-            {generatePageNumbers().map((page, idx) =>
-              page === "..." ? (
-                <span key={idx} className="px-2 py-1 text-gray-500">
-                  ...
-                </span>
-              ) : (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentPage(page)}
-                  className={`px-3 py-1 rounded ${
-                    currentPage === page
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 hover:bg-gray-300"
-                  }`}
-                >
-                  {page}
-                </button>
-              )
-            )}
+              {/* Page Numbers */}
+              {generatePageNumbers().map((page, idx) =>
+                page === "..." ? (
+                  <span key={idx} className="px-2 py-1 text-gray-500">
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-3 py-1 rounded ${
+                      currentPage === page
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-200 hover:bg-gray-300"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
 
-            {/* Next */}
-            <button
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-              disabled={currentPage === totalPages}
-              className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
-            >
-              {"Next"}
-            </button>
+              {/* Next */}
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
+              >
+                {"Next"}
+              </button>
 
-            {/* Last */}
-            <button
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages}
-              className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
-            >
-              {"Last"}
-            </button>
+              {/* Last */}
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
+              >
+                {"Last"}
+              </button>
+            </div>
+
+            {/* Items Per Page Dropdown */}
+            <div className="flex items-center space-x-3">
+              <label
+                htmlFor="itemsPerPage"
+                className="text-lg font-normal text-gray-600"
+              >
+                Per page:
+              </label>
+              <select
+                id="itemsPerPage"
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1); // reset to first page when changing items per page
+                }}
+                className="w-24 px-3 py-2 border text-md font-normal border-gray-300 rounded-lg shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              >
+                {[5, 10, 20, 30, 40, 50, 100].map((num) => (
+                  <option
+                    key={num}
+                    value={num}
+                    className="text-gray-700 text-lg font-normal"
+                  >
+                    {num}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
 
