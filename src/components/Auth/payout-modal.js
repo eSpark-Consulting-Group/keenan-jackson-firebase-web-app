@@ -139,13 +139,13 @@ const PayoutModal = ({ isOpen, onClose }) => {
 
               {method &&
                 payoutFields[method].map((field) => (
-                  <div key={field.name}>
+                  <div key={field?.name}>
                     <label className="block text-gray-700 font-medium mb-1">
-                      {field.label}
+                      {field?.label}
                     </label>
                     <input
-                      type={field.type}
-                      name={field.name}
+                      type={field?.type}
+                      name={field?.name}
                       value={formData[field.name] || ""}
                       onChange={handleChange}
                       className="w-full border rounded-lg p-2"

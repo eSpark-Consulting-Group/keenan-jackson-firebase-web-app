@@ -741,10 +741,16 @@ const winningUser = query(
       where("userId", "==", userId)
     );
     functions.logger.info("User Query:", { winningUser });
+    const gameSnap = await db.collection("games").doc(gameId).get();
+    if (!gameSnap.exists) {
+      throw new functions.https.HttpsError("not-found", "Game not found");
+    }
+    const game = gameSnap.data();
   // Create winner record
   const winnerRef = await db.collection("winners").add({
-    userId,
+    userId: winningUser.uid,
     user: winningUser,
+    game: game,
     gameId,
     boardId,
     quarter,

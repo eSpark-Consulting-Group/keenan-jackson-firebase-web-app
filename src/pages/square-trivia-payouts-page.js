@@ -182,7 +182,7 @@ export default function Payouts() {
 
       const payoutsQuery = query(
         collection(db, collections.winners),
-        where("userId", "==", user.uid),
+        where("userId", "==", user.uid),   
         orderBy("createdAt", "desc")
       );
 
