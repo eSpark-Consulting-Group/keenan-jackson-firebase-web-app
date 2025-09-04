@@ -23,12 +23,12 @@ const mailTransport = nodemailer.createTransport({
 // CONSTANTS
 // =====================================
 const TIER_CONFIG = {
-  tier_25: { amount: 25, name: "$25 Tier", payoutPercentage: 0.77 },
-  tier_50: { amount: 50, name: "$50 Tier", payoutPercentage: 0.77 },
-  tier_100: { amount: 100, name: "$100 Tier", payoutPercentage: 0.77 },
-  tier_250: { amount: 250, name: "$250 Tier", payoutPercentage: 0.8 },
-  tier_500: { amount: 500, name: "$500 Tier", payoutPercentage: 0.8 },
-  tier_1000: { amount: 1000, name: "$1000 Tier", payoutPercentage: 0.8 },
+  tier_25: { amount: 25, name: "$25 Tier", payoutPercentage: 0.64 },
+  tier_50: { amount: 50, name: "$50 Tier", payoutPercentage: 0.64 },
+  tier_100: { amount: 100, name: "$100 Tier", payoutPercentage: 0.64 },
+  tier_250: { amount: 250, name: "$250 Tier", payoutPercentage: 0.72 },
+  tier_500: { amount: 500, name: "$500 Tier", payoutPercentage: 0.72 },
+  tier_1000: { amount: 1000, name: "$1000 Tier", payoutPercentage: 0.72 },
 };
 
 const PAYOUT_STATUS = {
