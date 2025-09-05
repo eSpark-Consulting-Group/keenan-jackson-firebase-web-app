@@ -441,6 +441,9 @@ exports.determineWinners = functions.pubsub
                     position,
                     tierId: board.tierId,
                     answerTime: onlyClaim.answerTime,
+                    reportedOn1099: false,
+                    processedBy: "system",
+                    notificationStatus: "pending",
                     isSoloWin: true,
                   });
                 });
@@ -499,6 +502,7 @@ exports.determineWinners = functions.pubsub
                   await processWinner({
                     userId: winner.userId,
                     gameId,
+                    gameInfo: game,
                     boardId,
                     quarter,
                     position,
@@ -722,8 +726,23 @@ exports.cleanupClaims = functions.pubsub
 
 // Helper function to process winner
 async function processWinner(winnerData) {
-  const { userId, gameId, boardId, quarter, position, tierId, answerTime } =
-    winnerData;
+  const {
+    userId,
+    gameId,
+    boardId,
+    quarter,
+    position,
+    tierId,
+    answerTime,
+    isSoloWin,
+    claimId,
+    notificationStatus,
+    reportedOn1099,
+    opponentTime,
+    instantPayoutFee,
+    consolationSquareGranted,
+    processedBy,
+  } = winnerData;
 
   // Get tier info for prize amount
   const tierAmounts = {
@@ -736,21 +755,29 @@ async function processWinner(winnerData) {
   };
 
   const prizeAmount = tierAmounts[tierId]?.quarter || 0;
-const winningUser = query(
-      collection(db, "users"),
-      where("userId", "==", userId)
-    );
-    functions.logger.info("User Query:", { winningUser });
-    const gameSnap = await db.collection("games").doc(gameId).get();
-    if (!gameSnap.exists) {
-      throw new functions.https.HttpsError("not-found", "Game not found");
-    }
-    const game = gameSnap.data();
+  const winningUser = query(
+    collection(db, "users"),
+    where("userId", "==", userId)
+  );
+  functions.logger.info("User Query:", { winningUser });
+  const gameSnap = await db.collection("games").doc(gameId).get();
+  if (!gameSnap.exists) {
+    throw new functions.https.HttpsError("not-found", "Game not found");
+  }
+  const game = gameSnap.data();
   // Create winner record
   const winnerRef = await db.collection("winners").add({
     userId: winningUser.uid,
     user: winningUser,
-    game: game,
+    gameInfo: game,
+    isSoloWin: isSoloWin || false,
+    claimId: claimId || null,
+    notificationStatus: notificationStatus || "pending",
+    reportedOn1099: reportedOn1099 || false,
+    opponentTime: opponentTime || null,
+    instantPayoutFee: instantPayoutFee || null,
+    consolationSquareGranted: consolationSquareGranted || false,
+    processedBy: processedBy || null,
     gameId,
     boardId,
     quarter,
