@@ -1411,4 +1411,5 @@ module.exports = {
   handleFailedPayment,
   handleRefund,
   grantTelegramAccess,
+  sendMail,
 };

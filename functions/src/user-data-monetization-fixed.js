@@ -97,6 +97,7 @@ async function sendTelegramNotification(chatId, message) {
 const API_SPORTS_CONFIG = {
   NFL: {
     endpoint: "/v3/nfl/scores/json/ScoresByWeek",
+    leagueId: 1,
   },
   CFB: {
     endpoint: "/v3/cfb/scores/json/GamesByWeek",
@@ -856,7 +857,8 @@ exports.checkCancelledGames = functions.pubsub
   .onRun(async (context) => {
     const db = admin.firestore();
     const now = new Date();
-    const year = now.getFullYear();
+    // const year = now.getFullYear();
+    const year = 2021;
 
     try {
       logger.info("checkCancelledGames started");
@@ -876,32 +878,70 @@ exports.checkCancelledGames = functions.pubsub
         const { externalGameId, week, sport } = game;
         if (!externalGameId) continue;
 
-        const config = API_SPORTS_CONFIG[sport];
-
         logger.info(
           `🔎 Checking game ${gameDoc.id} (extId: ${externalGameId}, week: ${week}, sport: ${sport})`
         );
 
-        // Call SportsData API
-        const url = `https://api.sportsdata.io${config.endpoint}/${year}/${week}?key=${process.env.REACT_APP_APISPORTS_KEY}`;
-        const res = await fetch(url);
-        const gamesList = await res.json();
+        let apiGame = null;
 
-        logger.info(
-          `📡 API returned ${gamesList?.length || 0} games for week ${week}`
-        );
+        if (sport === "NFL") {
+          // --- NFL via API-Sports ---
+          const config = API_SPORTS_CONFIG[sport];
+          const url = `https://v1.american-football.api-sports.io/games?league=${config.leagueId}&season=${year}`;
 
-        const apiGame = gamesList.find((g) =>
-          sport === "NFL"
-            ? g.GameKey === externalGameId
-            : g.GameID === externalGameId
-        );
+          const res = await fetch(url, {
+            headers: { "X-RapidAPI-Key": process.env.REACT_APP_APISPORTS_KEY },
+          });
+          const data = await res.json();
+          const gamesList = data.response || [];
+
+          logger.info(
+            `📡 API returned ${gamesList.length} games for league ${config.leagueId}`
+          );
+
+          apiGame = gamesList.find(
+            (g) => g.game.id.toString() === externalGameId.toString()
+          );
+        } else if (sport === "CFB") {
+          // --- CFB via ESPN ---
+          const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard`;
+          const res = await fetch(
+            `${url}?week=${week}&year=${year}&seasontype=2`,
+            { headers: { accept: "application/json" } }
+          );
+          const data = await res.json();
+
+          const events = data.events || [];
+          logger.info(`📡 ESPN returned ${events.length} games for CFB`);
+
+          apiGame = events.find(
+            (e) => e.id.toString() === externalGameId.toString()
+          );
+
+          // normalize ESPN -> API shape (so cancellation check works)
+          if (apiGame) {
+            apiGame = {
+              game: {
+                id: apiGame.id,
+                status: {
+                  long: apiGame.competitions?.[0]?.status?.type?.description,
+                },
+              },
+            };
+          }
+        }
+
+        logger.info("Game:", { apiGame });
         if (!apiGame) {
           logger.info(`⚠️ API did not return game ${externalGameId}`);
           continue;
         }
 
-        if (apiGame.Status === "Canceled") {
+        // Check if the game is cancelled
+        if (
+          apiGame.game.status?.long === "Canceled" ||
+          apiGame.game.status?.long === "Cancelled"
+        ) {
           logger.info(`❌ Game ${gameDoc.id} is cancelled. Refunding tiers...`);
 
           const batch = db.batch();
@@ -929,8 +969,6 @@ exports.checkCancelledGames = functions.pubsub
                 if (!userId || !tierId) return;
 
                 const userRef = db.collection("users").doc(userId);
-
-                // Push tierId back into currentTiers array
                 batch.update(userRef, {
                   currentTiers: admin.firestore.FieldValue.arrayUnion(tierId),
                 });
@@ -953,7 +991,7 @@ exports.checkCancelledGames = functions.pubsub
         }
       }
     } catch (error) {
-      logError(error, { context: "checkCancelledGames" });
+      logger.error("Error in Checking Cancel Game: ", { error });
     }
   });
 
