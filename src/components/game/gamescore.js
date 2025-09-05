@@ -1,27 +1,35 @@
-import { motion } from 'framer-motion';
-import { Clock, Trophy } from 'lucide-react';
+import { motion } from "framer-motion";
+import { Clock, Trophy } from "lucide-react";
 
-export default function GameScore({ 
-  homeTeam, 
-  awayTeam, 
-  homeScore, 
-  awayScore, 
+export default function GameScore({
+  homeTeam,
+  awayTeam,
+  homeScore,
+  awayScore,
   quarter,
   timeRemaining,
-  isLive = true
+  isLive = true,
 }) {
   const getQuarterDisplay = () => {
-    if (!quarter) return 'Pre-Game';
-    
+    if (!quarter) return "Pre-Game";
+
     switch (quarter) {
-      case 1: return '1st Quarter';
-      case 2: return '2nd Quarter';
-      case 3: return '3rd Quarter';
-      case 4: return '4th Quarter';
-      case 5: return 'Overtime';
-      case 'F': return 'Final';
-      case 'HT': return 'Halftime';
-      default: return quarter;
+      case 1:
+        return "1st Quarter";
+      case 2:
+        return "2nd Quarter";
+      case 3:
+        return "3rd Quarter";
+      case 4:
+        return "4th Quarter";
+      case 5:
+        return "Overtime";
+      case "F":
+        return "Final";
+      case "HT":
+        return "Halftime";
+      default:
+        return quarter;
     }
   };
 
@@ -32,44 +40,46 @@ export default function GameScore({
   const getWinningPositions = () => {
     const homeDigit = getLastDigit(homeScore);
     const awayDigit = getLastDigit(awayScore);
-    
+
     const positions = [];
     positions.push(`(${awayDigit}, ${homeDigit})`);
-    
+
     if (homeDigit !== awayDigit) {
       positions.push(`(${homeDigit}, ${awayDigit})`);
     }
-    
+
     return positions;
   };
 
   const winningPositions = getWinningPositions();
 
   return (
-    <div className="bg-gray-900 text-white rounded-lg p-4 min-w-[300px]">
+    <div className="bg-gray-900 text-white rounded-lg p-3 sm:p-4 w-full max-w-md mx-auto">
       {/* Quarter and time */}
       <div className="text-center mb-3">
-        <div className="text-sm text-gray-400 mb-1">{getQuarterDisplay()}</div>
+        <div className="text-xs sm:text-sm text-gray-400 mb-1">
+          {getQuarterDisplay()}
+        </div>
         {timeRemaining && (
-          <div className="flex items-center justify-center text-sm">
-            <Clock className="h-4 w-4 mr-1" />
+          <div className="flex items-center justify-center text-xs sm:text-sm">
+            <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
             <span>{timeRemaining}</span>
           </div>
         )}
       </div>
 
       {/* Scores */}
-      <div className="grid grid-cols-3 gap-4 items-center mb-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 items-center mb-4">
         {/* Away team */}
         <div className="text-right">
-          <div className="text-sm text-gray-400 mb-1">Away</div>
-          <div className="font-semibold">{awayTeam}</div>
+          <div className="text-xs sm:text-sm text-gray-400 mb-1">Away</div>
+          <div className="font-semibold text-sm sm:text-base">{awayTeam}</div>
         </div>
 
         {/* Score display */}
         <div className="text-center">
-          <motion.div 
-            className="text-3xl font-bold flex items-center justify-center space-x-2"
+          <motion.div
+            className="text-2xl sm:text-3xl font-bold flex items-center justify-center space-x-2"
             key={`${awayScore}-${homeScore}`}
             initial={{ scale: 1.2 }}
             animate={{ scale: 1 }}
@@ -79,9 +89,9 @@ export default function GameScore({
             <span className="text-gray-500">-</span>
             <span>{homeScore}</span>
           </motion.div>
-          
+
           {/* Last digits */}
-          <div className="flex items-center justify-center space-x-2 mt-1 text-sm">
+          <div className="flex items-center justify-center space-x-2 mt-1 text-xs sm:text-sm">
             <span className="text-gray-400">Last digits:</span>
             <span className="font-mono bg-gray-800 px-2 py-1 rounded">
               {getLastDigit(awayScore)}-{getLastDigit(homeScore)}
@@ -91,28 +101,28 @@ export default function GameScore({
 
         {/* Home team */}
         <div className="text-left">
-          <div className="text-sm text-gray-400 mb-1">Home</div>
-          <div className="font-semibold">{homeTeam}</div>
+          <div className="text-xs sm:text-sm text-gray-400 mb-1">Home</div>
+          <div className="font-semibold text-sm sm:text-base">{homeTeam}</div>
         </div>
       </div>
 
       {/* Winning squares indicator */}
       <div className="border-t border-gray-800 pt-3">
-        <div className="flex items-center justify-center text-sm">
-          <Trophy className="h-4 w-4 text-yellow-500 mr-2" />
+        <div className="flex flex-wrap items-center justify-center text-xs sm:text-sm text-center">
+          <Trophy className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500 mr-1 sm:mr-2" />
           <span className="text-gray-400 mr-1">Winning squares:</span>
           <span className="font-mono text-yellow-500">
-            {winningPositions.join(' & ')}
+            {winningPositions.join(" & ")}
           </span>
         </div>
-        
+
         {isLive && (
-          <motion.div 
+          <motion.div
             className="mt-2 text-center"
             animate={{ opacity: [1, 0.5, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
-            <span className="text-xs bg-green-600 text-white px-2 py-1 rounded-full">
+            <span className="text-[10px] sm:text-xs bg-green-600 text-white px-2 py-0.5 sm:py-1 rounded-full">
               LIVE
             </span>
           </motion.div>

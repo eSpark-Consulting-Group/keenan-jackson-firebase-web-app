@@ -92,7 +92,9 @@ export default function SquareGrid({
     if (!squareData || !squareData.claims || squareData.claims.length === 0) {
       return (
         <div className="w-[77px] h-[71px] flex flex-col items-center justify-center">
-          <div className="text-2xl font-bold text-gray-400">{`${row}-${col}`}</div>
+          <div className="text-lg sm:text-xl md:text-2xl font-bold text-gray-400">
+            {`${row}-${col}`}
+          </div>
           {hoveredSquare === position && (
             <div className="text-xs text-center text-gray-500 mt-1">
               Click to claim
@@ -199,7 +201,7 @@ export default function SquareGrid({
           <p className="text-sm text-gray-600">
             Click on available squares to claim them with trivia
           </p>
-          <div className="flex items-center space-x-4 text-xs">
+          <div className="flex flex-wrap justify-center gap-4 md:justify-start text-xs">
             <div className="flex items-center">
               <div className="w-4 h-4 bg-white border-2 border-gray-300 rounded mr-1"></div>
               <span>Available</span>
@@ -281,7 +283,7 @@ export default function SquareGrid({
           );
         })}
         {/* Away team label */}
-        <div className="absolute -left-[3.4rem] top-1/2 -translate-y-1/2 -rotate-90 text-sm font-semibold text-gray-700">
+        <div className="absolute -left-[6.4rem] top-1/2 -translate-y-1/2 -rotate-90 text-sm font-semibold text-gray-700">
           ← {`${game?.teams?.away} Team` || "Away Team"}
         </div>
       </div>
