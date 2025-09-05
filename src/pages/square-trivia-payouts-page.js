@@ -768,45 +768,13 @@ export default function Payouts() {
                                 </span>
                               </div>
                             )}
-
-                            <p className="text-sm text-gray-700">
-                              <span className="font-semibold">
-                                Reported on 1099:
-                              </span>{" "}
-                              {payout.reportedOn1099 ? "Yes" : "No"}
-                            </p>
                             <p className="text-sm text-gray-700">
                               <span className="font-semibold">
                                 Winner Answer Time:
                               </span>{" "}
                               {payout.answerTime} ms
                             </p>
-                            <p className="text-sm text-gray-700">
-                              <span className="font-semibold">
-                                Instant Payout Fee:
-                              </span>{" "}
-                              {payout.instantPayoutFee
-                                ? "Granted"
-                                : "Not Granted"}
-                            </p>
-                            <p className="text-sm text-gray-700">
-                              <span className="font-semibold">
-                                Consolation Square:
-                              </span>{" "}
-                              {payout.consolationSquareGranted
-                                ? "Granted"
-                                : "Not Granted"}
-                            </p>
-
-                            {payout.processedBy && (
-                              <p className="text-sm text-gray-700">
-                                <span className="font-semibold">
-                                  Processed By:
-                                </span>{" "}
-                                {payout.processedBy}
-                              </p>
-                            )}
-                          </div>
+                        </div>
                         </motion.div>
                       )}
                     </div>
