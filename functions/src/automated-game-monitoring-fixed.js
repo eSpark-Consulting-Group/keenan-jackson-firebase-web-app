@@ -846,7 +846,7 @@ const activateNext7DaysGames = functions.pubsub
       // Find upcoming games that start within the next 7 days
       const upcomingGames = await db
         .collection("games")
-        // .where("status", "==", GAME_CONFIG.STATUS.UPCOMING)
+        .where("status", "==", GAME_CONFIG.STATUS.UPCOMING)
         .where("gameDate", ">=", now)
         .where("gameDate", "<=", sevenDaysAhead)
         .get();
