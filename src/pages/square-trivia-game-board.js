@@ -21,7 +21,14 @@ import {
   GAME_CONFIG,
   callFunction,
 } from "../firebase/config";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  query,
+  where,
+} from "firebase/firestore";
 import TriviaModal from "../components/game/triviamodal";
 import SquareGrid from "../components/game/squaregrid";
 import GameScore from "../components/game/gamescore";
@@ -31,6 +38,7 @@ export default function GameBoard() {
   const { boardId } = useParams();
   const navigate = useNavigate();
   const { user, userData } = useAuth();
+  const [winners, setWinners] = useState([]);
 
   const [board, setBoard] = useState(null);
   const [game, setGame] = useState(null);
@@ -160,7 +168,7 @@ export default function GameBoard() {
 
           // Update scores and winning squares
           if (gameData.quarterScores[latest]) {
-            console.log("REAL TIME CALLED");
+            // console.log("REAL TIME CALLED");
             setScores(gameData.quarterScores[latest]);
             updateWinningSquares(gameData.quarterScores[latest]);
           }
@@ -177,8 +185,8 @@ export default function GameBoard() {
   const updateWinningSquares = (currentScores) => {
     const homeLastDigit = (currentScores.home || 0) % 10;
     const awayLastDigit = (currentScores.away || 0) % 10;
-    console.log(homeLastDigit, "HOME");
-    console.log(awayLastDigit, "AWAY");
+    // console.log(homeLastDigit, "HOME");
+    // console.log(awayLastDigit, "AWAY");
 
     const winningPositions = [];
 
@@ -191,7 +199,7 @@ export default function GameBoard() {
       const pos2 = getPositionFromDigits(homeLastDigit, awayLastDigit, true);
       if (pos2 !== null) winningPositions.push(pos2);
     }
-    console.log(winningPositions);
+    // console.log(winningPositions);
 
     setWinningSquares(winningPositions);
   };
@@ -320,6 +328,56 @@ export default function GameBoard() {
   const remaining = Math.min(Math.max(userData.dailyTriviaAttempts, 0), total);
   const percentRemaining = total === 0 ? 0 : (remaining / total) * 100;
 
+  useEffect(() => {
+    if (!boardId) return;
+
+    // Query winners by boardId
+    const q = query(collection(db, "winners"), where("boardId", "==", boardId));
+
+    // Real-time listener
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const tempWinners = [];
+
+      for (const docSnap of snapshot.docs) {
+        const winnerData = docSnap.data();
+        const userId = winnerData.userId;
+
+        // fetch user details
+        const userRef = doc(db, "users", userId);
+        const userDoc = await getDoc(userRef);
+
+        let displayName;
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData.displayName) {
+            displayName = userData.displayName;
+          } else if (userData.email) {
+            displayName = `User ${userData.email}`;
+          } else {
+            displayName = "Unknown User";
+          }
+        } else {
+          displayName = "Unknown User";
+        }
+
+        tempWinners.push({
+          id: docSnap.id,
+          ...winnerData,
+          displayName,
+        });
+      }
+
+      setWinners(tempWinners);
+    });
+
+    // cleanup on unmount
+    return () => unsubscribe();
+  }, [boardId]);
+
+  useEffect(() => {
+    console.log(winners);
+  }, [winners]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -365,7 +423,7 @@ export default function GameBoard() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {game?.teams.away || "TBA"} @ {game?.teams?.home  || "TBA"}
+                {game?.teams.away || "TBA"} @ {game?.teams?.home || "TBA"}
               </h1>
               <div className="flex items-center space-x-4 text-sm text-gray-600">
                 <span
@@ -442,6 +500,44 @@ export default function GameBoard() {
             transition={{ delay: 0.3 }}
             className="space-y-6"
           >
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center">
+                <Trophy className="h-5 w-5 mr-2 text-yellow-400" />
+                Board Winners
+              </h3>
+
+              {winners && winners.length > 0 ? (
+                <ul className="space-y-3">
+                  {winners.map((win) => (
+                    <li
+                      key={win.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between border rounded-lg p-3"
+                    >
+                      <div>
+                        <p className="font-medium text-gray-800">
+                          {win.displayName}
+                        </p>
+                        <p className="text-sm text-gray-500">{win.email}</p>
+                      </div>
+                      <div className="mt-2 sm:mt-0">
+                        {win.isFastest ? (
+                          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700">
+                            🏆 Board Winner
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">
+                            Quarter {win.quarter}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500">No winners yet.</p>
+              )}
+            </div>
+
             {/* Your Squares */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-lg font-semibold mb-4 flex items-center">
