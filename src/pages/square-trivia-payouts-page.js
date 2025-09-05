@@ -182,7 +182,7 @@ export default function Payouts() {
 
       const payoutsQuery = query(
         collection(db, collections.winners),
-        where("userId", "==", user.uid),   
+        where("userId", "==", user.uid),
         orderBy("createdAt", "desc")
       );
 
@@ -752,7 +752,12 @@ export default function Payouts() {
                               <span className="font-semibold">Claim ID:</span>{" "}
                               {payout.claimId || "Not claimed yet"}
                             </p>
-
+                            <p className="text-sm text-gray-700">
+                              <span className="font-semibold">
+                                Instant Payout Fee:
+                              </span>
+                              {payout.payoutType === "instant" ? formatCurrency(payout.prizeAmount * 0.04) : "Not Applied"  }
+                            </p>
                             <p className="text-sm text-gray-700 col-span-2">
                               <span className="font-semibold">
                                 Notification Status:
@@ -774,7 +779,7 @@ export default function Payouts() {
                               </span>{" "}
                               {payout.answerTime} ms
                             </p>
-                        </div>
+                          </div>
                         </motion.div>
                       )}
                     </div>
@@ -1142,7 +1147,6 @@ export default function Payouts() {
                   X{/* <X className="h-5 w-5" /> */}
                 </button>
               </div>
-
               <div className="p-6">
                 <PayoutMethods
                   embedded={true}
