@@ -100,8 +100,6 @@ class ApiSportsService {
    * Fetch game score from API-Sports
    */
   async fetchGameScore(gameId, sport, week = 1) {
-    // logger.info(`[fetchGameScore] Called`, { gameId, sport, week });
-
     if (!gameId) throw new Error("No gameId provided");
 
     const config = SPORTS_CONFIG[sport];
@@ -112,25 +110,24 @@ class ApiSportsService {
 
       if (sport === "NFL") {
         // --- NFL: Single game from API-Sports ---
-        // const url = `https://v1.american-football.api-sports.io/games`;
-        // logger.info(`[fetchGameScore][NFL] Fetching single game`, {
-        //   url,
-        //   gameId,
-        // });
+        const url = `https://v1.american-football.api-sports.io/games`;
+        logger.info(`[fetchGameScore][NFL] Fetching single game`, {
+          url,
+          gameId,
+        });
 
-        // const response = await axios.get(url, {
-        //   params: { id: gameId },
-        //   headers: {
-        //     "x-apisports-key": process.env.REACT_APP_APISPORTS_KEY,
-        //   },
-        // });
+        const response = await axios.get(url, {
+          params: { id: gameId },
+          headers: {
+            "x-apisports-key": process.env.REACT_APP_APISPORTS_KEY,
+          },
+        });
 
-        // logger.info(`[fetchGameScore][NFL] API raw response length`, {
-        //   count: response.data?.response?.length,
-        // });
+        logger.info(`[fetchGameScore][NFL] API raw response length`, {
+          count: response.data?.response?.length,
+        });
 
-        // apiGame = response.data?.response?.[0] || null;
-        apiGame = DUMMY_GAMES || null;
+        apiGame = response.data?.response?.[0] || null;
       } else if (sport === "CFB") {
         // --- CFB: Single game from ESPN ---
         const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary`;
@@ -159,11 +156,24 @@ class ApiSportsService {
             (t) => t.homeAway === "away"
           );
 
+          // 🔑 Handle stage + week properly
+          const seasonType = response.data.header?.season?.type; // 2=regular, 3=postseason, 4=championship
+          let stage = "Regular Season";
+          let week = null;
+
+          if (seasonType === 2) {
+            stage = "Regular Season";
+            week = response.data.header.week;
+          } else {
+            stage = "Post Season";
+            week = response.data.header?.week?.text || "Championship";
+          }
+
           apiGame = {
             game: {
               id: gameId,
-              stage: "Regular Season",
-              week: `Week ${response.data.header.week}`,
+              stage,
+              week,
               date: {
                 timezone: "UTC",
                 date: competition.date.split("T")[0],
@@ -272,9 +282,6 @@ class ApiSportsService {
     const game = apiGame.game;
     const teams = apiGame.teams;
     const scores = apiGame.scores;
-    // const game = apiGame[0]?.game;
-    // const teams = apiGame[0]?.teams;
-    // const scores = apiGame[0]?.scores;
 
     logger.info("GAMMME parse Game: ", { game, teams, scores });
 
@@ -311,7 +318,6 @@ class ApiSportsService {
         type: typeof game?.id,
       });
     } else {
-      // If you expect only one match, take the first doc
       const activeGameDoc = snapshot.docs[0];
       const activeGameData = activeGameDoc.data();
 
@@ -369,7 +375,7 @@ class ApiSportsService {
       statusShort === "FT"
     )
       currentQuarter = 4;
-    else currentQuarter = scoredQuarters || 1; // fallback
+    else currentQuarter = scoredQuarters || 1;
 
     return {
       apiSportsId: game?.id,
@@ -380,6 +386,8 @@ class ApiSportsService {
       teams: parsedTeams,
       startTime,
       lastUpdate: new Date().toISOString(),
+      stage: game?.stage || null, // ✅ pass through
+      week: game?.week || null, // ✅ number for regular, string for playoffs/championship
     };
   }
 

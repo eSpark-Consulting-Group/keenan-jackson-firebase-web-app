@@ -66,6 +66,7 @@ export default function AdminGames() {
     sport: "",
     week: "",
     teamName: "",
+    gameType: "regular",
   });
 
   useEffect(() => {
@@ -274,8 +275,8 @@ export default function AdminGames() {
   };
 
   useEffect(() => {
-    console.log(selectedGame);
     if (selectedGame && Object.keys(selectedGame)?.length > 0) {
+      console.log(selectedGame);
       setGameForm({
         ...gameForm,
         sport: selectedGame?.sport,
@@ -291,6 +292,7 @@ export default function AdminGames() {
 
   useEffect(() => {
     if (!sportsForm?.sport) return;
+
     const searchGames = async () => {
       setGamesLoading(true);
       try {
@@ -305,24 +307,30 @@ export default function AdminGames() {
           return 0;
         };
 
-        const weekToSend = sportsForm?.week
-          ? sportsForm?.week
-          : getMinWeek(sportsForm?.sport);
-
-        const result = await searchApiSportsGames({
+        // Only add week when gameType is "regular"
+        const payload = {
           sport: sportsForm.sport,
-          week: weekToSend,
           teamName: sportsForm?.teamName,
-        });
+          gameType: sportsForm?.gameType, // ✅ include gameType
+          ...(sportsForm?.gameType === "regular" && {
+            week: sportsForm?.week
+              ? sportsForm?.week
+              : getMinWeek(sportsForm?.sport),
+          }),
+        };
+
+        const result = await searchApiSportsGames(payload);
+
         const data = result.data?.games?.map((game) => ({
           sport: sportsForm?.sport,
           homeTeam: game?.homeTeam,
           awayTeam: game?.awayTeam,
           startTime: game?.startTime,
           apiGameId: game?.apiSportsId,
-          gameType: "regular",
+          gameType: sportsForm?.gameType,
           week: game?.week,
         }));
+
         setSearchedGames(data);
       } catch (error) {
         console.error("Error calling searchApiSportsGames:", error);
@@ -330,8 +338,14 @@ export default function AdminGames() {
         setGamesLoading(false);
       }
     };
+
     searchGames();
-  }, [sportsForm.teamName, sportsForm.sport, sportsForm.week]);
+  }, [
+    sportsForm.teamName,
+    sportsForm.sport,
+    sportsForm.week,
+    sportsForm.gameType,
+  ]);
 
   useEffect(() => {
     if (!gameForm?.gameType) return;
@@ -351,6 +365,10 @@ export default function AdminGames() {
       ),
     }));
   }, [gameForm?.gameType]);
+
+  useEffect(() => {
+    console.log(sportsForm);
+  }, [sportsForm]);
 
   if ((loading && games.length === 0) || loading) {
     return (
@@ -668,6 +686,7 @@ export default function AdminGames() {
                           setGameForm({ ...gameForm, gameType: e.target.value })
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        disabled
                       >
                         <option value="regular">Regular</option>
                         <option value="playoff">Playoff</option>
@@ -780,6 +799,8 @@ export default function AdminGames() {
                           sport: "",
                           startTime: "",
                           teamName: "",
+                          week: "",
+                          gameType: "regular",
                         });
                         setGameForm({
                           sport: "",
@@ -865,57 +886,78 @@ export default function AdminGames() {
                         />
                       </div>
                     </div>
+                    {sportsForm?.gameType === "regular" && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Week Number
+                        </label>
+                        <input
+                          type="number"
+                          value={sportsForm.week || ""}
+                          disabled={
+                            sportsForm?.sport !== "NFL" &&
+                            sportsForm?.sport !== "CFB"
+                          }
+                          onChange={(e) => {
+                            let value = parseInt(e.target.value, 10);
+
+                            if (sportsForm?.sport === "NFL") {
+                              if (value < 1) value = 1;
+                              if (value > 17) value = 17;
+                            } else if (sportsForm?.sport === "CFB") {
+                              if (value < 0) value = 0;
+                              if (value > 15) value = 15;
+                            }
+
+                            setSportsForm({
+                              ...sportsForm,
+                              week: value,
+                            });
+                          }}
+                          min={
+                            sportsForm?.sport === "NFL"
+                              ? 1
+                              : sportsForm?.sport === "CFB"
+                                ? 0
+                                : undefined
+                          }
+                          max={
+                            sportsForm?.sport === "NFL"
+                              ? 17
+                              : sportsForm?.sport === "CFB"
+                                ? 15
+                                : undefined
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                          required
+                          defaultValue={
+                            sportsForm?.sport === "NFL"
+                              ? 1
+                              : sportsForm?.sport === "CFB"
+                                ? 0
+                                : undefined
+                          }
+                        />
+                      </div>
+                    )}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Week Number
+                        Game Type
                       </label>
-                      <input
-                        type="number"
-                        value={sportsForm.week || ""}
-                        disabled={
-                          sportsForm?.sport !== "NFL" &&
-                          sportsForm?.sport !== "CFB"
-                        }
-                        onChange={(e) => {
-                          let value = parseInt(e.target.value, 10);
-
-                          if (sportsForm?.sport === "NFL") {
-                            if (value < 1) value = 1;
-                            if (value > 17) value = 17;
-                          } else if (sportsForm?.sport === "CFB") {
-                            if (value < 0) value = 0;
-                            if (value > 15) value = 15;
-                          }
-
+                      <select
+                        value={sportsForm?.gameType}
+                        onChange={(e) =>
                           setSportsForm({
                             ...sportsForm,
-                            week: value,
-                          });
-                        }}
-                        min={
-                          sportsForm?.sport === "NFL"
-                            ? 1
-                            : sportsForm?.sport === "CFB"
-                              ? 0
-                              : undefined
-                        }
-                        max={
-                          sportsForm?.sport === "NFL"
-                            ? 17
-                            : sportsForm?.sport === "CFB"
-                              ? 15
-                              : undefined
+                            gameType: e.target.value,
+                          })
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                        required
-                        defaultValue={
-                          sportsForm?.sport === "NFL"
-                            ? 1
-                            : sportsForm?.sport === "CFB"
-                              ? 0
-                              : undefined
-                        }
-                      />
+                      >
+                        <option value="regular">Regular</option>
+                        <option value="playoff">Playoff</option>
+                        <option value="championship">Championship</option>
+                      </select>
                     </div>
                   </div>
 
@@ -988,6 +1030,8 @@ export default function AdminGames() {
                           sport: "",
                           teamName: "",
                           startTime: "",
+                          week: "",
+                          gameType: "regular",
                         });
                       }}
                       className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
