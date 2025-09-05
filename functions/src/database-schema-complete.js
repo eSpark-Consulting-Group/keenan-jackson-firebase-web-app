@@ -324,11 +324,11 @@ const WinnerSchema = {
   notificationErrors: [], // array - any errors
   
   // Payout status
-  payoutStatus: 'pending', // string - 'pending', 'processing', 'completed', 'failed'
+  status: 'pending_payout', // string - 'pending_payout', 'processing', 'completed', 'failed'
   payoutMethod: null, // string
   payoutDetails: {}, // object - transaction details
   payoutCompletedAt: null, // Timestamp
-  payoutType: '', // string - 'instant' or 'batch'
+  payoutType: 'standard', // string - 'instant' or 'batch' or 'standard'
   instantPayoutFee: 0, // number - fee amount if instant payout
   relayBatchId: null, // string - reference to relay batch if applicable
   
@@ -736,7 +736,7 @@ const firestoreIndexes = {
       queryScope: "COLLECTION",
       fields: [
         { fieldPath: "userId", order: "ASCENDING" },
-        { fieldPath: "payoutStatus", order: "ASCENDING" },
+        { fieldPath: "status", order: "ASCENDING" },
         { fieldPath: "createdAt", order: "DESCENDING" }
       ]
     },
@@ -744,7 +744,7 @@ const firestoreIndexes = {
       collectionGroup: "winners",
       queryScope: "COLLECTION",
       fields: [
-        { fieldPath: "payoutStatus", order: "ASCENDING" },
+        { fieldPath: "status", order: "ASCENDING" },
         { fieldPath: "createdAt", order: "ASCENDING" }
       ]
     },

@@ -786,7 +786,7 @@ exports.sendPayoutMessages = functions.pubsub
       logger.info("Hello Payout Function");
       const winnersSnap = await db
         .collection("winners")
-        .where("payoutStatus", "==", "completed")
+        .where("status", "==", "completed")
         .get();
 
       const pendingDocs = winnersSnap.docs.filter(

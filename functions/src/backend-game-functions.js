@@ -10,8 +10,8 @@ const {
   handleFailedPayment,
   handleRefund,
 } = require("./payment-system-modified");
-const { logger } = require("firebase-functions");
 const { default: axios } = require("axios");
+const { query, collection, where } = require("firebase/firestore");
 
 // Initialize admin if not already done
 if (!admin.apps.length) {
@@ -740,8 +740,23 @@ exports.cleanupClaims = functions.pubsub
 
 // Helper function to process winner
 async function processWinner(winnerData) {
-  const { userId, gameId, boardId, quarter, position, tierId, answerTime } =
-    winnerData;
+  const {
+    userId,
+    gameId,
+    boardId,
+    quarter,
+    position,
+    tierId,
+    answerTime,
+    isSoloWin,
+    claimId,
+    notificationStatus,
+    reportedOn1099,
+    opponentTime,
+    instantPayoutFee,
+    consolationSquareGranted,
+    processedBy,
+  } = winnerData;
 
   // Get tier info for prize amount
   const tierAmounts = {
@@ -754,10 +769,29 @@ async function processWinner(winnerData) {
   };
 
   const prizeAmount = tierAmounts[tierId]?.quarter || 0;
-
+  const winningUser = query(
+    collection(db, "users"),
+    where("userId", "==", userId)
+  );
+  functions.logger.info("User Query:", { winningUser });
+  const gameSnap = await db.collection("games").doc(gameId).get();
+  if (!gameSnap.exists) {
+    throw new functions.https.HttpsError("not-found", "Game not found");
+  }
+  const game = gameSnap.data();
   // Create winner record
   const winnerRef = await db.collection("winners").add({
-    userId,
+    userId: winningUser.uid,
+    user: winningUser,
+    gameInfo: game,
+    isSoloWin: isSoloWin || false,
+    claimId: claimId || null,
+    notificationStatus: notificationStatus || "pending",
+    reportedOn1099: reportedOn1099 || false,
+    opponentTime: opponentTime || null,
+    instantPayoutFee: instantPayoutFee || null,
+    consolationSquareGranted: consolationSquareGranted || false,
+    processedBy: processedBy || null,
     gameId,
     boardId,
     quarter,
@@ -765,7 +799,7 @@ async function processWinner(winnerData) {
     tierId,
     prizeAmount,
     answerTime,
-    payoutStatus: "pending",
+    payoutMethodId: null,
     payoutType: "standard",
     status: "pending_payout",
     createdAt: admin.firestore.FieldValue.serverTimestamp(),

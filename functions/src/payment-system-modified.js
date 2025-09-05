@@ -40,13 +40,13 @@ async function sendTelegramNotification(chatId, message) {
 }
 
 // Set API key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+sgMail.setApiKey(process.env.REACT_SENDGRID_API_KEY);
 
 // Example send function
 const sendMail = async ({ to, subject, html }) => {
   const msg = {
     to,
-    from: process.env.SENDGRID_FROM_EMAIL,
+    from: process.env.REACT_SENDGRID_FROM_EMAIL,
     subject,
     html,
     text: html.replace(/<[^>]+>/g, ""), // Fallback to plain text
@@ -877,7 +877,7 @@ async function sendPaymentConfirmation(userId, donationId, tier) {
         <p><strong>Tier:</strong> ${TIER_CONFIG[tier].name}</p>
         <p><strong>Amount:</strong> $${TIER_CONFIG[tier].amount}</p>
         <p><strong>Access Period:</strong> 30 days</p>
-        <p><strong>Telegram Username:</strong> @${donation.telegramUsername}</p>
+        ${donation.telegramUsername ? `<p><strong>Telegram Username:</strong> @${donation.telegramUsername}</p>` : ""}
       </div>
       
       <h3>What's Next?</h3>
@@ -1156,7 +1156,7 @@ exports.requestInstantPayout = functions.https.onCall(async (data, context) => {
       );
     }
 
-    if (game.payoutStatus === "completed") {
+    if (game.status === "completed") {
       throw new functions.https.HttpsError(
         "already-exists",
         "Payout already processed"
@@ -1174,7 +1174,7 @@ exports.requestInstantPayout = functions.https.onCall(async (data, context) => {
 
     // Update game with payout info
     await gameDoc.ref.update({
-      payoutStatus: "completed",
+      status: "completed",
       payoutType: "instant",
       payoutId: result.payoutId,
       instantPayoutFee: result.fee,
@@ -1406,6 +1406,7 @@ exports.cleanupExpiredAccess = functions.pubsub
   });
 
 module.exports = {
+  sendMail,
   handleSuccessfulPayment,
   handleFailedPayment,
   handleRefund,

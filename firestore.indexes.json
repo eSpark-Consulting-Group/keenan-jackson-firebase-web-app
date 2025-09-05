@@ -105,7 +105,8 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "gameId", "order": "ASCENDING" },
-        { "fieldPath": "quarter", "order": "ASCENDING" }
+        { "fieldPath": "quarter", "order": "ASCENDING" },
+        { "fieldPath": "payoutType", "order": "ASCENDING" }
       ]
     },
     {
@@ -113,16 +114,18 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "payoutStatus", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" },
+        { "fieldPath": "payoutType", "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "winners",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "payoutStatus", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "ASCENDING" }
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" },
+        { "fieldPath": "payoutType", "order": "ASCENDING" }
       ]
     },
     

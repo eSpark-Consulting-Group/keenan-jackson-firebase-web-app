@@ -52,7 +52,7 @@ export default function Layout({ children }) {
       name: "Payouts",
       href: "/payouts",
       icon: DollarSign,
-      public: true,
+      requireAuth: true,
     },
   ];
 
