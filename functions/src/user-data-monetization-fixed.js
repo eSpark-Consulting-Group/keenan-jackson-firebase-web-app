@@ -252,15 +252,13 @@ async function handleWinCommand(chatId) {
       if (gameDoc.exists) {
         const gameData = gameDoc.data();
         gameInfo = `${gameData?.teams?.home} 🆚 ${gameData?.teams?.away}`;
-      } else {
-        gameInfo = `Unknown Game (${win.gameId})`;
       }
     }
 
     const msg =
       `🏆 Win Details\n` +
       `📅 Date: ${formattedDate}\n` +
-      `🎮 Game: ${gameInfo}\n` + // ✅ show teams instead of boardId
+      (gameInfo ? `🎮 Game: ${gameInfo}\n` : "") +
       `🎯 Position: ${win.position}\n` +
       `👤 Solo Win: ${win.isSoloWin ? "Yes" : "No"}\n` +
       `📌 Status: ${win.status}`;
@@ -484,15 +482,13 @@ async function handlePayoutCommand(chatId) {
       if (gameDoc.exists) {
         const gameData = gameDoc.data();
         gameInfo = `${gameData?.teams?.home} 🆚 ${gameData?.teams?.away}`;
-      } else {
-        gameInfo = `Unknown Game (${win.gameId})`;
       }
     }
 
     const msg =
       `💸 Payout Details\n` +
       `📅 Date: ${formattedDate}\n` +
-      `🎮 Game: ${gameInfo}\n` +
+      (gameInfo ? `🎮 Game: ${gameInfo}\n` : "") +
       `📌 Status: ${win.status}`;
 
     messages.push(msg);
@@ -824,8 +820,19 @@ exports.sendPayoutMessages = functions.pubsub
           return;
         }
 
-        // Send Telegram message
-        const message = `🎉 Congratulations! Your payout has been completed.`;
+        const gameId = winnerData.gameId;
+        let message = "🎉 Congratulations! Your payout has been completed.";
+
+        if (gameId) {
+          const gameSnap = await db.collection("games").doc(gameId).get();
+          if (gameSnap.exists) {
+            const gameData = gameSnap.data();
+            const teamA = gameData?.teams?.home || "Team A";
+            const teamB = gameData?.teams?.away || "Team B";
+
+            message = `🎉 Congratulations! Your payout for the game *${teamA} vs ${teamB}* has been completed 🏆\n\nEnjoy your winnings 🚀`;
+          }
+        }
 
         try {
           await sendTelegramNotification(chatId, message);

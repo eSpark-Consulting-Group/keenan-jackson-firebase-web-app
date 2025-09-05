@@ -11,7 +11,7 @@ const {
   handleRefund,
 } = require("./payment-system-modified");
 const { default: axios } = require("axios");
-const { query, collection, where } = require("firebase/firestore");
+// const { query, collection, where } = require("firebase/firestore");
 
 // Initialize admin if not already done
 if (!admin.apps.length) {
@@ -769,10 +769,8 @@ async function processWinner(winnerData) {
   };
 
   const prizeAmount = tierAmounts[tierId]?.quarter || 0;
-  const winningUser = query(
-    collection(db, "users"),
-    where("userId", "==", userId)
-  );
+  const winningUser = db.collection("users").where("userId", "==", userId);
+
   functions.logger.info("User Query:", { winningUser });
   const gameSnap = await db.collection("games").doc(gameId).get();
   if (!gameSnap.exists) {
