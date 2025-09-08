@@ -38,7 +38,48 @@ export default function GameBoard() {
   const { boardId } = useParams();
   const navigate = useNavigate();
   const { user, userData } = useAuth();
-  const [winners, setWinners] = useState([]);
+  const [winners, setWinners] = useState([
+    {
+      id: "1",
+      displayName: "John Doe",
+      email: "john@example.com",
+      quarter: 1,
+      isFastest: false,
+      position: "59",
+    },
+    {
+      id: "2",
+      displayName: "Jane Smith",
+      position: "12",
+      email: "jane@example.com",
+      quarter: 2,
+      isFastest: false,
+    },
+    {
+      id: "3",
+      displayName: "Mike Johnson",
+      position: "10",
+      email: "mike@example.com",
+      quarter: 3,
+      isFastest: false,
+    },
+    {
+      id: "4",
+      position: "05",
+      displayName: "Emily Davis",
+      email: "emily@example.com",
+      quarter: 4,
+      isFastest: false,
+    },
+    {
+      id: "5",
+      position: "20",
+      displayName: "Chris Brown",
+      email: "chris@example.com",
+      quarter: null, // no quarter since Board Winner
+      isFastest: true,
+    },
+  ]);
 
   const [board, setBoard] = useState(null);
   const [game, setGame] = useState(null);
@@ -367,7 +408,7 @@ export default function GameBoard() {
         });
       }
 
-      setWinners(tempWinners);
+      // setWinners(tempWinners);
     });
 
     // cleanup on unmount
@@ -508,30 +549,40 @@ export default function GameBoard() {
 
               {winners && winners.length > 0 ? (
                 <ul className="space-y-3">
-                  {winners.map((win) => (
-                    <li
-                      key={win.id}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between border rounded-lg p-3"
-                    >
-                      <div>
-                        <p className="font-medium text-gray-800">
-                          {win.displayName}
-                        </p>
-                        <p className="text-sm text-gray-500">{win.email}</p>
-                      </div>
-                      <div className="mt-2 sm:mt-0">
-                        {win.isFastest ? (
-                          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700">
-                            🏆 Board Winner
-                          </span>
-                        ) : (
-                          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">
-                            Quarter {win.quarter}
-                          </span>
-                        )}
-                      </div>
-                    </li>
-                  ))}
+                  {winners.map((win) => {
+                    const formattedPosition =
+                      win.position?.toString().split("").join("-") || "";
+
+                    return (
+                      <li
+                        key={win.id}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between border rounded-lg p-3"
+                      >
+                        <div>
+                          <p className="font-medium text-gray-800 text-lg">
+                            {formattedPosition && (
+                              <span className="mr-2 text-indigo-600 font-semibold">
+                                {formattedPosition}
+                              </span>
+                            )}
+                            {win.displayName}
+                          </p>
+                          <p className="text-sm text-gray-500">{win.email}</p>
+                        </div>
+                        <div className="mt-2 sm:mt-0">
+                          {win.isFastest ? (
+                            <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700">
+                              🏆 Board Winner
+                            </span>
+                          ) : (
+                            <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">
+                              Quarter {win.quarter}
+                            </span>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : (
                 <p className="text-gray-500">No winners yet.</p>

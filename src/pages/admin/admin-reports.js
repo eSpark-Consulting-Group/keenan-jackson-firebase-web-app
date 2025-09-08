@@ -15,6 +15,7 @@ import {
   Clock,
   Target,
   CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { db, collections, TIERS, formatCurrency } from "../../firebase/config";
 import {
@@ -42,6 +43,9 @@ export default function AdminReports() {
     averageRevenuePerUser: 0,
     conversionRate: 0,
     retentionRate: 0,
+    scheduled: 0,
+    active: 0,
+    completed: 0,
   });
 
   // Revenue data
@@ -70,6 +74,7 @@ export default function AdminReports() {
     averageSquaresPerGame: 0,
     gamesByTier: {},
     completionRate: 0,
+    gameParticipation: 0,
   });
 
   // Trivia stats
@@ -80,6 +85,13 @@ export default function AdminReports() {
     averageAnswerTime: 0,
     popularQuestions: [],
     questionsByDifficulty: {},
+  });
+
+  const [payoutStatistics, setPayoutStatistics] = useState({
+    total: 0,
+    completed: 0,
+    pending: 0,
+    failed: 0,
   });
 
   useEffect(() => {
@@ -208,8 +220,14 @@ export default function AdminReports() {
       }).length;
 
       // Mock some calculated metrics (in real app, would be more complex)
+      const totalWinners = winnersSnapshot.size;
+      const completedWinners = winnersSnapshot.docs.filter(
+        (doc) => doc.data().status === "completed"
+      ).length;
+
       const conversionRate =
-        totalUsers > 0 ? donationsSnapshot.size / totalUsers : 0;
+        totalWinners > 0 ? completedWinners / totalWinners : 0;
+
       const retentionRate = totalUsers > 0 ? activeUsers / totalUsers : 0;
       const averageRevenuePerUser =
         totalUsers > 0 ? totalRevenue / totalUsers : 0;
@@ -289,6 +307,22 @@ export default function AdminReports() {
       const averageAnswerTime =
         totalClaims > 0 ? totalAnswerTime / totalClaims : 0;
 
+      let gamesByStatus = {
+        active: 0,
+        completed: 0,
+        scheduled: 0,
+      };
+
+      gamesSnapshot.forEach((doc) => {
+        const game = doc.data();
+        const status = game.status || "scheduled"; // default fallback
+        if (gamesByStatus[status] !== undefined) {
+          gamesByStatus[status]++;
+        } else {
+          gamesByStatus[status] = 1; // in case of unexpected statuses
+        }
+      });
+
       // Set all state
       setOverview({
         totalRevenue,
@@ -299,6 +333,9 @@ export default function AdminReports() {
         averageRevenuePerUser,
         conversionRate,
         retentionRate,
+        active: gamesByStatus?.active,
+        scheduled: gamesByStatus?.scheduled,
+        completed: gamesByStatus?.completed,
       });
 
       setRevenueData({
@@ -319,12 +356,34 @@ export default function AdminReports() {
         usersByTier: {}, // Would calculate from user data
       });
 
+      let totalClaimedSquares = 0;
+
+      boardsSnapshot.forEach((doc) => {
+        const board = doc.data();
+        const claimed = board.claimedSquares || 0;
+        totalClaimedSquares += claimed;
+      });
+
+      const averageSquaresPerGame =
+        boardsSnapshot.size > 0 ? totalClaimedSquares / boardsSnapshot.size : 0;
+
+      // 1. Total users
+
+      // 2. Unique participants from triviaAttempts
+      const uniqueTriviaPlayers = new Set(
+        triviaAttemptsSnapshot.docs.map((doc) => doc.data().userId)
+      ).size;
+
+      // 3. Game Participation Rate
+      const gameParticipationRate =
+        totalUsers > 0 ? uniqueTriviaPlayers / totalUsers : 0;
+
       setGamePerformance({
         fillRate: 0.75,
-        averageSquaresPerGame:
-          squaresSnapshot.size / Math.max(gamesSnapshot.size, 1),
+        averageSquaresPerGame,
         gamesByTier,
         completionRate,
+        gameParticipation: gameParticipationRate,
       });
 
       const trivia = triviaSnapshot.docs.map((doc) => ({
@@ -382,6 +441,29 @@ export default function AdminReports() {
         averageAnswerTime,
         popularQuestions,
         questionsByDifficulty,
+      });
+
+      const totalPrizesPaidToUser = winnersSnapshot.docs
+        .filter((doc) => doc.data().status === "completed")
+        .reduce((sum, doc) => sum + (doc.data().prizeAmount || 0), 0);
+
+      const completedPayouts = winnersSnapshot.docs.filter(
+        (doc) => doc.data().status === "completed"
+      ).length;
+
+      const pendingPayouts = winnersSnapshot.docs.filter(
+        (doc) => doc.data().status === "pending"
+      ).length;
+
+      const failedPayouts = winnersSnapshot.docs.filter(
+        (doc) => doc.data().status === "failed"
+      ).length;
+
+      setPayoutStatistics({
+        total: totalPrizesPaidToUser,
+        completed: completedPayouts,
+        pending: pendingPayouts,
+        failed: failedPayouts,
       });
 
       setLoading(false);
@@ -575,19 +657,21 @@ export default function AdminReports() {
 
         {/* Report Type Tabs */}
         <div className="mb-6 flex space-x-1 bg-gray-100 rounded-lg p-1">
-          {["overview", "revenue", "users", "games", "trivia"].map((type) => (
-            <button
-              key={type}
-              onClick={() => setReportType(type)}
-              className={`flex-1 py-2 px-4 rounded-md transition-colors capitalize ${
-                reportType === type
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              {type}
-            </button>
-          ))}
+          {["overview", "revenue", "users", "games", "trivia", "payouts"].map(
+            (type) => (
+              <button
+                key={type}
+                onClick={() => setReportType(type)}
+                className={`flex-1 py-2 px-4 rounded-md transition-colors capitalize ${
+                  reportType === type
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                {type}
+              </button>
+            )
+          )}
         </div>
 
         {/* Overview Report */}
@@ -923,7 +1007,15 @@ export default function AdminReports() {
             </div>
 
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-semibold mb-4">
+              <div>
+                <h4 className="text-lg font-semibold mb-4">
+                  Game participation rates
+                </h4>
+                <div className="text-3xl font-bold text-gray-900">
+                  {gamePerformance?.gameParticipation.toFixed(1)}
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold mb-4 mt-3">
                 Game Performance Metrics
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -946,19 +1038,19 @@ export default function AdminReports() {
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Completed</span>
                       <span className="text-sm font-medium">
-                        {Math.floor(overview.totalGames * 0.7)}
+                        {overview?.completed}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Active</span>
                       <span className="text-sm font-medium">
-                        {Math.floor(overview.totalGames * 0.2)}
+                        {overview?.active}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Scheduled</span>
                       <span className="text-sm font-medium">
-                        {Math.floor(overview.totalGames * 0.1)}
+                        {overview?.scheduled}
                       </span>
                     </div>
                   </div>
@@ -1039,6 +1131,35 @@ export default function AdminReports() {
               </div>
             </div>
           </>
+        )}
+
+        {reportType === "payouts" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <MetricCard
+              title="Total Prizes Paid"
+              value={payoutStatistics?.total ?? 0}
+              icon={DollarSign}
+              color="bg-green-600"
+            />
+            <MetricCard
+              title="Completed Payouts"
+              value={payoutStatistics?.completed ?? 0}
+              icon={CheckCircle}
+              color="bg-blue-600"
+            />
+            <MetricCard
+              title="Pending Payouts"
+              value={payoutStatistics?.pending ?? 0}
+              icon={Clock}
+              color="bg-yellow-600"
+            />
+            <MetricCard
+              title="Failed Payouts"
+              value={payoutStatistics?.failed ?? 0}
+              icon={XCircle}
+              color="bg-red-600"
+            />
+          </div>
         )}
       </div>
     </div>
