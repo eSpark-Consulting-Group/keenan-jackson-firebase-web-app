@@ -558,7 +558,7 @@ export default function Payouts() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Filter className="h-5 w-5 text-gray-500" />
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap justify-center md:justify-start gap-2">
                 <button
                   onClick={() => setFilter("all")}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -569,6 +569,7 @@ export default function Payouts() {
                 >
                   All ({payouts.length})
                 </button>
+
                 <button
                   onClick={() => {
                     setFilter("pending");
@@ -583,6 +584,7 @@ export default function Payouts() {
                   Pending (
                   {payouts.filter((p) => p.status === "pending_payout").length})
                 </button>
+
                 <button
                   onClick={() => {
                     setFilter("processing");
@@ -610,6 +612,7 @@ export default function Payouts() {
                 >
                   Failed ({payouts.filter((p) => p.status === "failed").length})
                 </button>
+
                 <button
                   onClick={() => {
                     setFilter("completed");

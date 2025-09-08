@@ -273,47 +273,46 @@ export default function AdminPayouts() {
     }
   };
 
- const exportForRelay = async () => {
-  try {
-    // Collect payoutIds of all eligible payouts
-    const payoutIds = payouts
-      .filter((p) => p.status === "pending" || p.status === "processing")
-      .map((p) => p.id);
+  const exportForRelay = async () => {
+    try {
+      // Collect payoutIds of all eligible payouts
+      const payoutIds = payouts
+        .filter((p) => p.status === "pending" || p.status === "processing")
+        .map((p) => p.id);
 
-    if (payoutIds.length === 0) {
-      toast.error("No payouts available to export");
-      return;
+      if (payoutIds.length === 0) {
+        toast.error("No payouts available to export");
+        return;
+      }
+
+      // ✅ Call the backend function
+      const functions = getFunctions();
+      const generateRelayCSV = httpsCallable(functions, "generateRelayCSV");
+
+      const { data } = await generateRelayCSV({ payoutIds });
+
+      // data.csv is returned from your function
+      const blob = new Blob(["\uFEFF" + data.csv], {
+        type: "text/csv;charset=utf-8;",
+      });
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `relay-payouts-${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      a.remove();
+
+      toast.success(
+        `Exported ${data.summary.payoutCount} payouts (Total: ${formatCurrency(
+          data.summary.totalAmount
+        )})`
+      );
+    } catch (error) {
+      console.error("Export for Relay failed:", error);
+      toast.error("Failed to generate Relay CSV");
     }
-
-    // ✅ Call the backend function
-    const functions = getFunctions();
-    const generateRelayCSV = httpsCallable(functions, "generateRelayCSV");
-
-    const { data } = await generateRelayCSV({ payoutIds });
-
-    // data.csv is returned from your function
-    const blob = new Blob(["\uFEFF" + data.csv], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = window.URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `relay-payouts-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    a.remove();
-
-    toast.success(
-      `Exported ${data.summary.payoutCount} payouts (Total: ${formatCurrency(
-        data.summary.totalAmount
-      )})`
-    );
-  } catch (error) {
-    console.error("Export for Relay failed:", error);
-    toast.error("Failed to generate Relay CSV");
-  }
-};
-
+  };
 
   const filteredPayouts = payouts.filter((payout) => {
     const matchesSearch =
@@ -527,7 +526,7 @@ export default function AdminPayouts() {
                   payoutType: e.target.value,
                 })
               }
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">All Types</option>
               <option value="instant">Instant</option>
@@ -542,7 +541,7 @@ export default function AdminPayouts() {
                   dateRange: e.target.value,
                 })
               }
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="today">Today</option>
               <option value="7days">Last 7 Days</option>
@@ -673,9 +672,9 @@ export default function AdminPayouts() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            <Link to={`/admin/users/${payout?.userId}`}>
-                              {payout?.user?.displayName || "Unknown User"}
-                            </Link>
+                            <a href={`/admin/users/${payout.userId}`}>
+                              {payout.user?.displayName || "Unknown User"}
+                            </a>
                           </div>
                           <div className="text-sm text-gray-500">
                             {payout?.user?.email || payout.email}
