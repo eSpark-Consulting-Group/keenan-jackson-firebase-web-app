@@ -98,7 +98,9 @@ export default function AdminPayouts() {
         constraints.unshift(where("status", "==", filterOptions.status));
       }
       if (filterOptions.payoutType !== "all") {
-        constraints.unshift(where("payoutType", "==", filterOptions.payoutType));
+        constraints.unshift(
+          where("payoutType", "==", filterOptions.payoutType)
+        );
       }
 
       if (filterOptions.dateRange !== "all") {
@@ -227,7 +229,7 @@ export default function AdminPayouts() {
       console.error("Error updating payout:", error);
       toast.error("⚠️ Failed to update payout status");
     }
-  };  
+  };
   const bulkUpdateStatus = async (newStatus) => {
     if (selectedPayouts.length === 0) {
       toast.error("No payouts selected");
@@ -264,51 +266,45 @@ export default function AdminPayouts() {
     }
   };
 
- const exportForRelay = async () => {
-  try {
-    // Collect payoutIds of all eligible payouts
-    const payoutIds = payouts
-      .filter((p) => p.status === "pending" || p.status === "processing")
-      .map((p) => p.id);
+  const exportForRelay = async () => {
+    try {
+      // Collect payoutIds of all eligible payouts
+      const payoutIds = payouts
+        .filter((p) => p.status === "pending" || p.status === "processing")
+        .map((p) => p.id);
 
-    if (payoutIds.length === 0) {
-      toast.error("No payouts available to export");
-      return;
+      if (payoutIds.length === 0) {
+        toast.error("No payouts available to export");
+        return;
+      }
+
+      // ✅ Call the backend function
+      const functions = getFunctions();
+      const generateRelayCSV = httpsCallable(functions, "generateRelayCSV");
+
+      const { data } = await generateRelayCSV({ payoutIds });
+
+      // data.csv is returned from your function
+      const blob = new Blob(["\uFEFF" + data.csv], {
+        type: "text/csv;charset=utf-8;",
+      });
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `relay-payouts-${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      a.remove();
+
+      toast.success(
+        `Exported ${data.summary.payoutCount} payouts (Total: ${formatCurrency(
+          data.summary.totalAmount
+        )})`
+      );
+    } catch (error) {
+      console.error("Export for Relay failed:", error);
+      toast.error("Failed to generate Relay CSV");
     }
-
-    // ✅ Call the backend function
-    const functions = getFunctions();
-    const generateRelayCSV = httpsCallable(functions, "generateRelayCSV");
-
-    const { data } = await generateRelayCSV({ payoutIds });
-
-    // data.csv is returned from your function
-    const blob = new Blob(["\uFEFF" + data.csv], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = window.URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `relay-payouts-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    a.remove();
-
-    toast.success(
-      `Exported ${data.summary.payoutCount} payouts (Total: ${formatCurrency(
-        data.summary.totalAmount
-      )})`
-    );
-  } catch (error) {
-    console.error("Export for Relay failed:", error);
-    toast.error("Failed to generate Relay CSV");
-  }
-};
-
-  const openConfirmModal = (payout) => {
-    setCurrentPayoutId(payout.id);
-    setConfirmationText(payout.confirmationDetails || "");
-    setShowConfirmModal(true);
   };
 
   const filteredPayouts = payouts.filter((payout) => {
@@ -325,7 +321,7 @@ export default function AdminPayouts() {
 
     return matchesSearch;
   });
-  
+
   const getPayoutTypeIcon = (payoutType) => {
     return payoutType === "instant" ? Zap : Clock;
   };
@@ -915,14 +911,15 @@ export default function AdminPayouts() {
           </div>
         </div>
       )}
-       {showConfirmModal && (
+      {showConfirmModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-[500px]">
             <h2 className="text-xl font-bold mb-4">
               Confirm Payment Completion
             </h2>
             <textarea
-              value={currentPayout ||confirmationText}
+              disabled={currentPayout}
+              value={currentPayout || confirmationText}
               onChange={(e) => setConfirmationText(e.target.value)}
               placeholder="Enter transaction ID, payment notes, etc..."
               className="w-full border border-gray-300 rounded-lg p-3 mb-4 focus:ring-2 focus:ring-blue-500"
@@ -938,20 +935,22 @@ export default function AdminPayouts() {
               >
                 Cancel
               </button>
-              <button
-                onClick={() => {
-                  updatePayoutStatus(
-                    currentPayoutId,
-                    "completed",
-                    confirmationText
-                  );
-                  setShowConfirmModal(false);
-                  setConfirmationText("");
-                }}
-                className="px-5 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700"
-              >
-                Submit
-              </button>
+              {!currentPayout && (
+                <button
+                  onClick={() => {
+                    updatePayoutStatus(
+                      currentPayoutId,
+                      "completed",
+                      confirmationText
+                    );
+                    setShowConfirmModal(false);
+                    setConfirmationText("");
+                  }}
+                  className="px-5 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700"
+                >
+                  Submit
+                </button>
+              )}
             </div>
           </div>
         </div>
