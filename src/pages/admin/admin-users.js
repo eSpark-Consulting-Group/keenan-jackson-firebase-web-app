@@ -29,6 +29,7 @@ import {
 } from "firebase/firestore";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../contexts/authcontext";
 
 export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
@@ -43,7 +44,7 @@ export default function AdminUsers() {
   });
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
-
+  const { userData } = useAuth();
   useEffect(() => {
     loadUsers();
   }, []);
@@ -566,9 +567,11 @@ export default function AdminUsers() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    is Admin
-                  </th>
+                  {userData.isSupperAdmin && (
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      is Admin
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
@@ -637,22 +640,24 @@ export default function AdminUsers() {
                           )}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <label className="inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={user.isAdmin || false}
-                            onChange={() => toggleAdmin(user, user.isAdmin)}
-                            className="sr-only peer"
-                          />
-                          <div
-                            className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer dark:bg-gray-300
+                      {userData.isSupperAdmin && (
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <label className="inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={user.isAdmin || false}
+                              onChange={() => toggleAdmin(user, user.isAdmin)}
+                              className="sr-only peer"
+                            />
+                            <div
+                              className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer dark:bg-gray-300
       peer-checked:bg-blue-600 relative transition-colors"
-                          >
-                            <span className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow"></span>
-                          </div>
-                        </label>
-                      </td>
+                            >
+                              <span className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow"></span>
+                            </div>
+                          </label>
+                        </td>
+                      )}
 
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">
