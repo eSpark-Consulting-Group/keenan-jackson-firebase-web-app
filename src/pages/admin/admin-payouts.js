@@ -13,6 +13,7 @@ import {
   Zap,
   Eye,
   DollarSign,
+  Mail,
 } from "lucide-react";
 import {
   db,
@@ -41,8 +42,11 @@ export default function AdminPayouts() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
-  console.log("Selected Payment Method:", selectedPaymentMethod);
-  console.log("Payouts:", payouts);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmationText, setConfirmationText] = useState("");
+  const [currentPayoutId, setCurrentPayoutId] = useState(null);
+  const [currentPayout, setCurrentPayout] = useState(null);
+
   const [stats, setStats] = useState({
     pendingCount: 0,
     pendingAmount: 0,
@@ -65,13 +69,11 @@ export default function AdminPayouts() {
 
   const handlePaymentMethodClick = (payout) => {
     let method = null;
-    if (payout.payoutType == "standard") {
-      // Find default payment method from user
+    if (payout.payoutType === "standard") {
       method = payout?.user?.paymentMethods?.find(
         (m) => m.id === payout?.user.defaultPaymentMethod
       );
     } else {
-      // Instant payout uses payout?.selectedpaymentMethod directly
       method = payout?.user?.paymentMethods?.find(
         (m) => m?.id === payout.payoutMethodId
       );
@@ -90,21 +92,18 @@ export default function AdminPayouts() {
   const loadPayouts = async () => {
     try {
       setLoading(true);
-
-      // --- 1. Build query based on filters ---
       let constraints = [orderBy("createdAt", "desc"), limit(100)];
 
       if (filterOptions.status !== "all") {
         constraints.unshift(where("status", "==", filterOptions.status));
       }
       if (filterOptions.payoutType !== "all") {
-        constraints.unshift(where("payoutType", "==", "isntant"));
+        constraints.unshift(where("payoutType", "==", filterOptions.payoutType));
       }
 
       if (filterOptions.dateRange !== "all") {
         const now = new Date();
         let startDate;
-
         switch (filterOptions.dateRange) {
           case "today":
             startDate = new Date(now.setHours(0, 0, 0, 0));
@@ -118,13 +117,11 @@ export default function AdminPayouts() {
           default:
             startDate = null;
         }
-
         if (startDate) {
           constraints.unshift(where("createdAt", ">=", startDate));
         }
       }
 
-      // --- 2. Fetch payouts (winners collection) ---
       const q = query(collection(db, collections.winners), ...constraints);
       const snapshot = await getDocs(q);
 
@@ -133,12 +130,10 @@ export default function AdminPayouts() {
         ...doc.data(),
       }));
 
-      // --- 3. Collect unique userIds ---
       const userIds = [
         ...new Set(payoutsData.map((p) => p.userId).filter(Boolean)),
       ];
 
-      // --- 4. Fetch all users in parallel ---
       const userDocs = await Promise.all(
         userIds.map((id) => getDoc(doc(db, collections.users, id)))
       );
@@ -150,16 +145,13 @@ export default function AdminPayouts() {
         }
       });
 
-      // --- 5. Attach users to payouts ---
       payoutsData = payoutsData.map((p) => ({
         ...p,
         user: p.userId ? userMap[p.userId] || null : null,
       }));
 
-      // --- 6. Update state & stats ---
       setPayouts(payoutsData);
       calculateStats(payoutsData);
-
       setLoading(false);
     } catch (error) {
       console.error("Error loading payouts:", error);
@@ -200,7 +192,7 @@ export default function AdminPayouts() {
     setStats(stats);
   };
 
-  const updatePayoutStatus = async (payoutId, newStatus) => {
+  const updatePayoutStatus = async (payoutId, newStatus, details) => {
     try {
       const updateData = {
         status: newStatus,
@@ -209,13 +201,13 @@ export default function AdminPayouts() {
 
       if (newStatus === "completed") {
         updateData.completedAt = new Date();
+        updateData.confirmationDetails = details || null;
       } else if (newStatus === "processing") {
         updateData.processingStartedAt = new Date();
       }
 
       await updateDoc(doc(db, collections.winners, payoutId), updateData);
 
-      // ✅ Show nice toast messages
       switch (newStatus) {
         case "processing":
           toast.success("Payout is now processing 🚀");
@@ -235,8 +227,7 @@ export default function AdminPayouts() {
       console.error("Error updating payout:", error);
       toast.error("⚠️ Failed to update payout status");
     }
-  };
-
+  };  
   const bulkUpdateStatus = async (newStatus) => {
     if (selectedPayouts.length === 0) {
       toast.error("No payouts selected");
@@ -314,6 +305,11 @@ export default function AdminPayouts() {
   }
 };
 
+  const openConfirmModal = (payout) => {
+    setCurrentPayoutId(payout.id);
+    setConfirmationText(payout.confirmationDetails || "");
+    setShowConfirmModal(true);
+  };
 
   const filteredPayouts = payouts.filter((payout) => {
     const matchesSearch =
@@ -329,7 +325,7 @@ export default function AdminPayouts() {
 
     return matchesSearch;
   });
-
+  
   const getPayoutTypeIcon = (payoutType) => {
     return payoutType === "instant" ? Zap : Clock;
   };
@@ -752,9 +748,10 @@ export default function AdminPayouts() {
                           {payout.status === "processing" && (
                             <>
                               <button
-                                onClick={() =>
-                                  updatePayoutStatus(payout.id, "completed")
-                                }
+                                onClick={() => {
+                                  setCurrentPayoutId(payout.id);
+                                  setShowConfirmModal(true);
+                                }}
                                 className="text-green-600 hover:text-green-900"
                                 title="Mark as Completed"
                               >
@@ -780,6 +777,19 @@ export default function AdminPayouts() {
                               title="Start Processing Again"
                             >
                               <Send className="h-4 w-4" />
+                            </button>
+                          )}
+                          {payout.confirmationDetails && (
+                            <button
+                              onClick={() => {
+                                setCurrentPayout(payout.confirmationDetails);
+                                setCurrentPayoutId(payout.id);
+                                setShowConfirmModal(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Start Processing Again"
+                            >
+                              <Mail className="h-4 w-4" />
                             </button>
                           )}
                           <Link to={`/admin/payouts/${payout.id}`}>
@@ -900,6 +910,47 @@ export default function AdminPayouts() {
                 className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+       {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-[500px]">
+            <h2 className="text-xl font-bold mb-4">
+              Confirm Payment Completion
+            </h2>
+            <textarea
+              value={currentPayout ||confirmationText}
+              onChange={(e) => setConfirmationText(e.target.value)}
+              placeholder="Enter transaction ID, payment notes, etc..."
+              className="w-full border border-gray-300 rounded-lg p-3 mb-4 focus:ring-2 focus:ring-blue-500"
+              rows={4}
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  setConfirmationText("");
+                }}
+                className="px-5 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  updatePayoutStatus(
+                    currentPayoutId,
+                    "completed",
+                    confirmationText
+                  );
+                  setShowConfirmModal(false);
+                  setConfirmationText("");
+                }}
+                className="px-5 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700"
+              >
+                Submit
               </button>
             </div>
           </div>
