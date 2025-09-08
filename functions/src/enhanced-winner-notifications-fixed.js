@@ -2234,7 +2234,7 @@ exports.recordPayoutChoice = functions.https.onCall(async (data, context) => {
         ...updateData,
         instantPayoutFee: instantCalc.fee,
         instantPayoutNetAmount: instantCalc.netAmount,
-        payoutStatus: 'processing_instant'
+        status: 'instant'
       };
       
       // Trigger instant payout processing
@@ -2255,7 +2255,7 @@ exports.recordPayoutChoice = functions.https.onCall(async (data, context) => {
       updateData = {
         ...updateData,
         expectedPayoutDate: nextBatchDate,
-        payoutStatus: 'queued_for_batch'
+        status: 'queued_for_batch'
       };
       
       // Add to batch queue

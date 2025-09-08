@@ -543,7 +543,7 @@ async function checkPaymentProcessing() {
     const pendingPayouts = await admin
       .firestore()
       .collection("winners")
-      .where("payoutStatus", "==", "pending")
+      .where("status", "==", "pending_payout")
       .get();
 
     let totalPending = 0;

@@ -22,7 +22,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import toast from "react-hot-toast";
 import { useAuth } from "../../contexts/authcontext";
 
-const PAYMENT_METHODS = {
+export const PAYMENT_METHODS = {
   paypal: {
     id: "paypal",
     name: "PayPal",
@@ -137,22 +137,54 @@ const PAYMENT_METHODS = {
     processingTime: "5-7 business days",
     fee: "No fee",
     fields: [
-      {
-        name: "name",
-        label: "Full Name",
-        type: "text",
-        required: true,
+     {
+      name: "name",
+      label: "Full Name",
+      type: "text",
+      required: true,
         autoComplete: "full-name",
-        placeholder: "e.g. John Doe",
-      },
-      {
-        name: "address",
-        label: "Mailing Address",
-        type: "text",
-        required: true,
-        autoComplete: "street-address",
-        placeholder: "Street, City, State, ZIP",
-      },
+      placeholder: "e.g. John Doe",
+    },
+    {
+      name: "addressLine1",
+      label: "Address Line 1",
+      type: "text",
+      required: true,
+      autoComplete: "address-line1",
+      placeholder: "Street address, P.O. box, company name",
+    },
+    {
+      name: "addressLine2",
+      label: "Address Line 2",
+      type: "text",
+      required: false,
+      autoComplete: "address-line2",
+      placeholder: "Apartment, suite, unit, building (optional)",
+    },
+    {
+      name: "city",
+      label: "City",
+      type: "text",
+      required: true,
+      autoComplete: "address-level2",
+      placeholder: "e.g. New York",
+    },
+    {
+      name: "state",
+      label: "State/Province/Region",
+      type: "text",
+      required: true,
+      autoComplete: "address-level1",
+      placeholder: "e.g. California",
+    },
+    {
+      name: "postalCode",
+      label: "ZIP / Postal Code",
+      type: "text",
+      required: true,
+      autoComplete: "postal-code",
+      placeholder: "e.g. 10001",
+    },
     ],
   },
   crypto: {
@@ -164,20 +196,20 @@ const PAYMENT_METHODS = {
     fee: "Network fees apply",
     fields: [
       {
-        name: "wallet",
-        label: "Wallet Address",
-        type: "text",
-        required: true,
-        autoComplete: "off",
-        placeholder: "e.g. 0x1234...abcd",
-      },
-      {
         name: "network",
         label: "Network",
         type: "text",
         required: true,
         autoComplete: "off",
         placeholder: "e.g. Ethereum, Solana",
+      },
+      {
+        name: "wallet",
+        label: "Wallet Address",
+        type: "text",
+        required: true,
+        autoComplete: "off",
+        placeholder: "e.g. 0x1234...abcd",
       },
     ],
   },
@@ -194,7 +226,7 @@ export default function PaymentMethods({
   const [defaultMethod, setDefaultMethod] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingMethod, setEditingMethod] = useState(null);
-  const [selectedType, setSelectedType] = useState("ach");
+  const [selectedType, setSelectedType] = useState(null);
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
 
@@ -228,13 +260,13 @@ export default function PaymentMethods({
 
     method.fields.forEach((field) => {
       if (field.required && !formData[field.name]) {
-        newErrors[field.name] = `${field.label} is required`;
+        newErrors[field.name] = `${field?.label} is required`;
       }
 
       if (field.pattern && formData[field.name]) {
         const regex = new RegExp(field.pattern);
         if (!regex.test(formData[field.name])) {
-          newErrors[field.name] = `Invalid ${field.label} format`;
+          newErrors[field.name] = `Invalid ${field?.label} format`;
         }
       }
 
@@ -359,7 +391,6 @@ export default function PaymentMethods({
     setEditingMethod(null);
     setFormData({});
     setErrors({});
-    setSelectedType("ach");
   };
 
   const handleEditMethod = (method) => {
@@ -432,9 +463,6 @@ export default function PaymentMethods({
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {method.displayInfo}
-                      </p>
                       <p className="text-xs text-gray-500 mt-1">
                         Processing: {methodConfig?.processingTime} •{" "}
                         {methodConfig?.fee}
@@ -597,16 +625,16 @@ export default function PaymentMethods({
 
                 {/* Form Fields */}
                 <div className="space-y-4">
-                  {PAYMENT_METHODS[selectedType].fields.map((field) => (
-                    <div key={field.name}>
+                  {PAYMENT_METHODS[selectedType]?.fields?.map((field) => (
+                    <div key={field?.name}>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        {field.label}
-                        {field.required && (
+                        {field?.label}
+                        {field?.required && (
                           <span className="text-red-500 ml-1">*</span>
                         )}
                       </label>
 
-                      {field.type === "select" ? (
+                      {field?.type === "select" ? (
                         <select
                           value={formData[field.name] || ""}
                           onChange={(e) =>
@@ -615,24 +643,24 @@ export default function PaymentMethods({
                               [field.name]: e.target.value,
                             })
                           }
-                          autoComplete={field.autoComplete || "off"}
-                          placeholder={field.placeholder || ""}
+                          autoComplete={field?.autoComplete || "off"}
+                          placeholder={field?.placeholder || ""}
                           className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                             errors[field.name]
                               ? "border-red-500"
                               : "border-gray-300"
                           }`}
                         >
-                          <option value="">Select {field.label}</option>
-                          {field.options.map((option) => (
+                          <option value="">Select {field?.label}</option>
+                          {field?.options.map((option) => (
                             <option key={option} value={option}>
-                              {option.charAt(0).toUpperCase() + option.slice(1)}
+                              {option?.charAt(0)?.toUpperCase() + option?.slice(1)}
                             </option>
                           ))}
                         </select>
                       ) : (
                         <input
-                          type={field.type}
+                          type={field?.type}
                           value={formData[field.name] || ""}
                           onChange={(e) =>
                             setFormData({
@@ -640,10 +668,10 @@ export default function PaymentMethods({
                               [field.name]: e.target.value,
                             })
                           }
-                          autoComplete={field.autoComplete || 'off'}
-                          placeholder={field.placeholder || ""}
-                          pattern={field.pattern || undefined}
-                          maxLength={field.maxLength}
+                          autoComplete={field?.autoComplete || 'off'}
+                          placeholder={field?.placeholder || ""}
+                          pattern={field?.pattern || undefined}
+                          maxLength={field?.maxLength}
                           className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                             errors[field.name]
                               ? "border-red-500"

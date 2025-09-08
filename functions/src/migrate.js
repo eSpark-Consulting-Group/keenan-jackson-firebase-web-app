@@ -94,7 +94,7 @@ const DonationSchema = {
   payoutPercentage: 0, // number - 0.77 or 0.80 based on tier
   
   // Status tracking
-  status: 'pending', // string - 'pending', 'completed', 'failed', 'refunded'
+  status: 'pending_payout', // string - 'pending_payout', 'completed', 'failed', 'refunded'
   completedAt: null, // Timestamp - when payment completed
   failedAt: null, // Timestamp - if payment failed
   failureReason: null, // string - reason for failure
@@ -314,7 +314,7 @@ const WinnerSchema = {
   notificationErrors: [], // array - any errors
   
   // Payout status
-  payoutStatus: 'pending', // string - 'pending', 'processing', 'completed', 'failed'
+  status: 'pending_payout', // string - 'pending_payout', 'processing', 'completed', 'failed'
   payoutMethod: null, // string
   payoutDetails: {}, // object - transaction details
   payoutCompletedAt: null, // Timestamp

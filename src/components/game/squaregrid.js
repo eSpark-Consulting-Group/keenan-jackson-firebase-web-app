@@ -61,11 +61,19 @@ export default function SquareGrid({
   };
 
   const getSquareColor = (position, status) => {
-    const isWinning = winningSquares.includes(Number(position));
+    const pos = String(position);
+
+    // ✅ Collect all winning positions from processed quarters
+    const processedWinningPositions = Object.values(game?.quarterScores ?? {})
+      .filter((q) => q?.processed) // only quarters marked processed
+      .flatMap((q) => q?.winningPositions ?? []);
+
+    const isWinning = processedWinningPositions.includes(pos);
 
     if (isWinning) {
-      if (status === "mine")
+      if (status === "mine") {
         return "bg-yellow-300 border-yellow-500 ring-4 ring-yellow-400 ring-opacity-50";
+      }
       return "bg-yellow-100 border-yellow-400 ring-2 ring-yellow-300";
     }
 

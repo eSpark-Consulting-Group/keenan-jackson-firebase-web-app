@@ -99,121 +99,176 @@ class ApiSportsService {
   /**
    * Fetch game score from API-Sports
    */
-  async fetchGameScore(gameKey, sport, week = 1) {
-    logger.info(`[fetchGameScore] Called`, { gameKey, sport, week });
-
-    if (!gameKey) {
-      logger.error("[fetchGameScore] No externalGameId provided");
-      throw new Error("No external GameKey provided");
-    }
-
-    if (FEATURE_FLAGS.MOCK_API_SPORTS) {
-      logger.warn("[fetchGameScore] Using MOCK data", { gameKey, sport, week });
-      return this.getMockGameData(gameKey, sport); // (apiSportsId -> gameKey)
-    }
+  async fetchGameScore(gameId, sport, week = 1) {
+    if (!gameId) throw new Error("No gameId provided");
 
     const config = SPORTS_CONFIG[sport];
-    if (!config) {
-      logger.error(`[fetchGameScore] Unknown sport`, { sport });
-      throw new Error(`Unknown sport: ${sport}`);
-    }
-
     const year = new Date().getFullYear();
-    logger.info(`[fetchGameScore] Parsed year/week`, { year, week });
-
-    const url = `https://api.sportsdata.io${config.endpoint}/${year}/${week}?key=${process.env.REACT_APP_APISPORTS_KEY}`;
-    logger.info(`[fetchGameScore] Built URL`, { url, gameKey, sport, week });
 
     try {
-      logger.info("[fetchGameScore] Making API request…", {
-        usingKey: !!process.env.REACT_APP_APISPORTS_KEY,
-        gameKey,
-        sport,
-        week,
-      });
+      let apiGame = null;
 
-      // const games = await this.makeRequest(url);
-      // const { data: games } = await axios.get(url);
-      const games = DUMMY_GAMES;
-      logger.info("[fetchGameScore] API returned", {
-        gameKey,
-        sport,
-        week,
-        count: Array.isArray(games) ? games.length : -1,
-      });
-
-      if (!Array.isArray(games)) {
-        logger.error("[fetchGameScore] Unexpected API response format", {
-          type: typeof games,
+      if (sport === "NFL") {
+        // --- NFL: Single game from API-Sports ---
+        const url = `https://v1.american-football.api-sports.io/games`;
+        logger.info(`[fetchGameScore][NFL] Fetching single game`, {
+          url,
+          gameId,
         });
-        throw new Error("Invalid response format from API");
+
+        const response = await axios.get(url, {
+          params: { id: gameId },
+          headers: {
+            "x-apisports-key": process.env.REACT_APP_APISPORTS_KEY,
+          },
+        });
+
+        logger.info(`[fetchGameScore][NFL] API raw response length`, {
+          count: response.data?.response?.length,
+        });
+
+        apiGame = response.data?.response?.[0] || null;
+      } else if (sport === "CFB") {
+        // --- CFB: Single game from ESPN ---
+        const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary`;
+        logger.info(`[fetchGameScore][CFB] Fetching single game`, {
+          url,
+          gameId,
+        });
+
+        const response = await axios.get(url, {
+          params: { event: gameId },
+          headers: { accept: "application/json" },
+        });
+
+        logger.info(`[fetchGameScore][CFB] Got response keys`, {
+          keys: Object.keys(response.data || {}),
+        });
+
+        const competition = response.data.header?.competitions?.[0];
+        if (competition) {
+          const status = competition.status.type;
+          const venue = competition.venue || {};
+          const home = competition.competitors.find(
+            (t) => t.homeAway === "home"
+          );
+          const away = competition.competitors.find(
+            (t) => t.homeAway === "away"
+          );
+
+          // 🔑 Handle stage + week properly
+          const seasonType = response.data.header?.season?.type; // 2=regular, 3=postseason, 4=championship
+          let stage = "Regular Season";
+          let week = null;
+
+          if (seasonType === 2) {
+            stage = "Regular Season";
+            week = response.data.header.week;
+          } else {
+            stage = "Post Season";
+            week = response.data.header?.week?.text || "Championship";
+          }
+
+          apiGame = {
+            game: {
+              id: gameId,
+              stage,
+              week,
+              date: {
+                timezone: "UTC",
+                date: competition.date.split("T")[0],
+                time: competition.date.split("T")[1].slice(0, 5),
+                timestamp: Math.floor(
+                  new Date(competition.date).getTime() / 1000
+                ),
+              },
+              venue: {
+                name: venue.fullName || null,
+                city: venue.address?.city || null,
+              },
+              status: {
+                short:
+                  status.state === "post"
+                    ? "FT"
+                    : status.state === "pre"
+                      ? "NS"
+                      : "Q1",
+                long: status.description,
+                timer: null,
+              },
+            },
+            teams: {
+              home: {
+                id: home.team.id,
+                name: home.team.displayName,
+                logo: home.team.logo,
+              },
+              away: {
+                id: away.team.id,
+                name: away.team.displayName,
+                logo: away.team.logo,
+              },
+            },
+            scores: {
+              home: {
+                quarter_1: home.linescores?.[0]?.value ?? 0,
+                quarter_2: home.linescores?.[1]?.value ?? 0,
+                quarter_3: home.linescores?.[2]?.value ?? 0,
+                quarter_4: home.linescores?.[3]?.value ?? 0,
+                overtime: home.linescores?.[4]?.value ?? null,
+                total: Number(home.score) || 0,
+              },
+              away: {
+                quarter_1: away.linescores?.[0]?.value ?? 0,
+                quarter_2: away.linescores?.[1]?.value ?? 0,
+                quarter_3: away.linescores?.[2]?.value ?? 0,
+                quarter_4: away.linescores?.[3]?.value ?? 0,
+                overtime: away.linescores?.[4]?.value ?? null,
+                total: Number(away.score) || 0,
+              },
+            },
+          };
+
+          logger.info(`[fetchGameScore][CFB] Parsed game object created`, {
+            id: apiGame.game.id,
+            week: apiGame.game.week,
+            status: apiGame.game.status,
+          });
+        } else {
+          logger.warn(
+            `[fetchGameScore][CFB] No competition found in response`,
+            {
+              gameId,
+            }
+          );
+        }
       }
 
-      const game = games.find((g) => g?.GameKey == gameKey);
-      if (!game) {
-        logger.warn("[fetchGameScore] Game not found in API response", {
-          gameKey,
-          availableKeys: games
-            .map((g) => g?.GameKey)
-            .filter(Boolean)
-            .slice(0, 50), // avoid huge logs
-          sport,
-          year,
-          week,
-        });
-
-        // SAFE STUB so the pipeline doesn’t crash
-        const notFoundStub = {
-          apiSportsId: gameKey,
+      if (!apiGame) {
+        logger.warn(`[fetchGameScore] No game found`, { sport, gameId });
+        return {
+          apiSportsId: gameId,
           status: "unknown",
-          currentPeriod: 0,
-          quarterScores: {},
           currentQuarter: 1,
+          quarterScores: {},
           totalScore: { home: 0, away: 0 },
           teams: { home: "", away: "" },
           startTime: null,
           lastUpdate: new Date().toISOString(),
           _notFound: true,
         };
-        logger.info("[fetchGameScore] Returning notFound stub", {
-          gameKey,
-          sport,
-          week,
-        });
-        return notFoundStub;
-
-        // OR: throw to skip this game entirely
-        // throw new Error(`Game ${gameKey} not found for ${sport} ${year} week ${week}`);
       }
 
-      logger.info("[fetchGameScore] Found game", {
-        gameKey,
-        home: game?.HomeTeam,
-        away: game?.AwayTeam,
+      const parsed = this.parseGameData(apiGame, sport);
+      logger.info(`[fetchGameScore] Parsed game data ready`, {
+        gameId,
         sport,
-        year,
-        week,
+        status: parsed.status,
       });
 
-      const parsed = this.parseGameData(game, sport);
-      logger.info("[fetchGameScore] Successfully parsed game data", {
-        gameKey,
-        sport,
-        week,
-        status: parsed?.status,
-        currentQuarter: parsed?.currentQuarter,
-      });
       return parsed;
     } catch (error) {
-      logger.error("[fetchGameScore] Error fetching game score", {
-        error: error?.message,
-        stack: error?.stack,
-        gameKey,
-        sport,
-        week,
-        url,
-      });
-      logError(error, { context: "fetchGameScore", gameKey, sport, week, url });
+      logger.error(`[fetchGameScore] Error`, { gameId, sport, error });
       throw error;
     }
   }
@@ -221,170 +276,119 @@ class ApiSportsService {
   /**
    * Parse API response into standard format
    */
-  parseGameData(apiGame, sport) {
-    // HARD GUARD: avoid crashes if caller passes undefined
-    if (!apiGame || typeof apiGame !== "object") {
-      logger.error("[parseGameData] apiGame is missing/invalid", {
-        sport,
-        typeofApiGame: typeof apiGame,
+  async parseGameData(apiGame, sport) {
+    logger.info("API GAME IN PARSE GAME ", { apiGame });
+
+    const game = apiGame.game;
+    const teams = apiGame.teams;
+    const scores = apiGame.scores;
+
+    logger.info("GAMMME parse Game: ", { game, teams, scores });
+
+    // Map status
+    const statusMap = {
+      NS: "scheduled",
+      Q1: "active",
+      Q2: "active",
+      Q3: "active",
+      Q4: "active",
+      OT: "active",
+      HT: "active",
+      FT: "completed",
+      AOT: "completed",
+      PST: "cancelled",
+      CANC: "cancelled",
+      SUSP: "cancelled",
+    };
+    const statusShort = game?.status?.short;
+    let gameStatus = statusMap[statusShort];
+
+    logger.info("GAME STATUS: ", { gameStatus, id: game?.id });
+
+    const db = admin.firestore();
+
+    const snapshot = await db
+      .collection("games")
+      .where("externalGameId", "==", String(game?.id))
+      .get();
+
+    if (snapshot.empty) {
+      logger.info("No active game found", {
+        id: game?.id,
+        type: typeof game?.id,
       });
-      return {
-        apiSportsId: null,
-        status: "unknown",
-        currentPeriod: 0,
-        quarterScores: {},
-        currentQuarter: 1,
-        totalScore: { home: 0, away: 0 },
-        teams: { home: "", away: "" },
-        startTime: null,
-        lastUpdate: new Date().toISOString(),
-        _parseWarning: "apiGame_missing",
-      };
+    } else {
+      const activeGameDoc = snapshot.docs[0];
+      const activeGameData = activeGameDoc.data();
+
+      if (activeGameData?.status === "active" && gameStatus === "scheduled") {
+        gameStatus = "active";
+      }
+      logger.info("GAME FOUND ", { activeGameData, id: game?.id });
     }
+    logger.info("GAME STATUS 2: ", { gameStatus, id: game?.id });
 
-    let currentQuarter = 1;
-    const isBasketball = sport === "NBA" || sport === "NCAA_BB";
+    // Parse quarter scores
+    const quarterScores = {};
+    let scoredQuarters = 0;
 
-    logger.info("[parseGameData] Incoming raw game object", {
-      sport,
-      keys: Object.keys(apiGame || {}),
-      gameKey: apiGame?.GameKey || apiGame?.id,
-      status: apiGame?.Status || apiGame?.status,
-      scoreQuarter: apiGame?.HomeScoreQuarter1,
-    });
-
-    let quarterScores = {};
-
-    if (apiGame?.HomeScoreQuarter1 !== undefined) {
-      logger.info("[parseGameData] Detected NFL-style game object");
-      quarterScores = {
-        q1: {
-          home: apiGame?.HomeScoreQuarter1 ?? null,
-          away: apiGame?.AwayScoreQuarter1 ?? null,
-        },
-        q2: {
-          home: apiGame?.HomeScoreQuarter2 ?? null,
-          away: apiGame?.AwayScoreQuarter2 ?? null,
-        },
-        q3: {
-          home: apiGame?.HomeScoreQuarter3 ?? null,
-          away: apiGame?.AwayScoreQuarter3 ?? null,
-        },
-        q4: {
-          home: apiGame?.HomeScoreQuarter4 ?? null,
-          away: apiGame?.AwayScoreQuarter4 ?? null,
-        },
-      };
-
-      const quarterFlags = [
-        { key: "Has1stQuarterStarted", number: 1 },
-        { key: "Has2ndQuarterStarted", number: 2 },
-        { key: "Has3rdQuarterStarted", number: 3 },
-        { key: "Has4thQuarterStarted", number: 4 },
-      ];
-
-      for (const q of quarterFlags) {
-        if (apiGame[q.key]) {
-          currentQuarter = q.number;
-        } else {
-          break;
+    ["quarter_1", "quarter_2", "quarter_3", "quarter_4", "overtime"].forEach(
+      (q, idx) => {
+        if (scores?.home?.[q] !== null && scores?.home?.[q] !== undefined) {
+          const key = q === "overtime" ? "ot" : `q${idx + 1}`;
+          quarterScores[key] = {
+            home: scores.home[q] ?? null,
+            away: scores.away[q] ?? null,
+          };
+          scoredQuarters++;
         }
       }
+    );
 
-      console.log("Current Quarter =", currentQuarter);
-
-      logger.info(
-        "[parseGameData] Extracted NFL-style quarter scores",
-        quarterScores
-      );
-    } else if (apiGame?.Periods?.length) {
-      logger.info(
-        "[parseGameData] Detected NCAA-style game object with Periods",
-        {
-          periodsCount: apiGame?.Periods?.length,
-        }
-      );
-
-      quarterScores = apiGame.Periods.reduce((acc, p, idx) => {
-        acc[`q${idx + 1}`] = {
-          home: p?.HomeScore ?? null,
-          away: p?.AwayScore ?? null,
-        };
-        return acc;
-      }, {});
-      currentQuarter =
-        apiGame?.periods?.current ||
-        apiGame?.Periods?.length ||
-        apiGame?.Quarter ||
-        1;
-
-      logger.info(
-        "[parseGameData] Extracted Period-based quarter scores",
-        quarterScores
-      );
-    }
-
-    if (apiGame?.IsOvertime || apiGame?.HomeScoreOvertime !== undefined) {
-      logger.info("[parseGameData] Adding overtime scores");
-      quarterScores.ot = {
-        home: apiGame?.HomeScoreOvertime ?? null,
-        away: apiGame?.AwayScoreOvertime ?? null,
-      };
-    }
-
-    let gameStatus = "unknown";
-    const statusMap = {
-      NS: "scheduled", // Not Started
-      Q1: "active", // 1st Quarter
-      Q2: "active", // 2nd Quarter
-      Q3: "active", // 3rd Quarter
-      Q4: "active", // 4th Quarter
-      OT: "active", // Overtime
-      HT: "active", // Halftime
-      FT: "completed", // Full Time
-      AOT: "completed", // After Overtime
-      PST: "cancelled", // Postponed
-      CANC: "cancelled", // Cancelled
-      SUSP: "cancelled", // Suspended
+    // Total score
+    const totalScore = {
+      home: scores?.home?.total ?? 0,
+      away: scores?.away?.total ?? 0,
     };
 
-    if (apiGame?.status?.short) {
-      gameStatus = statusMap[apiGame.status.short] || "unknown";
-    } else if (typeof apiGame?.Status === "string") {
-      gameStatus = apiGame.Status.toLowerCase();
+    // Teams
+    const parsedTeams = {
+      home: teams?.home?.name ?? "",
+      away: teams?.away?.name ?? "",
+    };
+
+    // Start time
+    let startTime = null;
+    if (game?.date?.date && game?.date?.time) {
+      startTime = new Date(`${game.date.date}T${game.date.time}:00Z`);
     }
 
-    logger.info("[parseGameData] Normalized game status", { gameStatus });
+    // 🔑 Current Quarter based on status.short
+    let currentQuarter = 0;
+    if (statusShort === "Q1") currentQuarter = 1;
+    else if (statusShort === "Q2" || statusShort === "HT") currentQuarter = 2;
+    else if (statusShort === "Q3") currentQuarter = 3;
+    else if (
+      statusShort === "Q4" ||
+      statusShort === "OT" ||
+      statusShort === "AOT" ||
+      statusShort === "FT"
+    )
+      currentQuarter = 4;
+    else currentQuarter = scoredQuarters || 1;
 
-    const parsed = {
-      apiSportsId: apiGame?.id || apiGame?.GameKey || null,
+    return {
+      apiSportsId: game?.id,
       status: gameStatus,
-      currentPeriod: apiGame?.periods?.current || apiGame?.Quarter || 0,
-      quarterScores,
       currentQuarter,
-      totalScore: {
-        home: apiGame?.HomeScore ?? apiGame?.HomeTeamScore ?? 0,
-        away: apiGame?.AwayScore ?? apiGame?.AwayTeamScore ?? 0,
-      },
-      teams: {
-        home: apiGame?.HomeTeam || apiGame?.teams?.home?.name || "",
-        away: apiGame?.AwayTeam || apiGame?.teams?.away?.name || "",
-      },
-      startTime:
-        apiGame?.Date || apiGame?.date
-          ? new Date(apiGame?.Date || apiGame?.date)
-          : null,
+      quarterScores,
+      totalScore,
+      teams: parsedTeams,
+      startTime,
       lastUpdate: new Date().toISOString(),
+      stage: game?.stage || null, // ✅ pass through
+      week: game?.week || null, // ✅ number for regular, string for playoffs/championship
     };
-
-    logger.info("[parseGameData] Final parsed object", {
-      apiSportsId: parsed.apiSportsId,
-      status: parsed.status,
-      currentQuarter: parsed.currentQuarter,
-      currentPeriod: parsed.currentPeriod,
-    });
-
-    return parsed;
   }
 
   /**
@@ -552,7 +556,7 @@ async function monitorSingleGame(db, gameDoc) {
     // Update game with latest data
     const updates = {
       lastApiCheck: getTimestamp(),
-      lastApiStatus: liveData.status,
+      lastApiStatus: game?.status?.short ?? null,
       apiCheckCount: admin.firestore.FieldValue.increment(1),
       currentQuarter: liveData.currentQuarter || game?.currentQuarter || 1,
     };
@@ -835,6 +839,9 @@ const activateNext7DaysGames = functions.pubsub
     const sevenDaysAhead = new Date(now.toDate()); // if getNow() returns Firestore.Timestamp
     sevenDaysAhead.setDate(sevenDaysAhead.getDate() + 7);
 
+    console.log("NOW:", now.toDate());
+    console.log("7 DAYS AHEAD:", sevenDaysAhead);
+
     try {
       // Find upcoming games that start within the next 7 days
       const upcomingGames = await db
@@ -853,6 +860,12 @@ const activateNext7DaysGames = functions.pubsub
       const batch = db.batch();
 
       upcomingGames.forEach((doc) => {
+        console.log(
+          "GAME:",
+          doc.id,
+          doc.data().gameDate.toDate(),
+          doc.data().status
+        );
         batch.update(doc.ref, {
           status: GAME_CONFIG.STATUS.ACTIVE,
           scheduledActivationTime: getTimestamp(), // optional custom field

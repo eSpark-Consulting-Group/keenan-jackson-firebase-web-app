@@ -560,7 +560,7 @@ async function processQuarterWinners(db, gameId, quarter, score, gameData) {
 
       gameInfo: gameData.teams,
       notificationStatus: "pending",
-      payoutStatus: "pending",
+      status: "pending_payout",
       createdAt: getTimestamp(),
     };
 

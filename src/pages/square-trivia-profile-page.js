@@ -98,9 +98,9 @@ export default function Profile() {
         // ✅ Totals based on prizeAmount
         totalWinnings += amount;
 
-        if (data.payoutStatus === "pending") {
+        if (data.status === "pending_payout") {
           pendingAmount += amount;
-        } else if (data.payoutStatus === "completed") {
+        } else if (data.status === "completed") {
           completedAmount += amount;
           if (data.payoutType === "instant" || data.isInstant) {
             instantAmount += amount;
