@@ -62,6 +62,7 @@ export default function Payouts() {
   const [expandedId, setExpandedId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const generatePDF = () => {
     const creationDate = new Date().toLocaleDateString();
@@ -182,7 +183,7 @@ export default function Payouts() {
 
       const payoutsQuery = query(
         collection(db, collections.winners),
-        where("userId", "==", user.uid),   
+        where("userId", "==", user.uid),
         orderBy("createdAt", "desc")
       );
 
@@ -777,7 +778,7 @@ export default function Payouts() {
                               </span>{" "}
                               {payout.answerTime} ms
                             </p>
-                        </div>
+                          </div>
                         </motion.div>
                       )}
                     </div>
@@ -785,7 +786,7 @@ export default function Payouts() {
 
                   {/* RIGHT SIDE ACTIONS */}
                   <div className="ml-6 flex flex-col items-end gap-2">
-                    {/* {payout.status === "pending_payout" && ( */}
+                    {!payout.confirmationDetails && (
                     <button
                       onClick={() => handleInstantPayout(payout)}
                       disabled={
@@ -806,14 +807,23 @@ export default function Payouts() {
                         : payout.status !== "pending_payout"
                           ? "Get Instant Not Available Now"
                           : "Get Instant Paid"}
-                    </button>
-
-                    {/* )} */}
-                    {/* {payout.status === "completed" && (
-                      <button className="text-gray-400 hover:text-gray-600">
-                        <Download className="h-5 w-5" />
+                    </button>)}
+                    {payout.confirmationDetails && (
+                      <button
+                        onClick={() => {
+                          setSelectedPayout(payout);
+                          setShowDetailsModal(true);
+                        }}
+                        className={`flex items-center px-4 py-2 rounded-xl shadow transition-colors ${
+                          payout.confirmationDetails
+                            ? "bg-blue-600 text-white hover:bg-blue-700"
+                            : "bg-gray-300 cursor-not-allowed text-gray-600"
+                        }`}
+                      >
+                        <Info className="h-4 w-4 mr-2" />
+                        View Payment Details
                       </button>
-                    )} */}
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -1158,6 +1168,45 @@ export default function Payouts() {
           </motion.div>
         )}
       </div>
+      {showDetailsModal && selectedPayout && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-[500px]">
+            <h2 className="text-xl font-bold mb-4">Payment Details</h2>
+
+            <div className="space-y-3">
+              <p>
+                <strong>Status:</strong> {selectedPayout.status}
+              </p>
+              {selectedPayout.completedAt && (
+                <p>
+                  <strong>Completed At:</strong>{" "}
+                  {new Date(
+                    selectedPayout.completedAt.seconds * 1000
+                  ).toLocaleString()}
+                </p>
+              )}
+              <p>
+                <strong>Confirmation Details:</strong>
+                <br />
+                <span className="whitespace-pre-line">
+                  {selectedPayout.confirmationDetails}
+                </span>
+              </p>
+            </div>
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => {
+                  setShowDetailsModal(false);
+                  setSelectedPayout(null);
+                }}
+                className="px-5 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
