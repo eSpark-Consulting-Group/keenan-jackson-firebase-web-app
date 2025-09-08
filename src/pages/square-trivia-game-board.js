@@ -38,48 +38,7 @@ export default function GameBoard() {
   const { boardId } = useParams();
   const navigate = useNavigate();
   const { user, userData } = useAuth();
-  const [winners, setWinners] = useState([
-    {
-      id: "1",
-      displayName: "John Doe",
-      email: "john@example.com",
-      quarter: 1,
-      isFastest: false,
-      position: "59",
-    },
-    {
-      id: "2",
-      displayName: "Jane Smith",
-      position: "12",
-      email: "jane@example.com",
-      quarter: 2,
-      isFastest: false,
-    },
-    {
-      id: "3",
-      displayName: "Mike Johnson",
-      position: "10",
-      email: "mike@example.com",
-      quarter: 3,
-      isFastest: false,
-    },
-    {
-      id: "4",
-      position: "05",
-      displayName: "Emily Davis",
-      email: "emily@example.com",
-      quarter: 4,
-      isFastest: false,
-    },
-    {
-      id: "5",
-      position: "20",
-      displayName: "Chris Brown",
-      email: "chris@example.com",
-      quarter: null, // no quarter since Board Winner
-      isFastest: true,
-    },
-  ]);
+  const [winners, setWinners] = useState([]);
 
   const [board, setBoard] = useState(null);
   const [game, setGame] = useState(null);
