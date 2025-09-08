@@ -33,6 +33,7 @@ import { Link } from "react-router-dom";
 export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
+  console.log(users, "users");
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterOptions, setFilterOptions] = useState({
@@ -207,6 +208,26 @@ export default function AdminUsers() {
         return aVal < bVal ? 1 : -1;
       }
     });
+
+  // Add this function inside AdminUsers
+  const toggleAdmin = async (user, currentStatus) => {
+    const newStatus = !currentStatus; // flip true/false
+
+    try {
+      await updateDoc(doc(db, collections.users, user.id), {
+        isAdmin: newStatus,
+      });
+
+      const userLabel = user.displayName || user.email?.split("@")[0] || "User";
+      const statusLabel = newStatus ? "is Admin Now" : "is Not Admin Now";
+
+      toast.success(`${userLabel} ${statusLabel}`);
+      loadUsers(); // reload list
+    } catch (error) {
+      console.error("Error updating admin status:", error);
+      toast.error("Failed to update admin status");
+    }
+  };
 
   const UserDetailsModal = ({ user, onClose }) => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -546,6 +567,9 @@ export default function AdminUsers() {
                     Status
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    is Admin
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -557,8 +581,12 @@ export default function AdminUsers() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            <Link to={`/admin/users/${user.id}`} className="hover:underline">
-                            {user.displayName || "Anonymous"}</Link>
+                            <Link
+                              to={`/admin/users/${user.id}`}
+                              className="hover:underline"
+                            >
+                              {user.displayName || "Anonymous"}
+                            </Link>
                           </div>
                           <div className="text-sm text-gray-500">
                             {user.email}
@@ -609,6 +637,23 @@ export default function AdminUsers() {
                           )}
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <label className="inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={user.isAdmin || false}
+                            onChange={() => toggleAdmin(user, user.isAdmin)}
+                            className="sr-only peer"
+                          />
+                          <div
+                            className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer dark:bg-gray-300
+      peer-checked:bg-blue-600 relative transition-colors"
+                          >
+                            <span className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow"></span>
+                          </div>
+                        </label>
+                      </td>
+
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">
                           <button
