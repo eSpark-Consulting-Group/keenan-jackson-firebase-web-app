@@ -17,6 +17,7 @@ import {
   BarChart,
   Clock,
   Award,
+  File,
 } from "lucide-react";
 import { db, collections } from "../../firebase/config";
 import {
@@ -381,14 +382,23 @@ export default function AdminTrivia() {
               Manage sports trivia questions and categories
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 justify-center items-center">
+            <a
+              href="/sample-trivia-import.csv"
+              download="sample-trivia-import.csv"
+              className="flex flex-col items-center justify-center text-green-600 hover:text-blue-800 cursor-pointer"
+              title="Download Sample Trivias File"
+            >
+              <File className="h-6 w-6 mb-1" />{" "}
+              {/* mb-1 adds small spacing below icon */}
+              <p className="text-xs text-center">Sample</p>
+            </a>
             <button
               onClick={handleClick}
               className="flex items-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
             >
               <Upload className="h-4 w-4 mr-2" />
-              Import
-            </button>
+              Import            </button>
             <input
               type="file"
               accept=".csv"

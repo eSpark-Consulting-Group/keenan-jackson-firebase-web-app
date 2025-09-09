@@ -1,0 +1,6 @@
+question,correctAnswer,wrongAnswer1,wrongAnswer2,wrongAnswer3,sport,category,difficulty,timeLimit,points,explanation
+Who won the Super Bowl in 2024?,Kansas City Chiefs,San Francisco 49ers,Philadelphia Eagles,Buffalo Bills,NFL,Records & Achievements,medium,30,100,Kansas City Chiefs defeated the San Francisco 49ers.
+Which NBA player has the most career points?,LeBron James,Kobe Bryant,Michael Jordan,Karl Malone,NBA,Player Statistics,expert,40,200,LeBron James holds the record for most career points.
+Which college football team is known as the Crimson Tide?,Alabama,Ohio State,Notre Dame,Michigan,CFB,Team History,easy,25,50,Alabama's team nickname is the Crimson Tide.
+What NCAA basketball team has won the most championships?,UCLA,Duke,North Carolina,Kansas,NCAA_BASKETBALL,Records & Achievements,hard,35,150,UCLA has the most NCAA men's basketball championships.
+"Which NFL team is known as ""America's Team""?",Dallas Cowboys,Green Bay Packers,New England Patriots,Pittsburgh Steelers,NFL,Team History,all,30,100,"Dallas Cowboys are popularly referred to as ""America's Team""."
