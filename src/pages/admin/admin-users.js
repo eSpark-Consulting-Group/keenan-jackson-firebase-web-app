@@ -16,7 +16,12 @@ import {
   RefreshCw,
   MessageSquare,
 } from "lucide-react";
-import { db, collections, formatCurrency } from "../../firebase/config";
+import {
+  db,
+  collections,
+  formatCurrency,
+  functions,
+} from "../../firebase/config";
 import {
   collection,
   query,
@@ -30,6 +35,7 @@ import {
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../contexts/authcontext";
+import { httpsCallable } from "firebase/functions";
 
 export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
@@ -212,16 +218,19 @@ export default function AdminUsers() {
 
   // Add this function inside AdminUsers
   const toggleAdmin = async (user, currentStatus) => {
-    const newStatus = !currentStatus; // flip true/false
+    const newStatus = !currentStatus;
+    console.log(user);
 
     try {
       await updateDoc(doc(db, collections.users, user.id), {
         isAdmin: newStatus,
       });
-
+      if (newStatus) {
+        const setAdminClaim = httpsCallable(functions, "setAdminClaim");
+        await setAdminClaim({ uid: user.id });
+      }
       const userLabel = user.displayName || user.email?.split("@")[0] || "User";
       const statusLabel = newStatus ? "is Admin Now" : "is Not Admin Now";
-
       toast.success(`${userLabel} ${statusLabel}`);
       loadUsers(); // reload list
     } catch (error) {

@@ -203,6 +203,15 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
           (g) => g.game.stage === "Post Season" && g.game.week === "Super Bowl"
         );
       }
+
+      const now = Math.floor(Date.now() / 1000);
+
+      const completedStatuses = ["Finished", "Final", "Match Finished"];
+      games = games.filter(
+        (item) =>
+          item?.game?.date?.timestamp > now ||
+          !completedStatuses.includes(item?.game?.status?.long)
+      );
     }
 
     if (sport === "CFB") {
