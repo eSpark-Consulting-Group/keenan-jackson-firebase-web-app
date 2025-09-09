@@ -108,7 +108,7 @@ export const bulkUploadQuestions = async (file) => {
               difficulty: row.difficulty.trim().toLowerCase(),
               timeLimit: Number(row.timeLimit),
               points: Number(row.points),
-              explanation: row.explanation.trim(),
+              explanation: row.explanation ? row.explanation.trim() : "",
               isActive: true,
               createdAt: new Date(),
               updatedAt: new Date(),
