@@ -50,6 +50,7 @@ import "./styles/index.css";
 import LandingPage from "./pages/LandingPage";
 import Payouts from "./pages/square-trivia-payouts-page";
 import Tier from "./pages/square-trivia-tier-page";
+import TeamsFanbase from "./pages/admin/teams-fanbase";
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -338,6 +339,16 @@ function App() {
                   <AdminRoute>
                     <Layout>
                       <AdminReports />
+                    </Layout>
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/teams-reports"
+                element={
+                  <AdminRoute>
+                    <Layout>
+                      <TeamsFanbase />
                     </Layout>
                   </AdminRoute>
                 }

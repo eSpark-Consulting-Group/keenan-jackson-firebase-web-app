@@ -41,6 +41,8 @@ import {
   where,
 } from "firebase/firestore";
 import PayoutMethods from "../components/Payouts/payment-methods";
+import { nbaTeams, nflTeams } from "../constant";
+import axios from "axios";
 
 export default function Profile() {
   const {
@@ -62,6 +64,8 @@ export default function Profile() {
   const [defaultPayoutMethod, setDefaultPayoutMethod] = useState(null);
   const [selectedPayoutMethod, setSelectedPayoutMethod] = useState(null);
   const [defaultMethod, setDefaultMethod] = useState(false);
+  const [cfbTeams, setCfbTeams] = useState([]);
+  const [cabTeams, setCabTeams] = useState([]);
   const [formData, setFormData] = useState({
     displayName: userData?.displayName || "",
     phone: userData?.phone || "",
@@ -71,6 +75,12 @@ export default function Profile() {
       telegram: userData?.notifications?.telegram ?? true,
       sms: userData?.notifications?.sms ?? false,
     },
+  });
+  const [teams, setTeams] = useState({
+    NFL: userData?.teams?.NFL ?? "",
+    NBA: userData?.teams?.NBA ?? "",
+    CFB: userData?.teams?.CFB ?? "",
+    NCAAB: userData?.teams?.NCAAB ?? "",
   });
   const loadPayouts = async () => {
     try {
@@ -147,6 +157,40 @@ export default function Profile() {
     loadUserStats();
   }, []);
 
+  useEffect(() => {
+    const fetchTop25 = async (sport, league, setter) => {
+      try {
+        const year = new Date().getFullYear();
+        const url = `https://site.web.api.espn.com/apis/fitt/v3/sports/${sport}/${league}/powerindex?season=${year}`;
+
+        const response = await axios.get(url);
+
+        const top25 = response.data.teams
+          ?.filter((t) =>
+            t.team?.ranks?.items?.some(
+              (r) => r.type === "ap" && r.rank?.current <= 25
+            )
+          )
+          .map((team) => {
+            const apRank = team.team.ranks.items.find((r) => r.type === "ap");
+            return {
+              id: team.team.id,
+              name: team.team.displayName,
+              rank: apRank.rank.current,
+            };
+          })
+          .sort((a, b) => a.rank - b.rank)
+          .slice(0, 25);
+
+        setter(top25);
+      } catch (err) {
+        console.error(`Failed to fetch rankings for ${league}:`, err);
+      }
+    };
+
+    fetchTop25("football", "college-football", setCfbTeams);
+    fetchTop25("basketball", "mens-college-basketball", setCabTeams);
+  }, []);
 
   const getPayoutMethodIcon = (type) => {
     switch (type) {
@@ -248,6 +292,7 @@ export default function Profile() {
         displayName: formData.displayName,
         phone: formData.phone,
         notifications: formData.notifications,
+        teams,
       });
 
       toast.success("Profile updated successfully!");
@@ -368,6 +413,17 @@ export default function Profile() {
         return "text-gray-400";
     }
   };
+
+  const handleTeamChange = (value, name) => {
+    setTeams((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  useEffect(() => {
+    console.log(teams);
+  }, [teams]);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -573,14 +629,15 @@ export default function Profile() {
                     </a>
                   )}
                   <div className="flex gap-x-3 items-center justify-between  mt-2">
-                    <label className=" text-sm font-medium text-gray-700 mt-2 flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700 mt-2 flex items-center justify-between">
                       Payouts Methods
                     </label>
                     <div
                       onClick={() => setShowPayoutMethods(true)}
                       className="flex items-center text-xs text-blue-600 mt-1 cursor-pointer"
                     >
-                      <Plus /> <span class={"text-sm"}> Add New Method</span>
+                      <Plus />{" "}
+                      <span className={"text-sm"}> Add New Method</span>
                     </div>
                   </div>
                   {userData?.paymentMethods?.length > 0 &&
@@ -646,6 +703,89 @@ export default function Profile() {
                         </div>
                       );
                     })}
+                </div>
+                <p className="text-lg font-medium text-gray-700">
+                  Favourite Teams
+                </p>
+                <div>
+                  <label className="block text-gray-700 font-medium mb-1">
+                    NFL
+                  </label>
+                  <select
+                    className="w-full border rounded-lg p-2"
+                    required
+                    onChange={(e) => handleTeamChange(e.target.value, "NFL")}
+                    disabled={!editing}
+                    value={teams?.NFL}
+                  >
+                    <option value="">-- Choose --</option>
+                    {nflTeams?.map((item, index) => (
+                      <option value={item} key={index}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-gray-700 font-medium mb-1">
+                    NBA
+                  </label>
+                  <select
+                    className="w-full border rounded-lg p-2"
+                    required
+                    onChange={(e) => handleTeamChange(e.target.value, "NBA")}
+                    disabled={!editing}
+                    value={teams?.NBA}
+                  >
+                    <option value="">-- Choose --</option>
+                    {nbaTeams?.map((item, index) => (
+                      <option value={item} key={index}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-gray-700 font-medium mb-1">
+                    NCAAF
+                  </label>
+                  <select
+                    className="w-full border rounded-lg p-2"
+                    required
+                    onChange={(e) => handleTeamChange(e.target.value, "CFB")}
+                    disabled={!editing}
+                    value={teams?.CFB}
+                  >
+                    <option value="">-- Choose --</option>
+                    {Array.isArray(cfbTeams) &&
+                      cfbTeams?.length > 0 &&
+                      cfbTeams?.map((item, index) => (
+                        <option value={item?.name} key={index}>
+                          {item?.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-gray-700 font-medium mb-1">
+                    NCAAB
+                  </label>
+                  <select
+                    className="w-full border rounded-lg p-2"
+                    required
+                    onChange={(e) => handleTeamChange(e.target.value, "NCAAB")}
+                    disabled={!editing}
+                    value={teams?.NCAAB}
+                  >
+                    <option value="">-- Choose --</option>
+                    {Array.isArray(cabTeams) &&
+                      cabTeams?.length > 0 &&
+                      cabTeams?.map((item, index) => (
+                        <option value={item?.name} key={index}>
+                          {item?.name}
+                        </option>
+                      ))}
+                  </select>
                 </div>
               </div>
             </div>

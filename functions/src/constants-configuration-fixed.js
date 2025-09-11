@@ -587,17 +587,17 @@ const DUMMY_GAMES = [
       week: "Week 1",
       date: {
         timezone: "UTC",
-        date: "2025-09-06",
+        date: "2025-09-12",
         time: "17:00",
-        timestamp: 1757178000,
+        timestamp: 1757696400,
       },
       venue: {
         name: null,
         city: null,
       },
       status: {
-        short: "FT",
-        long: "Finished",
+        short: "Q1",
+        long: "1st Quarter",
         timer: null,
       },
     },
@@ -615,7 +615,7 @@ const DUMMY_GAMES = [
     teams: {
       home: {
         id: 10,
-        name: "Cincinnati Bengals",
+        name: "Las Vegas Raiders",
         logo: "https://media.api-sports.io/american-football/teams/10.png",
       },
       away: {
@@ -626,18 +626,18 @@ const DUMMY_GAMES = [
     },
     scores: {
       home: {
-        quarter_1: 11,
-        quarter_2: 12,
-        quarter_3: 13,
-        quarter_4: 15,
+        quarter_1: null,
+        quarter_2: null,
+        quarter_3: null,
+        quarter_4: null,
         overtime: null,
         total: 0,
       },
       away: {
-        quarter_1: 17,
-        quarter_2: 18,
-        quarter_3: 14,
-        quarter_4: 19,
+        quarter_1: null,
+        quarter_2: null,
+        quarter_3: null,
+        quarter_4: null,
         overtime: null,
         total: 0,
       },

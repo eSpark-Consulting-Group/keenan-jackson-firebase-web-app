@@ -594,6 +594,66 @@ exports.determineWinners = functions.pubsub
     }
   });
 
+async function processClaimForTeam(game, claim) {
+  const { userId, answerTime, tokenId } = claim;
+  const { sport, teams } = game;
+
+  // 1. Load user
+  const userSnap = await db.collection("users").doc(userId).get();
+  if (!userSnap.exists) return;
+
+  const userTeams = userSnap.data().teams || {};
+  if (!userTeams[sport]) return;
+
+  const favTeam = userTeams[sport];
+  const gameTeams = [teams?.home, teams?.away];
+  if (!gameTeams.includes(favTeam)) return;
+
+  // 2. Reference sport-level document (e.g. teams/NFL)
+  const sportDocRef = db.collection("teams").doc(sport);
+  const sportDoc = await sportDocRef.get();
+
+  let teamsData = {};
+  if (sportDoc.exists) {
+    teamsData = sportDoc.data().teams || {};
+  }
+
+  // 3. Get team data (or init new one)
+  const teamData = teamsData[favTeam] || {
+    answerCount: 0,
+    processedClaims: [],
+    fastestAnswer: null,
+  };
+
+  // ✅ Skip if this claim already processed
+  if (teamData.processedClaims.includes(tokenId)) {
+    console.log(`⏩ Claim ${tokenId} already processed for ${favTeam}`);
+    return;
+  }
+
+  // 4. Update answerCount & processedClaims
+  teamData.answerCount += 1;
+  teamData.processedClaims.push(tokenId);
+
+  // 5. Update fastestAnswer
+  if (!teamData.fastestAnswer || answerTime < teamData.fastestAnswer.time) {
+    teamData.fastestAnswer = { userId, time: answerTime };
+  }
+
+  // 6. Save back to Firestore
+  await sportDocRef.set(
+    {
+      teams: {
+        ...teamsData,
+        [favTeam]: teamData,
+      },
+    },
+    { merge: true }
+  );
+
+  console.log(`✅ Updated ${sport} - ${favTeam}`, teamData);
+}
+
 // cleanup-old-claims.js
 async function cleanupOldClaims(boardId, board, currentQuarter, game) {
   const updates = {};
@@ -613,6 +673,10 @@ async function cleanupOldClaims(boardId, board, currentQuarter, game) {
 
   for (const [position, square] of Object.entries(board.squares || {})) {
     if (!square.claims || square.claims.length === 0) continue;
+
+    for (const claim of square.claims) {
+      await processClaimForTeam(game, claim);
+    }
 
     // 1. Find the fastest claim in this square (using answerTime)
     const fastestClaim = square.claims.reduce(
