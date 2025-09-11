@@ -8,7 +8,6 @@
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
-    
     {
       "collectionGroup": "donations",
       "queryScope": "COLLECTION",
@@ -27,7 +26,6 @@
         { "fieldPath": "accessExpiresAt", "order": "ASCENDING" }
       ]
     },
-    
     {
       "collectionGroup": "games",
       "queryScope": "COLLECTION",
@@ -45,7 +43,6 @@
         { "fieldPath": "startTime", "order": "DESCENDING" }
       ]
     },
-    
     {
       "collectionGroup": "boards",
       "queryScope": "COLLECTION",
@@ -63,7 +60,6 @@
         { "fieldPath": "isActive", "order": "ASCENDING" }
       ]
     },
-    
     {
       "collectionGroup": "squareClaims",
       "queryScope": "COLLECTION",
@@ -80,7 +76,6 @@
         { "fieldPath": "isWinner", "order": "ASCENDING" }
       ]
     },
-    
     {
       "collectionGroup": "triviaSessions",
       "queryScope": "COLLECTION",
@@ -99,7 +94,6 @@
         { "fieldPath": "answerTimeMs", "order": "ASCENDING" }
       ]
     },
-    
     {
       "collectionGroup": "winners",
       "queryScope": "COLLECTION",
@@ -128,7 +122,6 @@
         { "fieldPath": "payoutType", "order": "ASCENDING" }
       ]
     },
-    
     {
       "collectionGroup": "trivia",
       "queryScope": "COLLECTION",
@@ -138,7 +131,6 @@
         { "fieldPath": "isActive", "order": "ASCENDING" }
       ]
     },
-    
     {
       "collectionGroup": "accessTokens",
       "queryScope": "COLLECTION",
@@ -157,7 +149,6 @@
         { "fieldPath": "expiresAt", "order": "ASCENDING" }
       ]
     },
-    
     {
       "collectionGroup": "relayBatches",
       "queryScope": "COLLECTION",

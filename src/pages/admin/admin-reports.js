@@ -538,66 +538,64 @@ export default function AdminReports() {
     </motion.div>
   );
 
-  const RevenueChart = () => (
+  // Helper: get last 14 days with guaranteed entries
+const getLast14DaysData = (byDay = []) => {
+  const today = new Date();
+  const result = [];
+
+  for (let i = 13; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+
+    const dayStr = date.toISOString().split("T")[0]; // YYYY-MM-DD
+    const found = byDay.find((d) => d.date.startsWith(dayStr));
+
+    result.push({
+      date: date.toISOString(),
+      amount: found ? found.amount : 0,
+    });
+  }
+
+  return result;
+};
+
+const RevenueChart = () => {
+  const last14Days = getLast14DaysData(revenueData.byDay);
+  const maxAmount = Math.max(...last14Days.map((d) => d.amount), 0);
+
+  return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h3 className="text-lg font-semibold mb-4">Revenue Trend</h3>
       <div className="h-64 flex items-end justify-between gap-2">
-        {revenueData.byDay.slice(-14).map((day, index) => {
-          const maxAmount = Math.max(...revenueData.byDay.map((d) => d.amount));
+        {last14Days.map((day, index) => {
           const height = maxAmount > 0 ? (day.amount / maxAmount) * 100 : 0;
-          // console.log(maxAmount, "MAX_AMOUNT");
-          // console.log(revenueData, "REVENUE_DATA");
-          // console.log(day, "DAY");
-          // console.log(height, "HEIGHT");
+  console.log(maxAmount, "MAX_AMOUNT");
+          console.log(revenueData, "REVENUE_DATA");
+          console.log(day, "DAY");
+          console.log(height, "HEIGHT");
+
+          // Format date → "Sep 01"
+          const dateLabel = new Date(day.date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "2-digit",
+          });
 
           return (
             <div key={index} className="flex-1 flex flex-col items-center">
-              <div
-                className="w-full bg-blue-200 rounded-t"
-                style={{ height: `${height}px` }}
-              >
-                <div className="text-xs text-center mt-1 font-medium">
-                  {formatCurrency(day.amount)}
-                </div>
+              {/* Amount label above bar */}
+              <div className="text-xs mb-1 font-medium">
+                {formatCurrency(day.amount)}
               </div>
-              <div className="text-xs mt-2 rotate-45 origin-left">
-                {new Date(day.date).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
 
-  const TierBreakdown = () => (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h3 className="text-lg font-semibold mb-4">Revenue by Tier</h3>
-      <div className="space-y-3">
-        {Object.entries(revenueData.byTier).map(([tierId, amount]) => {
-          const tier = TIERS[tierId.toUpperCase()];
-          const percentage =
-            overview.totalRevenue > 0
-              ? (amount / overview.totalRevenue) * 100
-              : 0;
-          return (
-            <div key={tierId}>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium">
-                  {tier?.name || tierId}
-                </span>
-                <span className="text-sm text-gray-600">
-                  {formatCurrency(amount)}
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full ${tier?.color || "bg-gray-600"}`}
-                  style={{ width: `${percentage}%` }}
-                />
+              {/* Bar */}
+              <div
+                className="w-full bg-blue-500 rounded-t"
+                style={{ height: `${height}%` }}
+              />
+
+              {/* Date label */}
+              <div className="text-xs mt-2 rotate-45 origin-left">
+                {dateLabel}
               </div>
             </div>
           );
@@ -605,6 +603,38 @@ export default function AdminReports() {
       </div>
     </div>
   );
+};
+
+const TierBreakdown = () => (
+  <div className="bg-white rounded-lg shadow-md p-6">
+    <h3 className="text-lg font-semibold mb-4">Revenue by Tier</h3>
+    <div className="space-y-3">
+      {Object.values(TIERS).map((tier) => {
+        const amount = revenueData.byTier?.[tier.id] || 0;
+        const percentage =
+          overview.totalRevenue > 0 ? (amount / overview.totalRevenue) * 100 : 0;
+
+        return (
+          <div key={tier.id}>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium">{tier.name}</span>
+              <span className="text-sm text-gray-600">
+                {formatCurrency(amount)} ({percentage.toFixed(0)}%)
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full ${tier.color}`}
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+);
+
 
   if (loading) {
     return (
