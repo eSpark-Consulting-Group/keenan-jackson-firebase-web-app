@@ -5,8 +5,6 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const { sendMail } = require("./payment-system-modified");
-const { DUMMY_GAMES } = require("./constants-configuration-fixed");
-// const { DUMMY_GAMES } = require("./constants-configuration-fixed");
 const { logger } = require("firebase-functions");
 
 // =====================================
@@ -49,10 +47,6 @@ const TIER_AVAILABILITY = {
     "tier_1000",
   ],
 };
-
-// Payment processing constants
-const INSTANT_PAYOUT_FEE = 0.04; // 4% fee for instant payouts
-const BATCH_PAYOUT_DAYS = ["tuesday", "friday"];
 
 // API Sports configuration - Add your API keys during deployment
 const API_SPORTS_CONFIG = {

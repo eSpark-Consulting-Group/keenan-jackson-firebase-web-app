@@ -7,8 +7,4 @@ import "./styles/index.css";
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
 // Render app with providers
-root.render(
-  // <React.StrictMode>
-  <App />
-  // </React.StrictMode>
-);
+root.render(<App />);

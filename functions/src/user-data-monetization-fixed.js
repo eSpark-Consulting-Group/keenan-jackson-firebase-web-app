@@ -1,11 +1,9 @@
 const functions = require("firebase-functions");
-const { onRequest, onCall } = require("firebase-functions/v2/https");
 const { validateTelegramUsername } = require("./utility-functions-fixed");
 const admin = require("firebase-admin");
 const { grantTelegramAccess } = require("./payment-system-modified");
 const { verifyUserTierAccess } = require("./trivia-system-fixed");
 const { default: axios } = require("axios");
-// import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 const { logger } = require("firebase-functions");
 const { GAME_CONFIG } = require("./constants-configuration-fixed");
 
@@ -17,76 +15,12 @@ const db = admin.firestore();
 // ENHANCED USER PROFILE SCHEMA
 // =====================================
 
-const enhancedUserSchema = {
-  // Basic Info (already collecting)
-  email: "user@example.com",
-  telegramUsername: "@username",
-  createdAt: "Timestamp",
-
-  // Financial Profile
-  totalDonations: 0,
-  lifetimeValue: 0,
-  averageDonation: 0,
-  preferredTiers: ["100", "250"],
-  lastDonation: "Timestamp",
-  churnRisk: "low", // low, medium, high
-
-  // Game Preferences
-  favoriteTeams: {
-    NFL: ["Chiefs", "Bills"],
-    NBA: ["Lakers"],
-    NCAA_FB: ["Alabama"],
-    NCAA_BB: ["Duke"],
-  },
-  sportsEngagement: {
-    NFL: { gamesPlayed: 45, winRate: 0.22 },
-    NBA: { gamesPlayed: 23, winRate: 0.25 },
-    NCAA_FB: { gamesPlayed: 12, winRate: 0.18 },
-    NCAA_BB: { gamesPlayed: 8, winRate: 0.31 },
-  },
-
-  // Behavioral Data
-  lastActive: "Timestamp",
-  loginFrequency: "weekly", // daily, weekly, monthly
-  notificationPreferences: {
-    email: true,
-    telegram: true,
-    sms: false,
-    marketing: true, // KEY for monetization
-  },
-
-  // Geographic/Demographic
-  location: {
-    city: "Dallas",
-    state: "TX",
-    country: "US",
-    timezone: "America/Chicago",
-  },
-  estimatedAge: "25-34", // Based on game choices
-
-  // Engagement Metrics
-  referralCode: "MIKE123",
-  referredUsers: 3,
-  socialShares: 12,
-  supportTickets: 0,
-
-  // Monetization Flags
-  segments: ["high_roller", "nfl_enthusiast", "playoff_player"],
-  partnerOffers: {
-    draftkings: { eligible: true, converted: false },
-    fanduel: { eligible: true, converted: false },
-    youtubetv: { eligible: false, converted: false },
-  },
-};
-
-const TELEGRAM_BOT_TOKEN = "7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ";
-
 // Helper: send Telegram message
 async function sendTelegramNotification(chatId, message) {
   if (!chatId) return;
 
   await axios.post(
-    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+    `https://api.telegram.org/bot${process.env.REACT_TELEGRAM_BOT_TOKEN}/sendMessage`,
     {
       chat_id: chatId,
       text: message,
@@ -109,9 +43,15 @@ const API_SPORTS_CONFIG = {
 // =====================================
 
 // Track every user action
+  /**
+   * Destructures the `eventType` and `eventData` properties from the provided data object.
+   *
+   * @param {Object} data - The data object containing event information.
+   * @param {string} data.eventType - The type of the event.
+   * @param {*} data.eventData - The data associated with the event.
+   */
 exports.trackUserEvent = functions.https.onCall(async (data, context) => {
   if (!context.auth) return;
-
   const { eventType, eventData } = data;
   const userId = context.auth.uid;
 
@@ -129,9 +69,6 @@ exports.trackUserEvent = functions.https.onCall(async (data, context) => {
   await updateUserProfile(userId, eventType, eventData);
 });
 
-/**
- * Internal helper: safely grant Telegram access for a user & tier
- */
 /**
  * Internal helper: safely grant Telegram access for a user & tier
  */
@@ -163,9 +100,13 @@ async function handleGrantTelegramAccess(userId, telegramUsername, tier) {
   }
 }
 
+// Handles the /games command from Telegram.
+// Fetches all games from Firestore and sends details to the user.
 async function handleGameCommand(chatId) {
+  // Get all games from Firestore
   const gamesSnapshot = await admin.firestore().collection("games").get();
 
+  // If no games found, notify user
   if (gamesSnapshot.empty) {
     await sendTelegramNotification(chatId, "No games available at the moment.");
     return;
@@ -173,9 +114,11 @@ async function handleGameCommand(chatId) {
 
   const promises = [];
 
+  // For each game, format and send details
   gamesSnapshot.forEach((doc) => {
     const game = doc.data();
 
+    // Format game date
     let formattedDate = "";
     if (game.gameDate && game.gameDate.toDate) {
       formattedDate = game.gameDate.toDate().toLocaleDateString("en-US", {
@@ -185,18 +128,20 @@ async function handleGameCommand(chatId) {
       });
     }
 
+    // Build message with game info
     const message =
       `📅 Game Date: ${formattedDate}\n` +
       `🏟 Sports: ${game.sport}\n` +
       `🏠 Home Team: ${game.teams.home}\n` +
       `🛫 Away Team: ${game.teams.away}`;
 
+    // Queue message to be sent
     promises.push(sendTelegramNotification(chatId, message));
   });
 
+  // Send all messages
   await Promise.all(promises);
 }
-
 async function handleWinCommand(chatId) {
   const userSnapshot = await admin
     .firestore()
@@ -1069,6 +1014,7 @@ const TIER_CONFIG = {
     payoutPercentage: 0.8,
   },
 };
+
 exports.sendTelegramMessage = functions.https.onRequest(async (req, res) => {
   const TelegramBot = require("node-telegram-bot-api");
 
