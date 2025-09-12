@@ -74,6 +74,11 @@ export default function Layout({ children }) {
     { name: "Manage Payouts", href: "/admin/payouts", icon: CircleDollarSign },
     { name: "Manage Reports", href: "/admin/reports", icon: BarChart3 },
     { name: "Team Reports", href: "/admin/teams-reports", icon: BarChart3 },
+    {
+      name: "Referral Reports",
+      href: "/admin/referral-reports",
+      icon: BarChart3,
+    },
   ];
 
   const isActive = (href) => location.pathname === href;

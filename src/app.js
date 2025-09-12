@@ -51,6 +51,8 @@ import LandingPage from "./pages/LandingPage";
 import Payouts from "./pages/square-trivia-payouts-page";
 import Tier from "./pages/square-trivia-tier-page";
 import TeamsFanbase from "./pages/admin/teams-fanbase";
+import ReferralReports from "./pages/admin/referral-reports";
+// import ReferalReports from "./pages/referal-reports";
 
 function App() {
   const [loading, setLoading] = useState(true);
@@ -349,6 +351,16 @@ function App() {
                   <AdminRoute>
                     <Layout>
                       <TeamsFanbase />
+                    </Layout>
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/referral-reports"
+                element={
+                  <AdminRoute>
+                    <Layout>
+                      <ReferralReports />
                     </Layout>
                   </AdminRoute>
                 }
