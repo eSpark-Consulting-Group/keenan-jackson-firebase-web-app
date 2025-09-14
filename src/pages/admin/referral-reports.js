@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { db } from "../../firebase/config"; // adjust path
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 
 const ReferralReports = () => {
   const [loading, setLoading] = useState(false);
@@ -8,86 +8,112 @@ const ReferralReports = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const getReferralSummary = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // 1. Fetch all users
-        const usersSnap = await getDocs(collection(db, "users"));
-        const users = usersSnap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+    getReferralSummary();
+  }, []);
 
-        // 2. Fetch all donations
-        const donationsSnap = await getDocs(collection(db, "donations"));
-        const donations = donationsSnap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+  const getReferralSummary = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // 1. Fetch all users
+      const usersSnap = await getDocs(collection(db, "users"));
+      const users = usersSnap.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-        // 3. Build referral summary
-        const referrers = users.filter(
-          (u) => u.referralCode && u.referralCode.trim() !== ""
+      // 2. Fetch all donations
+      const donationsSnap = await getDocs(collection(db, "donations"));
+      const donations = donationsSnap.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // 3. Build referral summary
+      const referrers = users.filter(
+        (u) => u.referralCode && u.referralCode.trim() !== ""
+      );
+
+      let summary = referrers.map((referrer) => {
+        const referredUsers = users.filter(
+          (u) => u.referredBy === referrer.referralCode
         );
 
-        let summary = referrers.map((referrer) => {
-          // find users who used this referrer’s code
-          const referredUsers = users.filter(
-            (u) => u.referredBy === referrer.referralCode
+        const referredWithConversion = referredUsers.map((u) => {
+          const userDonations = donations.filter(
+            (d) => d.userId === u.id && d.status === "completed"
           );
-
-          // for each referred user, check if they have any successful donation
-          const referredWithConversion = referredUsers.map((u) => {
-            const userDonations = donations.filter(
-              (d) => d.userId === u.id && d.status === "completed"
-            );
-            return {
-              ...u,
-              hasConverted: userDonations.length > 0,
-            };
-          });
-
-          const signupCount = referredUsers.length;
-          const conversionCount = referredWithConversion.filter(
-            (u) => u.hasConverted
-          ).length;
-
-          // payment calculation
-          const amountEarned = conversionCount * 3;
-          const amountPaid = referrer.amountPaid || 0;
-          const amountPending = amountEarned - amountPaid;
-
           return {
-            userId: referrer.id,
-            referralCode: referrer.referralCode,
-            signupCount,
-            conversionCount,
-            amountEarned,
-            amountPaid,
-            amountPending,
-            referredUsers: referredWithConversion.map((u) => ({
-              id: u.id,
-              referralCode: u.referralCode || null,
-              hasConverted: u.hasConverted,
-            })),
+            ...u,
+            hasConverted: userDonations.length > 0,
           };
         });
 
-        // ✅ Only include referrers with at least 1 signup
-        summary = summary.filter((item) => item.signupCount >= 1);
+        const signupCount = referredUsers.length;
+        const conversionCount = referredWithConversion.filter(
+          (u) => u.hasConverted
+        ).length;
 
-        setReferralReport(summary);
-      } catch (err) {
-        console.error("Error fetching referral summary:", err);
-        setError("Failed to fetch referral report. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
+        const amountEarned = conversionCount * 3;
+        const amountPaid = referrer.amountPaid || 0;
+        const amountPending = amountEarned - amountPaid;
 
-    getReferralSummary();
-  }, []);
+        return {
+          userId: referrer.id,
+          referralCode: referrer.referralCode,
+          signupCount,
+          conversionCount,
+          amountEarned,
+          amountPaid,
+          amountPending,
+          referredUsers: referredWithConversion.map((u) => ({
+            id: u.id,
+            referralCode: u.referralCode || null,
+            hasConverted: u.hasConverted,
+          })),
+        };
+      });
+
+      console.log(summary);
+
+      summary = summary.filter((item) => item.signupCount >= 1);
+      setReferralReport(summary);
+    } catch (err) {
+      console.error("Error fetching referral summary:", err);
+      setError("Failed to fetch referral report. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Mark Paid handler
+  const handleMarkPaid = async (referrer) => {
+    if (referrer.amountPending <= 0) return;
+
+    try {
+      // update Firestore: increase amountPaid by amountPending
+      const userRef = doc(db, "users", referrer.userId);
+      await updateDoc(userRef, {
+        amountPaid: (referrer.amountPaid || 0) + referrer.amountPending,
+      });
+
+      // update state locally without refetch
+      setReferralReport((prev) =>
+        prev.map((item) =>
+          item.userId === referrer.userId
+            ? {
+                ...item,
+                amountPaid: item.amountPaid + item.amountPending,
+                amountPending: 0,
+              }
+            : item
+        )
+      );
+    } catch (err) {
+      console.error("Error updating payment:", err);
+      alert("Failed to mark as paid. Try again.");
+    }
+  };
 
   if (loading) {
     return (
@@ -167,7 +193,13 @@ const ReferralReports = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <button
-                      className={`bg-blue-600 text-white hover:bg-blue-700 hover:text-white px-4 py-2`}
+                      disabled={item.amountPending <= 0}
+                      onClick={() => handleMarkPaid(item)}
+                      className={`${
+                        item.amountPending <= 0
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-blue-600 hover:bg-blue-700"
+                      } text-white px-4 py-2 rounded`}
                     >
                       Mark Paid
                     </button>
@@ -177,7 +209,7 @@ const ReferralReports = () => {
             ) : (
               <tr>
                 <td
-                  colSpan="4"
+                  colSpan="8"
                   className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center"
                 >
                   No referral code found.
