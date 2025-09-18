@@ -38,7 +38,7 @@ Skill-Based Winner Determination: When a square's numbers match the game score a
 
 Answer Time Privacy: To maintain competitive integrity and suspense, trivia answer times are not visible to other players until a square wins. You can see your own answer times on squares you've claimed, but other players' times remain hidden until the square's numbers match the game score. This ensures fair competition where players cannot strategically avoid squares with fast answer times.
 
-Consolation Prizes: If two players occupy a winning square position, the player with the slower trivia answer time receives one (1) free square for a future game board as a consolation prize. A maximum of four (4) consolation squares are awarded per board. Squares earned through consolation prizes cannot earn additional consolation prizes if they lose a future skill competition.`
+Consolation Prizes: If two players occupy a winning square position, the player with the slower trivia answer time receives one (1) free square for a future game board as a consolation prize. A maximum of five (5) consolation squares are awarded per board. Squares earned through consolation prizes cannot earn additional consolation prizes if they lose a future skill competition.`
     },
     {
       id: "winner-determination",

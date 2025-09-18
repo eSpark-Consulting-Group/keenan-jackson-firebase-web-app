@@ -689,7 +689,7 @@ class EmailService {
         <ul style="margin: 10px 0; padding-left: 20px;">
           <li>This free square expires in 30 days</li>
           <li>Consolation squares cannot earn additional free squares if they lose</li>
-          <li>Maximum 4 consolation squares awarded per board</li>
+          <li>Maximum 5 consolation squares awarded per board</li>
           <li>Cannot be used on back-to-back games</li>
         </ul>
       </div>

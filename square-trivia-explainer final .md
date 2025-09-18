@@ -104,7 +104,7 @@ Six donation tiers with guaranteed prize pools - NO FEES:
 - **IMPORTANT: Consolation squares CANNOT earn more consolation prizes**
   - If you lose on a consolation square, you get nothing
   - Prevents infinite free squares
-- Maximum 4 consolation squares awarded per board
+- Maximum 5 consolation squares awarded per board
 - **NOT for non-winning squares** - only for speed competition losers
 
 ---
