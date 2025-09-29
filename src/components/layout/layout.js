@@ -436,7 +436,7 @@ export default function Layout({ children }) {
           </div>
 
           <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
-            <p>&copy; 2024 Square Trivia. All rights reserved.</p>
+            <p>&copy; 2024 Square Trivia. All rights reserved. 18+ only.</p>
             <p className="mt-2">
               Skill-based competition platform • Not gambling • No purchase
               necessary
