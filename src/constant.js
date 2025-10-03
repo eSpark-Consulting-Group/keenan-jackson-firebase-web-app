@@ -1,3 +1,5 @@
+import { Award, CheckCircle } from "lucide-react";
+
 export const nflTeams = [
   "Arizona Cardinals",
   "Atlanta Falcons",
@@ -66,7 +68,7 @@ export const nbaTeams = [
   "Washington Wizards",
 ];
 
-export const STTos = [
+export const TERMS_OF_SERVICE = [
   {
     heading: "1. Eligibility",
     isCheckCircle: true,
@@ -385,5 +387,62 @@ export const STTos = [
 
 </p></p><b>Mailing Address:</b> 1209 Mountain Road Pl NE, Suite R, Albuquerque, NM 87110
 </p></p><b> By using Square Trivia, you acknowledge that you have <b>read</b>, <b>understood</b>, and <b>agree</b> to be bound by these Terms of Service.</b>`,
+  },
+];
+
+export const skillCertification = [
+  {
+    heading: "Legal Classification",
+    isCheckCircle: false,
+    subHeading:
+      "Square Trivia qualifies as a <b>skill-based competition</b> under U.S. law because winners are determined entirely by participants' <b>knowledge</b> and <b>speed</b> in answering trivia questions, with no element of chance involved in the outcome determination.",
+    footer: "",
+  },
+  {
+    heading: "Key Skill Elements",
+    isCheckCircle: true,
+    listItems: [
+      {
+        text: "<b>Knowledge:</b> Correct answers require sports knowledge",
+      },
+      {
+        text: "<b>Speed:</b> Faster correct answers win competitions",
+      },
+      {
+        text: "<b>Strategy:</b> Square selection requires strategic thinking",
+      },
+      {
+        text: "<b>Practice:</b> Performance improves with experience",
+      },
+    ],
+    footer: "",
+  },
+  {
+    heading: "No Element of Chance",
+    subHeading:
+      "Unlike traditional squares games where winners are randomly determined by score combinations, Square Trivia ensures that:",
+    isCheckCircle: false,
+    listItems: [
+      {
+        text: "Winners are determined by <b>measurable skill metrics</b>",
+      },
+      {
+        text: "Answer times are objectively recorded to <b>milliseconds</b>",
+      },
+      {
+        text: "No random number generators or chance mechanics",
+      },
+      {
+        text: "Skill directly correlates with <b>success rate</b>",
+      },
+    ],
+    footer: "",
+  },
+  {
+    heading: "Alternative Method of Entry (AMOE)",
+    isCheckCircle: false,
+    subHeading:
+      "In compliance with skill-based competition regulations, Square Trivia offers a free alternative method of entry via mail-in request, ensuring no purchase is necessary to participate or win.",
+    footer: "",
   },
 ];

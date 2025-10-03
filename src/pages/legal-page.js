@@ -9,7 +9,8 @@ import {
   ExternalLink,
   CheckCircle,
 } from "lucide-react";
-import { STTos } from "../constant";
+import { skillCertification, TERMS_OF_SERVICE } from "../constant";
+import CircleList from "../components/legal/CircleList";
 
 export default function Legal() {
   const { page } = useParams();
@@ -97,63 +98,6 @@ function LegalHub() {
     </motion.div>
   );
 }
-
-const CircelList = ({ data }) => {
-  return (
-    <section>
-      {data.heading && (
-        <h2
-          className="text-xl font-semibold text-gray-900 mb-4"
-          dangerouslySetInnerHTML={{ __html: data.heading }}
-        />
-      )}
-      {data?.subHeading && (
-        <p
-          className="text-gray-700"
-          dangerouslySetInnerHTML={{ __html: data.subHeading }}
-        />
-      )}
-      {data?.listItems && (
-        <ul className="space-y-2 text-gray-700">
-          {data.listItems.map((point, index) => (
-            <li key={index} className="flex flex-col">
-              <div className="flex items-start">
-                {data.isCheckCircle ? (
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                ) : (
-                  <span>•&nbsp;&nbsp;</span>
-                )}
-                <span dangerouslySetInnerHTML={{ __html: point?.text }} />
-              </div>
-
-              {point?.points && (
-                <ul className="space-y-2 text-gray-700 mt-2 ml-6">
-                  {point.points.map((subPoint, subIndex) => (
-                    <li key={subIndex} className="flex items-start">
-                      {data.isCheckCircle ? (
-                        <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                      ) : (
-                        <span>•&nbsp;&nbsp;</span>
-                      )}
-                      <span dangerouslySetInnerHTML={{ __html: subPoint }} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      {data.footer && (
-        <p
-          className="text-gray-700 mt-2"
-          dangerouslySetInnerHTML={{ __html: data.footer }}
-        />
-      )}
-    </section>
-  );
-};
-
 function TermsOfService() {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -180,8 +124,8 @@ function TermsOfService() {
             using Square Trivia, you agree to be bound by these Terms.
           </p>
         </div>
-        {STTos?.map((item, index) => (
-          <CircelList key={index} data={item} />
+        {TERMS_OF_SERVICE?.map((item, index) => (
+          <CircleList key={index} data={item} />
         ))}
 
         <div className="pt-8 border-t border-gray-200">
@@ -340,81 +284,11 @@ function SkillCertification() {
         </div>
 
         <div className="space-y-6 text-gray-700">
-          <section>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              Legal Classification
-            </h3>
-            <p>
-              Square Trivia qualifies as a skill-based competition under U.S.
-              law because winners are determined entirely by participants'
-              knowledge and speed in answering trivia questions, with no element
-              of chance involved in the outcome determination.
-            </p>
-          </section>
+          {skillCertification.map((section, index) => (
+            <CircleList data={section} key={index} />
+          ))}
 
-          <section>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              Key Skill Elements
-            </h3>
-            <ul className="space-y-2">
-              <li className="flex items-start">
-                <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                <span>
-                  <strong>Knowledge:</strong> Correct answers require sports
-                  knowledge
-                </span>
-              </li>
-              <li className="flex items-start">
-                <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                <span>
-                  <strong>Speed:</strong> Faster correct answers win
-                  competitions
-                </span>
-              </li>
-              <li className="flex items-start">
-                <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                <span>
-                  <strong>Strategy:</strong> Square selection requires strategic
-                  thinking
-                </span>
-              </li>
-              <li className="flex items-start">
-                <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                <span>
-                  <strong>Practice:</strong> Performance improves with
-                  experience
-                </span>
-              </li>
-            </ul>
-          </section>
-
-          <section>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              No Element of Chance
-            </h3>
-            <p className="mb-3">
-              Unlike traditional squares games where winners are randomly
-              determined by score combinations, Square Trivia ensures that:
-            </p>
-            <ul className="space-y-2 ml-4">
-              <li>• Winners are determined by measurable skill metrics</li>
-              <li>• Answer times are objectively recorded to milliseconds</li>
-              <li>• No random number generators or chance mechanics</li>
-              <li>• Skill directly correlates with success rate</li>
-            </ul>
-          </section>
-
-          <section>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              Alternative Method of Entry (AMOE)
-            </h3>
-            <p>
-              In compliance with skill-based competition regulations, Square
-              Trivia offers a free alternative method of entry via mail-in
-              request, ensuring no purchase is necessary to participate or win.
-            </p>
-          </section>
-
+          {/* Disclaimer */}
           <section className="bg-blue-50 rounded-lg p-6">
             <p className="text-sm text-gray-600 text-center">
               This certification is based on legal analysis of skill-based
