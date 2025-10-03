@@ -864,8 +864,8 @@ exports.checkCancelledGames = functions.pubsub
   .onRun(async (context) => {
     const db = admin.firestore();
     const now = new Date();
-    // const year = now.getFullYear();
-    const year = 2021;
+    const year = now.getFullYear();
+    // const year = 2021;
 
     try {
       logger.info("checkCancelledGames started");

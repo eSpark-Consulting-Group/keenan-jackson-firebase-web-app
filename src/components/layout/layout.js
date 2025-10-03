@@ -340,7 +340,7 @@ export default function Layout({ children }) {
 
       {/* Footer */}
       <footer className="bg-gray-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* About */}
             <div>
@@ -348,8 +348,8 @@ export default function Layout({ children }) {
                 to="/"
                 className="text-lg font-semibold mb-4 flex items-center gap-2"
               >
-                <img src="../logo.svg" alt="Square Trivia" width="160px" />
-              </Link> 
+                <img src="../logo.svg" alt="Square Trivia" width="220px" />
+              </Link>
               <p className="text-gray-400 text-sm">
                 100% skill-based sports competition platform. Win money with
                 your knowledge!
@@ -357,7 +357,7 @@ export default function Layout({ children }) {
             </div>
 
             {/* Quick Links */}
-            <div>
+            <div className="mt-2">
               <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
               <ul className="space-y-2 text-sm">
                 <li>
@@ -385,7 +385,7 @@ export default function Layout({ children }) {
             </div>
 
             {/* Legal */}
-            <div>
+            <div className="mt-2">
               <h3 className="text-lg font-semibold mb-4">Legal</h3>
               <ul className="space-y-2 text-sm">
                 <li>
@@ -416,7 +416,7 @@ export default function Layout({ children }) {
             </div>
 
             {/* Contact */}
-            <div>
+            <div className="mt-2">
               <h3 className="text-lg font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-sm">
                 <li className="flex items-center text-gray-400">
