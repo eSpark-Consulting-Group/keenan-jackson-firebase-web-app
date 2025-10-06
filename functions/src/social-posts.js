@@ -9,7 +9,7 @@ const axios = require("axios");
 // admin.initializeApp();
 
 // Load keys from env
-const FB_PAGE_ID = "103373862015603";
+const FB_PAGE_ID = process.env.FB_PAGE_ID || "103373862015603";
 const FB_PAGE_ACCESS_TOKEN = process.env.FB_PAGE_ACCESS_TOKEN;
 const IG_USER_ID = process.env.IG_USER_ID;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
