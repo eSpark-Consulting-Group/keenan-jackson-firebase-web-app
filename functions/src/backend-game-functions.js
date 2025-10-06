@@ -11,6 +11,12 @@ const {
   handleRefund,
 } = require("./payment-system-modified");
 const { default: axios } = require("axios");
+const { TwitterApi } = require("twitter-api-v2");
+const {
+  fbImagePost,
+  igImageContainer,
+  igPublishMedia,
+} = require("./social-posts");
 // const { query, collection, where } = require("firebase/firestore");
 
 // Initialize admin if not already done
@@ -19,6 +25,26 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
+require("dotenv").config();
+
+const client = new TwitterApi({
+  appKey: process.env.X_CONSUMER_KEY,
+  appSecret: process.env.X_CONSUMER_SECRET,
+  accessToken: process.env.X_ACCESS_TOKEN,
+  accessSecret: process.env.X_ACCESS_TOKEN_SECRET,
+});
+
+// ✅ Export reusable function
+async function postTweet(message) {
+  try {
+    const tweet = await client.v2.tweet(message);
+    console.log("✅ Tweet posted successfully:", tweet.data.id);
+    return tweet;
+  } catch (error) {
+    console.error("❌ Failed to post tweet:", error);
+    throw error;
+  }
+}
 
 const TELEGRAM_BOT_TOKEN = "7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ";
 
@@ -822,7 +848,7 @@ async function processWinner(winnerData) {
     processedBy,
   } = winnerData;
 
-  // Get tier info for prize amount
+  // ✅ Tier prize mapping
   const tierAmounts = {
     tier_25: { quarter: 200 },
     tier_50: { quarter: 450 },
@@ -833,19 +859,42 @@ async function processWinner(winnerData) {
   };
 
   const prizeAmount = tierAmounts[tierId]?.quarter || 0;
-  const winningUser = db.collection("users").where("userId", "==", userId);
 
-  functions.logger.info("User Query:", { winningUser });
+  // ✅ Get user safely
+  const userSnap = await db.collection("users").doc(userId).get();
+  if (!userSnap.exists) throw new Error(`User ${userId} not found`);
+  const userData = userSnap.data();
+
+  const displayName =
+    userData.displayName || userData.email || "Unknown Player";
+
+  // ✅ Get game info
   const gameSnap = await db.collection("games").doc(gameId).get();
-  if (!gameSnap.exists) {
-    throw new functions.https.HttpsError("not-found", "Game not found");
-  }
+  if (!gameSnap.exists) throw new Error("Game not found");
   const game = gameSnap.data();
-  // Create winner record
+
+  const team1 = game.teams?.home || "Home Team";
+  const team2 = game.teams?.away || "Away Team";
+
+  // ✅ Determine caption template
+  const isBigWin = prizeAmount >= 900;
+
+  const caption = isBigWin
+    ? `🚨 ${displayName} just took home $${prizeAmount} with a blazing ${answerTime}s answer! Think you're faster? 🏃‍♂️\n\n${team1} vs ${team2} - Square ${position}\nSpeed Wins. Always.\n#SquareTrivia #SpeedWins`
+    : `BOOM! 💥 $${prizeAmount} win for ${displayName} on the ${team1} vs ${team2} board!\nAnswer time: ${answerTime} seconds ⚡\n\nSpeed Wins. Always.`;
+
+  // ✅ Create winner record
   const winnerRef = await db.collection("winners").add({
-    userId: winningUser.uid,
-    user: winningUser,
-    gameInfo: game,
+    userId,
+    user: {
+      displayName,
+      email: userData.email || null,
+      photoURL: userData.photoURL || null,
+    },
+    gameInfo: {
+      teams: game.teams || null,
+      externalGameId: game.externalGameId || null,
+    },
     isSoloWin: isSoloWin || false,
     claimId: claimId || null,
     notificationStatus: notificationStatus || "pending",
@@ -866,10 +915,9 @@ async function processWinner(winnerData) {
     status: "pending_payout",
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     isTelegramSend: false,
-    ...winnerData,
   });
 
-  // Update user's win count
+  // ✅ Update user's win stats
   await db
     .collection("users")
     .doc(userId)
@@ -878,7 +926,7 @@ async function processWinner(winnerData) {
       totalWinnings: admin.firestore.FieldValue.increment(prizeAmount),
     });
 
-  // update userId in quarter result
+  // ✅ Update userId in quarter result
   await db
     .collection("games")
     .doc(gameId)
@@ -886,8 +934,25 @@ async function processWinner(winnerData) {
       [`quarterScores.${quarter}.winnerUserId`]: userId,
     });
 
-  // Send notification
-  await sendWinnerNotification(userId, prizeAmount, quarter);
+  // ✅ Send notifications / social posts
+  try {
+    // Twitter
+    // await postTweet(caption);
+
+    // Facebook
+    await fbImagePost("https://yourdomain.com/default-win-image.jpg", caption);
+
+    // Instagram
+    // const container = await igImageContainer(
+    //   "https://yourdomain.com/default-win-image.jpg",
+    //   caption
+    // );
+    // await igPublishMedia(container.id);
+  } catch (err) {
+    console.error("⚠️ Social post failed", err);
+  }
+
+  console.log(`🏆 Winner processed: ${displayName} - $${prizeAmount}`);
 
   return winnerRef.id;
 }

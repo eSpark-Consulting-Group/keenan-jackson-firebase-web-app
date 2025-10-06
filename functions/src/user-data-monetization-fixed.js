@@ -8,8 +8,10 @@ const { default: axios } = require("axios");
 // import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 const { logger } = require("firebase-functions");
 const { GAME_CONFIG } = require("./constants-configuration-fixed");
+const { TwitterApi } = require("twitter-api-v2");
 
 const db = admin.firestore();
+require("dotenv").config();
 
 // User Data Collection & Monetization System
 
@@ -78,6 +80,25 @@ const enhancedUserSchema = {
     youtubetv: { eligible: false, converted: false },
   },
 };
+
+const client = new TwitterApi({
+  appKey: process.env.X_CONSUMER_KEY,
+  appSecret: process.env.X_CONSUMER_SECRET,
+  accessToken: process.env.X_ACCESS_TOKEN,
+  accessSecret: process.env.X_ACCESS_TOKEN_SECRET,
+});
+
+// ✅ Export reusable function
+async function postTweet(message) {
+  try {
+    const tweet = await client.v2.tweet(message);
+    console.log("✅ Tweet posted successfully:", tweet.data.id);
+    return tweet;
+  } catch (error) {
+    console.error("❌ Failed to post tweet:", error);
+    throw error;
+  }
+}
 
 const TELEGRAM_BOT_TOKEN = "7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ";
 
@@ -1000,6 +1021,13 @@ exports.checkCancelledGames = functions.pubsub
     } catch (error) {
       logger.error("Error in Checking Cancel Game: ", { error });
     }
+  });
+
+exports.autoTweet = functions.pubsub
+  .schedule("every 1 minutes")
+  .onRun(async () => {
+    // await postTweet(`Hello World From Node Js ${Date.now()}`);
+    return null;
   });
 
 async function sendTelegramNotification(chatId, message) {

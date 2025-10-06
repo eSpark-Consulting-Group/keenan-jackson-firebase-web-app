@@ -9,7 +9,7 @@ const axios = require("axios");
 // admin.initializeApp();
 
 // Load keys from env
-const FB_PAGE_ID = process.env.FB_PAGE_ID;
+const FB_PAGE_ID = "103373862015603";
 const FB_PAGE_ACCESS_TOKEN = process.env.FB_PAGE_ACCESS_TOKEN;
 const IG_USER_ID = process.env.IG_USER_ID;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -27,6 +27,8 @@ async function fbImagePost(imageUrl, caption) {
     caption,
     access_token: FB_PAGE_ACCESS_TOKEN,
   };
+
+  console.log("FACEBOOK FUNC CALLED");
 
   const res = await axios.post(url, data, {
     headers: { "Content-Type": "application/json" },
@@ -76,6 +78,8 @@ async function igImageContainer(imageUrl, caption) {
     caption,
     access_token: FB_PAGE_ACCESS_TOKEN,
   };
+
+  console.log("INSTAGRAM CALLED");
 
   const res = await axios.post(url, data);
   return res.data; // returns "id" (creation_id)
