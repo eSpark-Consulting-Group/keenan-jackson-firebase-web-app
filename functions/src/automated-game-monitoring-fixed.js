@@ -127,8 +127,8 @@ class ApiSportsService {
           count: response.data?.response?.length,
         });
 
-        // apiGame = response.data?.response?.[0] || null;
-        apiGame = DUMMY_GAMES;
+        apiGame = response.data?.response?.[0] || null;
+        // apiGame = DUMMY_GAMES;
         logger.info("API GAME HAI", { apiGame });
       } else if (sport === "CFB") {
         // --- CFB: Single game from ESPN ---
