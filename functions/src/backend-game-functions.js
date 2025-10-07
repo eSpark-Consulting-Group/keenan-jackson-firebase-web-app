@@ -940,14 +940,17 @@ async function processWinner(winnerData) {
     // await postTweet(caption);
 
     // Facebook
-    await fbImagePost("https://yourdomain.com/default-win-image.jpg", caption);
+    await fbImagePost(
+      "https://www.aljazeera.com/wp-content/uploads/2022/04/2022-04-09T203047Z_934087426_RC2WJT9RAM94_RTRMADP_3_PAKISTAN-POLITICS-e1649569800725.jpg?resize=1170%2C780&quality=80",
+      caption
+    );
 
     // Instagram
-    // const container = await igImageContainer(
-    //   "https://yourdomain.com/default-win-image.jpg",
-    //   caption
-    // );
-    // await igPublishMedia(container.id);
+    const container = await igImageContainer(
+      "https://www.aljazeera.com/wp-content/uploads/2022/04/2022-04-09T203047Z_934087426_RC2WJT9RAM94_RTRMADP_3_PAKISTAN-POLITICS-e1649569800725.jpg?resize=1170%2C780&quality=80",
+      caption
+    );
+    await igPublishMedia(container.id);
   } catch (err) {
     console.error("⚠️ Social post failed", err);
   }

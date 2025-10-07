@@ -281,9 +281,9 @@ class ApiSportsService {
   async parseGameData(apiGame, sport) {
     logger.info("API GAME IN PARSE GAME ", { apiGame });
 
-    const game = apiGame[0].game;
-    const teams = apiGame[0].teams;
-    const scores = apiGame[0].scores;
+    const game = apiGame?.game;
+    const teams = apiGame?.teams;
+    const scores = apiGame?.scores;
 
     logger.info("GAMMME parse Game: ", { game, teams, scores });
 
