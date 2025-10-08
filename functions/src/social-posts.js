@@ -1,26 +1,39 @@
 require("dotenv").config();
 const axios = require("axios");
 
-// const functions = require("firebase-functions");
-// const admin = require("firebase-admin");
-// const { logger } = require("firebase-functions");
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+const { logger } = require("firebase-functions");
 
-// Initialize Firebase Admin
-// admin.initializeApp();
+// Initialize Firebase Admin (safe re-init)
+if (!admin.apps.length) admin.initializeApp();
 
 // Load keys from env
 const FB_PAGE_ID = process.env.FB_PAGE_ID || "103373862015603";
 const FB_PAGE_ACCESS_TOKEN =
   process.env.FB_PAGE_ACCESS_TOKEN ||
   "EAAK3h4UAM2sBPnhZB0jLIYbCS0fTUXduFDe7WNVrCBz0l1uPkuZBaaLzLabzuuCaQdnnqcLhg57CbLN2ScudwMohk9ZBstfHIfWccGE36rFdu2XVMfzirfjaO8pFs6mTMZCdjKStGeo84Xe4Hf0CrOcZCFKywqHpUxh5tP3F9raxWWxDdQEfz9e9E1QFhqNAU34h63kDZBrJkv7TQVhDsZD";
-const FB_USER_ACCESS_TOKEN =
-  process.env.FB_USER_ACCESS_TOKEN ||
-  "EAAK3h4UAM2sBPpsWY1zAKk2PVRC2qsFyDr9RD5vDXIK4egcH8Ji8n9KN0PuWWSlvZBAi9BxUj9LenPZAIwAktLuU38cpJOZCxiTwJdHnteFF1x27ZCHA02HuPeHUi2lU9sCyS0I6CEYipyxuU4D3AYVDwiZAs4Js8LC3ULZC5dJmSBw3QEjXwukwwaBSQElOCbvKVdTdtNK27Q";
+// const FB_USER_ACCESS_TOKEN =
+//   process.env.FB_USER_ACCESS_TOKEN ||
+//   "EAAK3h4UAM2sBPpsWY1zAKk2PVRC2qsFyDr9RD5vDXIK4egcH8Ji8n9KN0PuWWSlvZBAi9BxUj9LenPZAIwAktLuU38cpJOZCxiTwJdHnteFF1x27ZCHA02HuPeHUi2lU9sCyS0I6CEYipyxuU4D3AYVDwiZAs4Js8LC3ULZC5dJmSBw3QEjXwukwwaBSQElOCbvKVdTdtNK27Q";
 const IG_USER_ID = process.env.IG_USER_ID || "17841414682425711";
 const TELEGRAM_BOT_TOKEN =
   process.env.TELEGRAM_BOT_TOKEN ||
   "8437839049:AAFW3qU7gDPxG_yH951oSMHt56aKz8xv_wM";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || 1310589021;
+
+// Unified logging helper
+function logInfo(context, data) {
+  console.log(`🟢 [INFO] ${context}:`, data);
+  logger.info(`[${context}]`, data);
+}
+function logError(context, error) {
+  console.error(
+    `🔴 [ERROR] ${context}:`,
+    error.response?.data || error.message
+  );
+  logger.error(`[${context}]`, error.response?.data || error.message);
+}
 
 // =============================
 // Facebook Graph API Functions
@@ -29,18 +42,17 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || 1310589021;
 // 1. Facebook Image Post
 async function fbImagePost(imageUrl, caption) {
   const url = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}/photos`;
-  const data = {
-    url: imageUrl,
-    caption,
-    access_token: FB_PAGE_ACCESS_TOKEN,
-  };
+  const data = { url: imageUrl, caption, access_token: FB_PAGE_ACCESS_TOKEN };
 
-  console.log("FACEBOOK FUNC CALLED");
-
-  const res = await axios.post(url, data, {
-    headers: { "Content-Type": "application/json" },
-  });
-  return res.data;
+  try {
+    logInfo("Facebook Image Post", { url, caption });
+    const res = await axios.post(url, data);
+    logInfo("Facebook Image Post Response", res.data);
+    return res.data;
+  } catch (error) {
+    logError("Facebook Image Post", error);
+    throw error;
+  }
 }
 
 // 2. Facebook Video Post
@@ -52,25 +64,31 @@ async function fbVideoPost(videoUrl, description) {
     access_token: FB_PAGE_ACCESS_TOKEN,
   };
 
-  const res = await axios.post(url, data, {
-    headers: { "Content-Type": "application/json" },
-  });
-  return res.data;
+  try {
+    logInfo("Facebook Video Post", { url, description });
+    const res = await axios.post(url, data);
+    logInfo("Facebook Video Post Response", res.data);
+    return res.data;
+  } catch (error) {
+    logError("Facebook Video Post", error);
+    throw error;
+  }
 }
 
 // 3. Facebook Text + Link Post
 async function fbFeedPost(message, link) {
   const url = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}/feed`;
-  const data = {
-    message,
-    link,
-    access_token: FB_PAGE_ACCESS_TOKEN,
-  };
+  const data = { message, link, access_token: FB_PAGE_ACCESS_TOKEN };
 
-  const res = await axios.post(url, data, {
-    headers: { "Content-Type": "application/json" },
-  });
-  return res.data;
+  try {
+    logInfo("Facebook Feed Post", { message, link });
+    const res = await axios.post(url, data);
+    logInfo("Facebook Feed Post Response", res.data);
+    return res.data;
+  } catch (error) {
+    logError("Facebook Feed Post", error);
+    throw error;
+  }
 }
 
 // =============================
@@ -86,10 +104,15 @@ async function igImageContainer(imageUrl, caption) {
     access_token: FB_PAGE_ACCESS_TOKEN,
   };
 
-  console.log("INSTAGRAM CALLED");
-
-  const res = await axios.post(url, data);
-  return res.data; // returns "id" (creation_id)
+  try {
+    logInfo("Instagram Image Container", { imageUrl, caption });
+    const res = await axios.post(url, data);
+    logInfo("Instagram Image Container Response", res.data);
+    return res.data;
+  } catch (error) {
+    logError("Instagram Image Container", error);
+    throw error;
+  }
 }
 
 // 2. Instagram Create Video Media Container
@@ -102,111 +125,152 @@ async function igVideoContainer(videoUrl, caption) {
     access_token: FB_PAGE_ACCESS_TOKEN,
   };
 
-  const res = await axios.post(url, data);
-  return res.data;
+  try {
+    logInfo("Instagram Video Container", { videoUrl, caption });
+    const res = await axios.post(url, data);
+    logInfo("Instagram Video Container Response", res.data);
+    return res.data;
+  } catch (error) {
+    logError("Instagram Video Container", error);
+    throw error;
+  }
 }
 
 // 3. Instagram Publish Container
 async function igPublishMedia(creationId) {
   const url = `https://graph.facebook.com/v20.0/${IG_USER_ID}/media_publish`;
-  const data = {
-    creation_id: creationId,
-    access_token: FB_PAGE_ACCESS_TOKEN,
-  };
+  const data = { creation_id: creationId, access_token: FB_PAGE_ACCESS_TOKEN };
 
-  const res = await axios.post(url, data);
-  return res.data;
+  try {
+    logInfo("Instagram Publish Media", { creationId });
+    const res = await axios.post(url, data);
+    logInfo("Instagram Publish Media Response", res.data);
+    return res.data;
+  } catch (error) {
+    logError("Instagram Publish Media", error);
+    throw error;
+  }
 }
 
 // =============================
 // Telegram Bot API Functions
 // =============================
 
-// 1. Get Bot Info
 async function tgGetMe() {
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe`;
-  const res = await axios.post(url);
-  return res.data;
+  try {
+    logInfo("Telegram GetMe", url);
+    const res = await axios.post(url);
+    logInfo("Telegram GetMe Response", res.data);
+    return res.data;
+  } catch (error) {
+    logError("Telegram GetMe", error);
+    throw error;
+  }
 }
 
-// 2. Get Updates
 async function tgGetUpdates() {
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates`;
-  const res = await axios.post(url);
-  return res.data;
+  try {
+    logInfo("Telegram GetUpdates", url);
+    const res = await axios.post(url);
+    logInfo("Telegram GetUpdates Response", res.data);
+    return res.data;
+  } catch (error) {
+    logError("Telegram GetUpdates", error);
+    throw error;
+  }
 }
 
-// 3. Send Text Message
 async function tgSendMessage(text) {
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
   const data = { chat_id: TELEGRAM_CHAT_ID, text };
 
-  const res = await axios.post(url, data);
-  return res.data;
+  try {
+    logInfo("Telegram SendMessage", { text });
+    const res = await axios.post(url, data);
+    logInfo("Telegram SendMessage Response", res.data);
+    return res.data;
+  } catch (error) {
+    logError("Telegram SendMessage", error);
+    throw error;
+  }
 }
 
-// 4. Send Image (Photo)
 async function tgSendPhoto(photoUrl, caption = "") {
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`;
-  const data = {
-    chat_id: TELEGRAM_CHAT_ID,
-    photo: photoUrl, // must be a valid URL or file_id
-    caption: caption,
-  };
+  const data = { chat_id: TELEGRAM_CHAT_ID, photo: photoUrl, caption };
 
-  const res = await axios.post(url, data);
-  return res.data;
+  try {
+    logInfo("Telegram SendPhoto", { photoUrl, caption });
+    const res = await axios.post(url, data);
+    logInfo("Telegram SendPhoto Response", res.data);
+    return res.data;
+  } catch (error) {
+    logError("Telegram SendPhoto", error);
+    throw error;
+  }
 }
 
-// 5. Send Video
 async function tgSendVideo(videoUrl, caption = "") {
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendVideo`;
-  const data = {
-    chat_id: TELEGRAM_CHAT_ID,
-    video: videoUrl, // must be a valid URL or file_id
-    caption: caption,
-  };
+  const data = { chat_id: TELEGRAM_CHAT_ID, video: videoUrl, caption };
 
-  const res = await axios.post(url, data);
-  return res.data;
+  try {
+    logInfo("Telegram SendVideo", { videoUrl, caption });
+    const res = await axios.post(url, data);
+    logInfo("Telegram SendVideo Response", res.data);
+    return res.data;
+  } catch (error) {
+    logError("Telegram SendVideo", error);
+    throw error;
+  }
 }
 
 // =============================
 // Firebase HTTPS Function Wrapper
 // =============================
 
-// exports.apiTest = functions.https.onRequest(async (req, res) => {
-//   try {
-//     SAMPLE CALLS (uncomment one at a time to test)
+exports.apiTest = functions.https.onRequest(async (req, res) => {
+  try {
+    logInfo("API Test Triggered", req.query || req.body);
+    // SAMPLE CALLS (uncomment one at a time to test)
 
-//     Facebook
-//     const result = await fbImagePost("https://yourdomain.com/photo.jpg", "Hello FB!");
+    // Facebook;
+    // const result = await fbImagePost(
+    //   "https://yourdomain.com/photo.jpg",
+    //   "Hello FB!"
+    // );
 
-//     Instagram
-//     const container = await igImageContainer("https://yourdomain.com/photo.jpg", "Hello IG!");
-//     const result = await igPublishMedia(container.id);
+    // Instagram
+    // const container = await igImageContainer("https://yourdomain.com/photo.jpg", "Hello IG!");
+    // const result = await igPublishMedia(container.id);
 
-//     const container = await igVideoContainer("https://yourdomain.com/video.jpg", "Hello IG!");
-//     const result = await igPublishMedia(container.id);
+    // const container = await igVideoContainer("https://yourdomain.com/video.jpg", "Hello IG!");
+    // const result = await igPublishMedia(container.id);
 
-//     Telegram
-//     const result = await tgSendMessage("Hello from Firebase Functions!");
-//     const result = await tgGetMe();
-//     const result = await tgGetUpdates();
+    // Telegram
+    // const result = await tgSendMessage("Hello from Firebase Functions!");
+    // const result = await tgGetMe();
+    // const result = await tgGetUpdates();
 
-//     res.json({
-//       success: true,
-//       message: "API call success",
-//       // result,  // uncomment when testing
-//     });
-//   } catch (error) {
-//     logger.error("API Error", error.response?.data || error.message);
-//     res.status(500).json({
-//       success: false,
-//       error: error.response?.data || error.message,
-//     });
-//   }
-// });
+    res.json({
+      success: true,
+      message: "API call success",
+      // data: result,
+    });
+  } catch (error) {
+    logError("API Test Handler", error);
+    res.status(500).json({
+      success: false,
+      error: error.response?.data || error.message,
+    });
+  }
+});
+
+// =============================
+// Exports for local use
+// =============================
 
 module.exports = {
   fbImagePost,
