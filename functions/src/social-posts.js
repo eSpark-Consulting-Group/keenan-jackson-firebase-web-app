@@ -268,11 +268,61 @@ exports.apiTest = functions.https.onRequest(async (req, res) => {
   }
 });
 
+const CTA_VARIATIONS = [
+  "Speed Wins. Always. Play now → {link}",
+  "Your speed = Your winnings 💰",
+  "NO FEES - Test your speed → {link}",
+  "Think you’re fast? Prove it → {link}",
+  "Join {activePlayerCount} winners. Speed Wins. Always.",
+  "Next game in {time} - Get your square NOW",
+  "The fastest finger wins. Always. → {link}",
+  "Turn milliseconds into money → {link}",
+];
+
+/**
+ * Replace placeholders with dynamic values.
+ */
+function replacePlaceholders(cta, { link, activePlayerCount, time }) {
+  return cta
+    .replace("{link}", link || "")
+    .replace("{activePlayerCount}", activePlayerCount || "thousands of")
+    .replace("{time}", time || "a few minutes");
+}
+
+/**
+ * Generate a random CTA variation.
+ * Only select CTAs that have required placeholders available.
+ */
+function getRandomCTA(context = {}) {
+  const { link, activePlayerCount, time } = context;
+
+  // Filter CTAs that can be filled
+  const eligibleCTAs = CTA_VARIATIONS.filter((cta) => {
+    if (cta.includes("{link}") && !link) return false;
+    if (cta.includes("{activePlayerCount}") && !activePlayerCount) return false;
+    if (cta.includes("{time}") && !time) return false;
+    return true;
+  });
+
+  // Fallback: if none eligible, use a default CTA
+  const finalCTAs = eligibleCTAs.length
+    ? eligibleCTAs
+    : ["Speed Wins. Always. Play now →"];
+
+  const randomCTA = finalCTAs[Math.floor(Math.random() * finalCTAs.length)];
+  return replacePlaceholders(randomCTA, context);
+}
+
+// ✅ Append CTA to post template
+// const template = "🔥 The next trivia challenge is LIVE!";
+// const content = `${template}\n\n\n${ctaText}`;
+
 // =============================
 // Exports for local use
 // =============================
 
 module.exports = {
+  getRandomCTA,
   fbImagePost,
   fbVideoPost,
   fbFeedPost,
