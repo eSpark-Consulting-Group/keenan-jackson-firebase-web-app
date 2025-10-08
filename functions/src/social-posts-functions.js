@@ -15,150 +15,142 @@ const {
   // tgSendVideo,
 } = require("./social-posts");
 
-// 6. Milestone / Special Events (New PUB SUB NEEDED)
+const hashTags = getHashtags();
+const link = "https://squaretrivia.com/games";
+
+// ==========================================================
+// Handles all platforms automatically based on media type
+// ==========================================================
+
+async function postToAllPlatforms({ media, caption, link }) {
+  const ext = media?.split(".").pop().toLowerCase();
+
+  if (["jpg", "jpeg", "png"].includes(ext)) {
+    await fbImagePost(media, caption);
+    const container = await igImageContainer(media, caption);
+    await igPublishMedia(container.id);
+  } else if (ext === "mp4") {
+    await fbVideoPost(media, caption);
+    const container = await igVideoContainer(media, caption);
+    await igPublishMedia(container.id);
+  } else if (link) {
+    await fbFeedPost(caption, link);
+  } else {
+    throw new Error(`❌ Unsupported file type: .${ext}. Use JPG, PNG, or MP4.`);
+  }
+
+  await postTweet(caption);
+  await tgSendMessage(caption);
+  return caption.trim();
+}
+
+// ==========================================================
+// Builds post text with CTA + hashTags
+// ==========================================================
+function buildTemplate(body, cta) {
+  return `${body.trim()}
+
+${cta}
+
+${hashTags}`;
+}
+
+// ==========================================================
+// Post Templates
+// ==========================================================
+
+// ==========================================================
+// Platform Milestone Post Generator
+// ============================
 // Trigger: Platform growth milestones or record events.
 // Platform Milestone → When total payouts cross a big milestone ($10k, $50k, $100k).
 // Record Breaker → When someone sets a new fastest-answer record.
 
-const hastags = getHashtags();
+// ==========================================================
+// No Fees Post Generator
+// ==========================================================
 
-// Platform Milestone Post Generator
-const NoFeesPost = async ({ mediaToUpload, captionLink }) => {
-  const cta = getRandomCTA({
-    link: link,
-  });
-
-  // Each option object can look like:
+async function NoFeesPost({ mediaToUpload, captionLink }) {
+  const cta = getRandomCTA({ link });
   const options = [
     { icon: "⚡", title: "Express service", detail: "Get 96% today" },
     { icon: "⏰", title: "Standard service", detail: "Get 100% in 2–3 days" },
-  ];
-
-  const optionsList = options
+  ]
     .map((o) => `${o.icon} ${o.title}: ${o.detail}`)
     .join("\n");
 
-  const template = `
+  const body = `
 NO FEES Emphasis:
 Win $200? Get paid $200! NO FEES on Square Trivia!  
 
-${optionsList}
+${options}
 
 Your choice, your money!
-${cta}
-
-${hastags}
   `;
-  const ext = mediaToUpload.split(".").pop().toLowerCase();
-  if (["jpg", "jpeg", "png"].includes(ext)) {
-    // Facebook Video
-    await fbImagePost(mediaToUpload, template); // or you can handle specific image types if needed
-    // Instagram
-    const container = await igImageContainer(mediaToUpload, template);
-    await igPublishMedia(container.id);
-  } else if (ext === "mp4") {
-    // Facebook
-    await fbVideoPost(mediaToUpload, template);
-    // Instagram
-    const container = await igVideoContainer(mediaToUpload, template);
-    await igPublishMedia(container.id);
-  } else if (captionLink && captionLink !== "") {
-    // Facebook Link
-    await fbFeedPost(template, captionLink);
-  } else {
-    throw new Error(
-      `❌ Unsupported file type: .${ext}. Only JPG, PNG, or MP4 allowed.`
-    );
-  }
-  // Tweeter post
-  await postTweet(template);
-  // Telegram post with formatting
-  await tgSendMessage(template);
 
-  return template.trim();
-};
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
 
-const SkillCelebration = async ({
+// ==========================================================
+// Skill Celebration Post Generator
+// ==========================================================
+
+async function SkillCelebration({
   recentWinner,
   time,
   prize,
   mediaToUpload,
   captionLink,
-}) => {
-  const cta = getRandomCTA({
-    link: link,
-    time: time,
-  });
-
+}) {
+  const cta = getRandomCTA({ link, time });
   const comparisons = [
     { icon: "🎲", label: "Traditional squares", desc: "Hope for luck" },
     { icon: "⚡", label: "Square Trivia winners", desc: "Trust their speed" },
-  ];
-
-  const comparisonText = comparisons
+  ]
     .map((c) => `${c.label}: ${c.icon} ${c.desc}`)
     .join("\n");
 
-  const template = `
+  const body = `
 Skill Celebration
 What separates Square Trivia winners from everyone else?
 
-${comparisonText}
+${comparisons}
 
 ${recentWinner} just proved it with a ${time}s answer for $${prize}!
-${cta}
-
-${hastags}
   `;
-  const ext = mediaToUpload.split(".").pop().toLowerCase();
-  if (["jpg", "jpeg", "png"].includes(ext)) {
-    // Facebook Video
-    await fbImagePost(mediaToUpload, template); // or you can handle specific image types if needed
-    // Instagram
-    const container = await igImageContainer(mediaToUpload, template);
-    await igPublishMedia(container.id);
-  } else if (ext === "mp4") {
-    // Facebook
-    await fbVideoPost(mediaToUpload, template);
-    // Instagram
-    const container = await igVideoContainer(mediaToUpload, template);
-    await igPublishMedia(container.id);
-  } else if (captionLink && captionLink !== "") {
-    // Facebook Link
-    await fbFeedPost(template, captionLink);
-  } else {
-    throw new Error(
-      `❌ Unsupported file type: .${ext}. Only JPG, PNG, or MP4 allowed.`
-    );
-  }
-  // Tweeter post
-  await postTweet(template);
-  // Telegram post with formatting
-  await tgSendMessage(template);
-  return template.trim();
-};
 
-// 7. Engagement Builders (New PUB SUB NEEDED)
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
+
+// ==========================================================
+// Engagement Builders
+// ==========================================================
 // Trigger: Weekly, to drive conversation and competition.
 // Referral Leaderboard → Weekly (Sunday night / Monday morning).
 // Team Rivalry → Post mid-week OR before a major rivalry game (Cowboys vs Eagles, Chiefs vs Bills, etc.).
 
-const link = "https://squaretrivia.com/games";
-
+// ==========================================================
 // Team Rivalry Post Generator
-const TeamRivalryPost = async ({
+// ==========================================================
+
+async function TeamRivalryPost({
   teamA,
   teamB,
   teamAWins,
   teamBWins,
   mediaToUpload,
   captionLink,
-}) => {
-  const cta = getRandomCTA({
-    link: link,
-  });
-
-  const template = `
+}) {
+  const cta = getRandomCTA({ link });
+  const body = `
 Team Rivalry
 Battle of the Fanbases! 🏈
 
@@ -166,53 +158,25 @@ ${teamA} fans: ${teamAWins} wins this week
 ${teamB} fans: ${teamBWins} wins this week  
 
 Who knows their team better? Prove it on Sunday!
-
-${cta}
-
-${hastags}
   `;
-  const ext = mediaToUpload.split(".").pop().toLowerCase();
-  if (["jpg", "jpeg", "png"].includes(ext)) {
-    // Facebook Video
-    await fbImagePost(mediaToUpload, template); // or you can handle specific image types if needed
-    // Instagram
-    const container = await igImageContainer(mediaToUpload, template);
-    await igPublishMedia(container.id);
-  } else if (ext === "mp4") {
-    // Facebook
-    await fbVideoPost(mediaToUpload, template);
-    // Instagram
-    const container = await igVideoContainer(mediaToUpload, template);
-    await igPublishMedia(container.id);
-  } else if (captionLink && captionLink !== "") {
-    // Facebook Link
-    await fbFeedPost(template, captionLink);
-  } else {
-    throw new Error(
-      `❌ Unsupported file type: .${ext}. Only JPG, PNG, or MP4 allowed.`
-    );
-  }
-  // Tweeter post
-  await postTweet(template);
-  // Telegram post with formatting
-  await tgSendMessage(template);
 
-  return template.trim();
-};
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
 
+// ==========================================================
 // Referral Leaderboard Post Generator
-const ReferralLeaderboard = async ({
+// ==========================================================
+
+async function ReferralLeaderboard({
   winners = [],
   mediaToUpload,
   captionLink,
-}) => {
-  const cta = getRandomCTA({
-    link: link,
-  });
-
-  // Each winner object should look like:
-  // { name: "Ali", amount: 120, referrals: 8 }
-
+}) {
+  const cta = getRandomCTA({ link });
   const leaderboard = winners
     .map(
       (w, i) =>
@@ -220,129 +184,84 @@ const ReferralLeaderboard = async ({
     )
     .join("\n");
 
-  const template = `
+  const body = `
 Referral Leaderboard
 🏆 This Week's Referral Winners:
 
 ${leaderboard}
 
 These players win on the board AND off the board.
-
-${cta}
-
-${hastags}
   `;
 
-  const ext = mediaToUpload.split(".").pop().toLowerCase();
-  if (["jpg", "jpeg", "png"].includes(ext)) {
-    // Facebook Video
-    await fbImagePost(mediaToUpload, template); // or you can handle specific image types if needed
-    // Instagram
-    const container = await igImageContainer(mediaToUpload, template);
-    await igPublishMedia(container.id);
-  } else if (ext === "mp4") {
-    // Facebook
-    await fbVideoPost(mediaToUpload, template);
-    // Instagram
-    const container = await igVideoContainer(mediaToUpload, template);
-    await igPublishMedia(container.id);
-  } else if (captionLink && captionLink !== "") {
-    // Facebook Link
-    await fbFeedPost(template, captionLink);
-  } else {
-    throw new Error(
-      `❌ Unsupported file type: .${ext}. Only JPG, PNG, or MP4 allowed.`
-    );
-  }
-  // Tweeter post
-  await postTweet(template);
-  // Telegram post with formatting
-  await tgSendMessage(template);
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
 
-  return template.trim();
-};
-
+// ==========================================================
 // Platform-Specific Variations (Discussion Needed):
+// ==========================================================
 
 // Twitter (Short) → Auto-adapt from Winner/Recap templates, compressed.
 // Instagram (Visual) → Use Winner Announcement + image card designs.
 // Telegram (Rich) → Winner templates expanded with Markdown formatting.
 // Platform-Specific Winner Post Generators
 
-const WinnerPostTwitter = async ({ winnerName, prize, gameName, time }) => {
-  const cta = getRandomCTA({
-    link: link,
-    time: time,
-  });
-  const template = `
+// ==========================================================
+// Twitter (Short) Winner Post Generator
+// ==========================================================
+
+async function WinnerPostTwitter({ winnerName, prize, gameName, time }) {
+  const cta = getRandomCTA({ link, time });
+  const body = `
 ${winnerName} ➡️ $${prize}${time ? ` ⚡ ${time}s` : ""}
 
 ${gameName}: Where speed pays 🏁
 
 #SkillNotLuck #${gameName.replace(/\s+/g, "")}
-
-${cta}
-
-${hastags}
   `;
 
-  // Tweeter post
-  await postTweet(template);
+  const post = buildTemplate(body, cta);
+  await postTweet(post);
+  return post;
+}
 
-  return template.trim();
-};
+// ==========================================================
+// Instagram (Visual) Winner Post Generator
+// ==========================================================
 
-const WinnerPostInstagram = async ({
+async function WinnerPostInstagram({
   winnerName,
   team,
   prize,
   time,
-  imageUrl,
   mediaToUpload,
-}) => {
-  const cta = getRandomCTA({
-    link: link,
-    time: time,
-  });
-  const template = `
-[IMAGE: ${imageUrl || "Winner card with stats 🏆"}]
+  imageUrl,
+}) {
+  const cta = getRandomCTA({ link, time });
+  const body = `
+[IMAGE: ${imageUrl || "Winner card 🏆"}]
 
 When your ESPN addiction finally pays off 💰
 
 ${winnerName} turned their ${team} knowledge into $${prize} with a lightning-fast ${time}s answer!
 
 NO FEES. Just skill. Just speed. Just win. ⚡
-
-Link in bio to start playing 🎯
-
-${cta}
-
-${hastags}
   `;
 
-  const ext = mediaToUpload.split(".").pop().toLowerCase();
-  if (["jpg", "jpeg", "png"].includes(ext)) {
-    // Facebook Video
-    await fbImagePost(mediaToUpload, template); // or you can handle specific image types if needed
-    // Instagram
-    const container = await igImageContainer(mediaToUpload, template);
-    await igPublishMedia(container.id);
-  } else if (ext === "mp4") {
-    // Facebook
-    await fbVideoPost(mediaToUpload, template);
-    // Instagram
-    const container = await igVideoContainer(mediaToUpload, template);
-    await igPublishMedia(container.id);
-  } else {
-    throw new Error(
-      `❌ Unsupported file type: .${ext}. Only JPG, PNG, or MP4 allowed.`
-    );
-  }
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+  });
+}
 
-  return template.trim();
-};
+// ==========================================================
+// Telegram (Rich) Winner Post Generator
+// ==========================================================
 
-const WinnerPostTelegram = async ({
+async function WinnerPostTelegram({
   winnerName,
   prize,
   time,
@@ -351,35 +270,31 @@ const WinnerPostTelegram = async ({
   square,
   triviaQuestion,
   answer,
-  tgSendMessage, // callback function to send message
-}) => {
-  const cta = getRandomCTA({
-    link: link,
-    time: time,
-  });
-  const template = `
+}) {
+  const cta = getRandomCTA({ link, time });
+  const body = `
 🔥 *WINNER ALERT* 🔥
 
 *Player:* ${winnerName}
 *Prize:* $${prize}
-*Answer Time:* ⚡ ${time} seconds
+*Answer Time:* ⚡ ${time}s
 *Game:* ${team1} vs ${team2}
 *Square:* ${square}
 
 _"${triviaQuestion}"_
 Answer: *${answer}*
 
-Think you could've been faster? Join now - NO FEES!
+Think you could’ve been faster? Join now - NO FEES!
+  `;
 
-${cta}
+  const post = buildTemplate(body, cta);
+  await tgSendMessage(post);
+  return post;
+}
 
-${hastags}
-  `.trim();
-
-  await tgSendMessage(template);
-
-  return template;
-};
+// ==========================================================
+// Exports
+// ==========================================================
 
 module.exports = {
   // Milestone / Special Events
