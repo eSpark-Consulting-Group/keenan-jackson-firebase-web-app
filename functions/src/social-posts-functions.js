@@ -1,4 +1,14 @@
-const { getRandomCTA, tgSendMessage } = require("./social-posts");
+const {
+  getRandomCTA,
+  tgSendMessage,
+  fbImagePost,
+  igImageContainer,
+  igPublishMedia,
+  fbVideoPost,
+  igVideoContainer,
+  fbFeedPost,
+  postTweet,
+} = require("./social-posts");
 
 // 7. Engagement Builders (New PUB SUB NEEDED)
 // Trigger: Weekly, to drive conversation and competition.
@@ -13,6 +23,8 @@ const TeamRivalryPost = async ({
   teamB = "Eagles", // Example teams
   teamAWins = 0, // Example win counts
   teamBWins = 0, // Example win counts
+  mediaToUpload,
+  captionLink,
 }) => {
   const cta = getRandomCTA({
     link: link,
@@ -29,15 +41,43 @@ Who knows their team better? Prove it on Sunday!
 
 ${cta}
   `;
+  const ext = mediaToUpload.split(".").pop().toLowerCase();
+  if (["jpg", "jpeg", "png"].includes(ext)) {
+    // Facebook Video
+    await fbImagePost(mediaToUpload, template); // or you can handle specific image types if needed
+    // Instagram
+    const container = await igImageContainer(mediaToUpload, template);
+    await igPublishMedia(container.id);
+  } else if (ext === "mp4") {
+    // Facebook
+    await fbVideoPost(mediaToUpload, template);
+    // Instagram
+    const container = await igVideoContainer(mediaToUpload, template);
+    await igPublishMedia(container.id);
+  } else if (captionLink && captionLink !== "") {
+    // Facebook Link
+    await fbFeedPost(template, captionLink);
+  } else {
+    throw new Error(
+      `❌ Unsupported file type: .${ext}. Only JPG, PNG, or MP4 allowed.`
+    );
+  }
+  // Tweeter post
+  await postTweet(template);
+  // Telegram post with formatting
+  await tgSendMessage(template);
 
   return template.trim();
 };
 
 // Referral Leaderboard Post Generator
-const ReferralLeaderboard = async ({ winners = [], time }) => {
+const ReferralLeaderboard = async ({
+  winners = [],
+  mediaToUpload,
+  captionLink,
+}) => {
   const cta = getRandomCTA({
     link: link,
-    time: time,
   });
 
   // Each winner object should look like:
@@ -60,6 +100,32 @@ These players win on the board AND off the board.
 
 ${cta}
   `;
+
+  const ext = mediaToUpload.split(".").pop().toLowerCase();
+  if (["jpg", "jpeg", "png"].includes(ext)) {
+    // Facebook Video
+    await fbImagePost(mediaToUpload, template); // or you can handle specific image types if needed
+    // Instagram
+    const container = await igImageContainer(mediaToUpload, template);
+    await igPublishMedia(container.id);
+  } else if (ext === "mp4") {
+    // Facebook
+    await fbVideoPost(mediaToUpload, template);
+    // Instagram
+    const container = await igVideoContainer(mediaToUpload, template);
+    await igPublishMedia(container.id);
+  } else if (captionLink && captionLink !== "") {
+    // Facebook Link
+    await fbFeedPost(template, captionLink);
+  } else {
+    throw new Error(
+      `❌ Unsupported file type: .${ext}. Only JPG, PNG, or MP4 allowed.`
+    );
+  }
+  // Tweeter post
+  await postTweet(template);
+  // Telegram post with formatting
+  await tgSendMessage(template);
 
   return template.trim();
 };
@@ -86,6 +152,9 @@ ${gameName}: Where speed pays 🏁
 ${cta}
   `;
 
+  // Tweeter post
+  await postTweet(template);
+
   return template.trim();
 };
 
@@ -95,6 +164,7 @@ const WinnerPostInstagram = async ({
   prize,
   time,
   imageUrl,
+  mediaToUpload,
 }) => {
   const cta = getRandomCTA({
     link: link,
@@ -114,7 +184,24 @@ Link in bio to start playing 🎯
 ${cta}
   `;
 
-  await tgSendMessage(template);
+  const ext = mediaToUpload.split(".").pop().toLowerCase();
+  if (["jpg", "jpeg", "png"].includes(ext)) {
+    // Facebook Video
+    await fbImagePost(mediaToUpload, template); // or you can handle specific image types if needed
+    // Instagram
+    const container = await igImageContainer(mediaToUpload, template);
+    await igPublishMedia(container.id);
+  } else if (ext === "mp4") {
+    // Facebook
+    await fbVideoPost(mediaToUpload, template);
+    // Instagram
+    const container = await igVideoContainer(mediaToUpload, template);
+    await igPublishMedia(container.id);
+  } else {
+    throw new Error(
+      `❌ Unsupported file type: .${ext}. Only JPG, PNG, or MP4 allowed.`
+    );
+  }
 
   return template.trim();
 };

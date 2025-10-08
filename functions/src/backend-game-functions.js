@@ -19,11 +19,7 @@ const {
   fbVideoPost,
   igVideoContainer,
   fbFeedPost,
-  tgGetMe,
-  tgGetUpdates,
-  tgSendMessage,
-  tgSendPhoto,
-  tgSendVideo,
+  postTweet,
 } = require("./social-posts");
 // const { query, collection, where } = require("firebase/firestore");
 
@@ -34,25 +30,6 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 require("dotenv").config();
-
-const client = new TwitterApi({
-  appKey: process.env.X_CONSUMER_KEY,
-  appSecret: process.env.X_CONSUMER_SECRET,
-  accessToken: process.env.X_ACCESS_TOKEN,
-  accessSecret: process.env.X_ACCESS_TOKEN_SECRET,
-});
-
-// ✅ Export reusable function
-async function postTweet(message) {
-  try {
-    const tweet = await client.v2.tweet(message);
-    console.log("✅ Tweet posted successfully:", tweet.data.id);
-    return tweet;
-  } catch (error) {
-    console.error("❌ Failed to post tweet:", error);
-    throw error;
-  }
-}
 
 const TELEGRAM_BOT_TOKEN = "7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ";
 
@@ -949,7 +926,7 @@ async function processWinner(winnerData) {
   // ✅ Send notifications / social posts
   try {
     // Twitter
-    // await postTweet(caption);
+    await postTweet(caption);
     if (["jpg", "jpeg", "png"].includes(ext)) {
       // Facebook Video
       await fbImagePost(mediaToUpload, caption); // or you can handle specific image types if needed

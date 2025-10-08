@@ -4,6 +4,7 @@ const axios = require("axios");
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { logger } = require("firebase-functions");
+const { TwitterApi } = require("twitter-api-v2");
 
 // Initialize Firebase Admin (safe re-init)
 if (!admin.apps.length) admin.initializeApp();
@@ -21,6 +22,13 @@ const TELEGRAM_BOT_TOKEN =
   process.env.TELEGRAM_BOT_TOKEN ||
   "8437839049:AAFW3qU7gDPxG_yH951oSMHt56aKz8xv_wM";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || 1310589021;
+
+const client = new TwitterApi({
+  appKey: process.env.X_CONSUMER_KEY,
+  appSecret: process.env.X_CONSUMER_SECRET,
+  accessToken: process.env.X_ACCESS_TOKEN,
+  accessSecret: process.env.X_ACCESS_TOKEN_SECRET,
+});
 
 // Unified logging helper
 function logInfo(context, data) {
@@ -317,12 +325,25 @@ function getRandomCTA(context = {}) {
 // const template = "🔥 The next trivia challenge is LIVE!";
 // const content = `${template}\n\n\n${ctaText}`;
 
+// ✅ Export reusable function
+async function postTweet(message) {
+  try {
+    const tweet = await client.v2.tweet(message);
+    console.log("✅ Tweet posted successfully:", tweet.data.id);
+    return tweet;
+  } catch (error) {
+    console.error("❌ Failed to post tweet:", error);
+    throw error;
+  }
+}
+
 // =============================
 // Exports for local use
 // =============================
 
 module.exports = {
   getRandomCTA,
+  postTweet,
   fbImagePost,
   fbVideoPost,
   fbFeedPost,
