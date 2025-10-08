@@ -1,14 +1,135 @@
 const {
   getRandomCTA,
-  tgSendMessage,
-  fbImagePost,
-  igImageContainer,
-  igPublishMedia,
-  fbVideoPost,
-  igVideoContainer,
-  fbFeedPost,
   postTweet,
+  fbImagePost,
+  fbVideoPost,
+  fbFeedPost,
+  igImageContainer,
+  igVideoContainer,
+  igPublishMedia,
+  tgSendMessage,
+  // tgGetMe,
+  // tgGetUpdates,
+  // tgSendPhoto,
+  // tgSendVideo,
 } = require("./social-posts");
+
+// 6. Milestone / Special Events (New PUB SUB NEEDED)
+// Trigger: Platform growth milestones or record events.
+// Platform Milestone → When total payouts cross a big milestone ($10k, $50k, $100k).
+// Record Breaker → When someone sets a new fastest-answer record.
+
+// Platform Milestone Post Generator
+const NoFeesPost = async ({ mediaToUpload, captionLink }) => {
+  const cta = getRandomCTA({
+    link: link,
+  });
+
+  // Each option object can look like:
+  const options = [
+    { icon: "⚡", title: "Express service", detail: "Get 96% today" },
+    { icon: "⏰", title: "Standard service", detail: "Get 100% in 2–3 days" },
+  ];
+
+  const optionsList = options
+    .map((o) => `${o.icon} ${o.title}: ${o.detail}`)
+    .join("\n");
+
+  const template = `
+NO FEES Emphasis:
+Win $200? Get paid $200! NO FEES on Square Trivia!  
+
+${optionsList}
+
+Your choice, your money!
+${cta}
+  `;
+  const ext = mediaToUpload.split(".").pop().toLowerCase();
+  if (["jpg", "jpeg", "png"].includes(ext)) {
+    // Facebook Video
+    await fbImagePost(mediaToUpload, template); // or you can handle specific image types if needed
+    // Instagram
+    const container = await igImageContainer(mediaToUpload, template);
+    await igPublishMedia(container.id);
+  } else if (ext === "mp4") {
+    // Facebook
+    await fbVideoPost(mediaToUpload, template);
+    // Instagram
+    const container = await igVideoContainer(mediaToUpload, template);
+    await igPublishMedia(container.id);
+  } else if (captionLink && captionLink !== "") {
+    // Facebook Link
+    await fbFeedPost(template, captionLink);
+  } else {
+    throw new Error(
+      `❌ Unsupported file type: .${ext}. Only JPG, PNG, or MP4 allowed.`
+    );
+  }
+  // Tweeter post
+  await postTweet(template);
+  // Telegram post with formatting
+  await tgSendMessage(template);
+
+  return template.trim();
+};
+
+const SkillCelebration = async ({
+  recentWinner,
+  time,
+  prize,
+  mediaToUpload,
+  captionLink,
+}) => {
+  const cta = getRandomCTA({
+    link: link,
+    time: time,
+  });
+
+  const comparisons = [
+    { icon: "🎲", label: "Traditional squares", desc: "Hope for luck" },
+    { icon: "⚡", label: "Square Trivia winners", desc: "Trust their speed" },
+  ];
+
+  const comparisonText = comparisons
+    .map((c) => `${c.label}: ${c.icon} ${c.desc}`)
+    .join("\n");
+
+  const template = `
+Skill Celebration
+What separates Square Trivia winners from everyone else?
+
+${comparisonText}
+
+${recentWinner} just proved it with a ${time}s answer for $${prize}!
+${cta}
+  `;
+  const ext = mediaToUpload.split(".").pop().toLowerCase();
+  if (["jpg", "jpeg", "png"].includes(ext)) {
+    // Facebook Video
+    await fbImagePost(mediaToUpload, template); // or you can handle specific image types if needed
+    // Instagram
+    const container = await igImageContainer(mediaToUpload, template);
+    await igPublishMedia(container.id);
+  } else if (ext === "mp4") {
+    // Facebook
+    await fbVideoPost(mediaToUpload, template);
+    // Instagram
+    const container = await igVideoContainer(mediaToUpload, template);
+    await igPublishMedia(container.id);
+  } else if (captionLink && captionLink !== "") {
+    // Facebook Link
+    await fbFeedPost(template, captionLink);
+  } else {
+    throw new Error(
+      `❌ Unsupported file type: .${ext}. Only JPG, PNG, or MP4 allowed.`
+    );
+  }
+  // Tweeter post
+  await postTweet(template);
+  // Telegram post with formatting
+  await tgSendMessage(template);
+  return template.trim();
+};
 
 // 7. Engagement Builders (New PUB SUB NEEDED)
 // Trigger: Weekly, to drive conversation and competition.
@@ -19,10 +140,10 @@ const link = "https://squaretrivia.com/games";
 
 // Team Rivalry Post Generator
 const TeamRivalryPost = async ({
-  teamA = "Cowboys", // Example teams
-  teamB = "Eagles", // Example teams
-  teamAWins = 0, // Example win counts
-  teamBWins = 0, // Example win counts
+  teamA ,
+  teamB,
+  teamAWins, 
+  teamBWins,
   mediaToUpload,
   captionLink,
 }) => {
@@ -244,6 +365,9 @@ ${cta}
 };
 
 module.exports = {
+  // Milestone / Special Events
+  NoFeesPost,
+  SkillCelebration,
   // Export Engagement Builders
   ReferralLeaderboard,
   TeamRivalryPost,
