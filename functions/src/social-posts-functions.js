@@ -8,6 +8,7 @@ const {
   igVideoContainer,
   igPublishMedia,
   tgSendMessage,
+  getHashtags,
   // tgGetMe,
   // tgGetUpdates,
   // tgSendPhoto,
@@ -18,6 +19,8 @@ const {
 // Trigger: Platform growth milestones or record events.
 // Platform Milestone → When total payouts cross a big milestone ($10k, $50k, $100k).
 // Record Breaker → When someone sets a new fastest-answer record.
+
+const hastags = getHashtags();
 
 // Platform Milestone Post Generator
 const NoFeesPost = async ({ mediaToUpload, captionLink }) => {
@@ -43,6 +46,8 @@ ${optionsList}
 
 Your choice, your money!
 ${cta}
+
+${hastags}
   `;
   const ext = mediaToUpload.split(".").pop().toLowerCase();
   if (["jpg", "jpeg", "png"].includes(ext)) {
@@ -102,6 +107,8 @@ ${comparisonText}
 
 ${recentWinner} just proved it with a ${time}s answer for $${prize}!
 ${cta}
+
+${hastags}
   `;
   const ext = mediaToUpload.split(".").pop().toLowerCase();
   if (["jpg", "jpeg", "png"].includes(ext)) {
@@ -140,9 +147,9 @@ const link = "https://squaretrivia.com/games";
 
 // Team Rivalry Post Generator
 const TeamRivalryPost = async ({
-  teamA ,
+  teamA,
   teamB,
-  teamAWins, 
+  teamAWins,
   teamBWins,
   mediaToUpload,
   captionLink,
@@ -161,6 +168,8 @@ ${teamB} fans: ${teamBWins} wins this week
 Who knows their team better? Prove it on Sunday!
 
 ${cta}
+
+${hastags}
   `;
   const ext = mediaToUpload.split(".").pop().toLowerCase();
   if (["jpg", "jpeg", "png"].includes(ext)) {
@@ -220,6 +229,8 @@ ${leaderboard}
 These players win on the board AND off the board.
 
 ${cta}
+
+${hastags}
   `;
 
   const ext = mediaToUpload.split(".").pop().toLowerCase();
@@ -271,6 +282,8 @@ ${gameName}: Where speed pays 🏁
 #SkillNotLuck #${gameName.replace(/\s+/g, "")}
 
 ${cta}
+
+${hastags}
   `;
 
   // Tweeter post
@@ -303,6 +316,8 @@ NO FEES. Just skill. Just speed. Just win. ⚡
 Link in bio to start playing 🎯
 
 ${cta}
+
+${hastags}
   `;
 
   const ext = mediaToUpload.split(".").pop().toLowerCase();
@@ -357,6 +372,8 @@ Answer: *${answer}*
 Think you could've been faster? Join now - NO FEES!
 
 ${cta}
+
+${hastags}
   `.trim();
 
   await tgSendMessage(template);

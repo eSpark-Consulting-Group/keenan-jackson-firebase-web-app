@@ -337,12 +337,48 @@ async function postTweet(message) {
   }
 }
 
+function getHashtags(context = {}) {
+  const { category } = context; // e.g. "standard", "nfl", "bigwin"
+
+  const HASHTAG_SETS = {
+    standard: [
+      "#SquareTrivia",
+      "#SpeedWins",
+      "#SpeedWinsAlways",
+      "#NoFees",
+      "#WinWithSpeed",
+    ],
+    nfl: ["#NFLSunday", "#SpeedWins", "#SundaySquares", "#FastestFingerWins"],
+    bigwin: ["#BigWin", "#SpeedPays", "#TriviaMaster", "#SpeedWinsAlways"],
+  };
+
+  // Pick matching set (default = standard)
+  const hashtags =
+    HASHTAG_SETS[category?.toLowerCase()] || HASHTAG_SETS.standard;
+
+  // Shuffle a bit for variation
+  const shuffled = hashtags.sort(() => 0.5 - Math.random());
+
+  // Return as joined string
+  return shuffled.join(" ");
+}
+
+// getHashtags({ category: "nfl" });
+// → "#SpeedWins #SundaySquares #FastestFingerWins #NFLSunday"
+
+// getHashtags({ category: "bigwin" });
+// → "#TriviaMaster #SpeedPays #BigWin #SpeedWinsAlways"
+
+// getHashtags();
+// → "#NoFees #SquareTrivia #SpeedWins #SpeedWinsAlways #WinWithSpeed"
+
 // =============================
 // Exports for local use
 // =============================
 
 module.exports = {
   getRandomCTA,
+  getHashtags,
   postTweet,
   fbImagePost,
   fbVideoPost,
