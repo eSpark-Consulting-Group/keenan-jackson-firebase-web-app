@@ -10,10 +10,17 @@ const axios = require("axios");
 
 // Load keys from env
 const FB_PAGE_ID = process.env.FB_PAGE_ID || "103373862015603";
-const FB_PAGE_ACCESS_TOKEN = process.env.FB_PAGE_ACCESS_TOKEN;
-const IG_USER_ID = process.env.IG_USER_ID;
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const FB_PAGE_ACCESS_TOKEN =
+  process.env.FB_PAGE_ACCESS_TOKEN ||
+  "EAAK3h4UAM2sBPnhZB0jLIYbCS0fTUXduFDe7WNVrCBz0l1uPkuZBaaLzLabzuuCaQdnnqcLhg57CbLN2ScudwMohk9ZBstfHIfWccGE36rFdu2XVMfzirfjaO8pFs6mTMZCdjKStGeo84Xe4Hf0CrOcZCFKywqHpUxh5tP3F9raxWWxDdQEfz9e9E1QFhqNAU34h63kDZBrJkv7TQVhDsZD";
+const FB_USER_ACCESS_TOKEN =
+  process.env.FB_USER_ACCESS_TOKEN ||
+  "EAAK3h4UAM2sBPpsWY1zAKk2PVRC2qsFyDr9RD5vDXIK4egcH8Ji8n9KN0PuWWSlvZBAi9BxUj9LenPZAIwAktLuU38cpJOZCxiTwJdHnteFF1x27ZCHA02HuPeHUi2lU9sCyS0I6CEYipyxuU4D3AYVDwiZAs4Js8LC3ULZC5dJmSBw3QEjXwukwwaBSQElOCbvKVdTdtNK27Q";
+const IG_USER_ID = process.env.IG_USER_ID || "17841414682425711";
+const TELEGRAM_BOT_TOKEN =
+  process.env.TELEGRAM_BOT_TOKEN ||
+  "8437839049:AAFW3qU7gDPxG_yH951oSMHt56aKz8xv_wM";
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || 1310589021;
 
 // =============================
 // Facebook Graph API Functions

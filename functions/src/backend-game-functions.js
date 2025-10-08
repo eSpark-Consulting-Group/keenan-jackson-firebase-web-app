@@ -16,6 +16,14 @@ const {
   fbImagePost,
   igImageContainer,
   igPublishMedia,
+  fbVideoPost,
+  igVideoContainer,
+  fbFeedPost,
+  tgGetMe,
+  tgGetUpdates,
+  tgSendMessage,
+  tgSendPhoto,
+  tgSendVideo,
 } = require("./social-posts");
 // const { query, collection, where } = require("firebase/firestore");
 
@@ -934,23 +942,35 @@ async function processWinner(winnerData) {
       [`quarterScores.${quarter}.winnerUserId`]: userId,
     });
 
+  const mediaToUpload =
+    "https://www.aljazeera.com/wp-content/uploads/2022/04/2022-04-09T203047Z_934087426_RC2WJT9RAM94_RTRMADP_3_PAKISTAN-POLITICS-e1649569800725.jpg?resize=1170%2C780&quality=80";
+  const ext = mediaToUpload.split(".").pop().toLowerCase(); // Extract file extension
+  const captionLink = "https://squaretrivia.com";
   // ✅ Send notifications / social posts
   try {
     // Twitter
     // await postTweet(caption);
-
-    // Facebook
-    await fbImagePost(
-      "https://www.aljazeera.com/wp-content/uploads/2022/04/2022-04-09T203047Z_934087426_RC2WJT9RAM94_RTRMADP_3_PAKISTAN-POLITICS-e1649569800725.jpg?resize=1170%2C780&quality=80",
-      caption
-    );
-
-    // Instagram
-    const container = await igImageContainer(
-      "https://www.aljazeera.com/wp-content/uploads/2022/04/2022-04-09T203047Z_934087426_RC2WJT9RAM94_RTRMADP_3_PAKISTAN-POLITICS-e1649569800725.jpg?resize=1170%2C780&quality=80",
-      caption
-    );
-    await igPublishMedia(container.id);
+    if (["jpg", "jpeg", "png"].includes(ext)) {
+      // Facebook Video
+      await fbImagePost(mediaToUpload, caption); // or you can handle specific image types if needed
+      // Instagram
+      const container = await igImageContainer(mediaToUpload, caption);
+      await igPublishMedia(container.id);
+    } else if (ext === "mp4") {
+      // Facebook
+      await fbVideoPost(mediaToUpload, caption);
+      // Instagram
+      const container = await igVideoContainer(mediaToUpload, caption);
+      await igPublishMedia(container.id);
+    } else if (captionLink && captionLink !== "") {
+      // Facebook Link
+      await fbFeedPost(caption, captionLink);
+    } else {
+      throw new Error(
+        `❌ Unsupported file type: .${ext}. Only JPG, PNG, or MP4 allowed.`
+      );
+    }
+    // await postTweet(caption);
   } catch (err) {
     console.error("⚠️ Social post failed", err);
   }
