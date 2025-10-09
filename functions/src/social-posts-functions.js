@@ -16,10 +16,7 @@ const {
 const hashTags = getHashtags();
 const link = "https://squaretrivia.com/games";
 
-// ==========================================================
 // Handles all platforms automatically based on media type
-// ==========================================================
-
 async function postToAllPlatforms({ media, caption, link }) {
   const ext = media?.split(".").pop().toLowerCase();
 
@@ -56,9 +53,7 @@ async function postToAllPlatforms({ media, caption, link }) {
   return caption.trim();
 }
 
-// ==========================================================
 // Builds post text with CTA + hashTags
-// ==========================================================
 function buildTemplate(body, cta) {
   return `${body.trim()}
 
@@ -67,25 +62,16 @@ ${cta}
 ${hashTags}`;
 }
 
-// ==========================================================
 // Post Templates
-// ==========================================================
 //
-// =======================================================================================
-// =======================================================================================
 // 1. Winner Announcements
-// =======================================================================================
-// =======================================================================================
 
 // Trigger: Immediately after a game ends or a winner is declared.
 // Big Win Template → When prize ≥ $100 or top-tier win.
 // Standard Win → For normal wins (mid-tier, typical payouts).
 // Photo Finish → When the win margin is less than 1 second between winner and runner-up.
 
-// ==========================================================
 // Big Win Post Generator
-// ==========================================================
-
 async function BigWinPost({
   winner,
   prize,
@@ -105,7 +91,6 @@ ${team1} vs ${team2} - Square ${square}
 Speed Wins. Always.  
 #SquareTrivia #SpeedWins
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
@@ -113,10 +98,7 @@ Speed Wins. Always.
   });
 }
 
-// ==========================================================
 // Standard Win Post Generator
-// ==========================================================
-
 async function StandardWinPost({
   winner,
   prize,
@@ -134,7 +116,6 @@ Answer time: ${time} seconds ⚡
 
 Speed Wins. Always.
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
@@ -142,10 +123,7 @@ Speed Wins. Always.
   });
 }
 
-// ==========================================================
 // Photo Finish Post Generator
-// ==========================================================
-
 async function PhotoFinishPost({
   winner,
   loser,
@@ -166,18 +144,14 @@ Runner-up: ${loseTime}s
 Every millisecond counts!  
 Speed Wins. Always. 📸
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
     link: captionLink,
   });
 }
-// =======================================================================================
-// =======================================================================================
+
 // 3. Daily/Weekly Summaries
-// =======================================================================================
-// =======================================================================================
 
 // Trigger: Before and during a board/game filling.
 // Board Going Fast → When a board is >70% full.
@@ -188,10 +162,7 @@ Speed Wins. Always. 📸
 // Multi-Game Update → On days with multiple live games (daily snapshot).
 // Tier Status Update → When high-value tiers are nearly sold out but not full.
 
-// ==========================================================
 // Board Going Fast
-// ==========================================================
-
 async function BoardGoingFastPost({
   team1,
   team2,
@@ -217,17 +188,14 @@ ${tierLines}
 Get your square before kickoff!  
 Speed Wins. Always. ⚡
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
     link: captionLink,
   });
 }
-// ==========================================================
-// New Board Alert
-// ==========================================================
 
+// New Board Alert
 async function NewBoardAlertPost({
   team1,
   team2,
@@ -251,17 +219,14 @@ All tiers available NOW:
 First come, first served!  
 Speed Wins. Always.
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
     link: captionLink,
   });
 }
-// ==========================================================
-// Final Call
-// ==========================================================
 
+// Final Call
 async function FinalCallPost({
   team1,
   team2,
@@ -281,17 +246,14 @@ ${squaresLeft} squares remaining
 Don't watch from the sidelines.  
 Speed Wins. Always. 🎯
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
     link: captionLink,
   });
 }
-// ==========================================================
-// Prime Squares Alert
-// ==========================================================
 
+// Prime Squares Alert
 async function PrimeSquaresAlertPost({
   team1,
   team2,
@@ -311,17 +273,14 @@ ${openSquares.map((sq) => `Square ${sq}: OPEN`).join("\n")}
 These numbers hit often. Claim yours!  
 Speed Wins. Always.
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
     link: captionLink,
   });
 }
-// ==========================================================
-// Board Full Announcement
-// ==========================================================
 
+// Board Full Announcement
 async function BoardFullAnnouncementPost({
   team1,
   team2,
@@ -340,17 +299,14 @@ Fastest fingers will win.
 Check other games or join the waitlist.  
 Speed Wins. Always. 💪
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
     link: captionLink,
   });
 }
-// ==========================================================
-// Multi-Game Update
-// ==========================================================
 
+// Multi-Game Update
 async function MultiGameUpdatePost({ games, mediaToUpload, captionLink }) {
   // games example: [{match: "Cowboys vs Eagles", fill: "85%"}, ...]
   const cta = getRandomCTA({ link });
@@ -365,17 +321,14 @@ ${gameLines}
 Get in NOW before they're gone!  
 Speed Wins. Always.
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
     link: captionLink,
   });
 }
-// ==========================================================
-// Tier Status Update
-// ==========================================================
 
+// Tier Status Update
 async function TierStatusUpdatePost({
   team1,
   team2,
@@ -403,7 +356,6 @@ ${tierLines}
 Big money squares going fast!  
 Speed Wins. Always. 💰
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
@@ -411,20 +363,13 @@ Speed Wins. Always. 💰
   });
 }
 
-// =======================================================================================
-// =======================================================================================
 // 3. Daily/Weekly Summaries
-// =======================================================================================
-// =======================================================================================
 
 // Trigger: Scheduled posts (auto-cron).
 // Daily Recap → End of each day (summarize wins, biggest prize, fastest player).
 // Weekly Champion → Every Sunday evening or Monday morning (show leaderboard).
 
-// ==========================================================
 // Daily Recap
-// ==========================================================
-
 async function DailyRecapPost({
   totalPrizes,
   winnerCount,
@@ -445,17 +390,14 @@ async function DailyRecapPost({
 
 Your sports knowledge = real money!
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
     link: captionLink,
   });
 }
-// ==========================================================
-// Weekly Champion
-// ==========================================================
 
+// Weekly Champion
 async function WeeklyChampionPost({
   winner1,
   amount1,
@@ -480,7 +422,6 @@ async function WeeklyChampionPost({
 
 Think you can make next week's list? 🎯
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
@@ -488,20 +429,13 @@ Think you can make next week's list? 🎯
   });
 }
 
-// =======================================================================================
-// =======================================================================================
 // 4. Game Promotion
-// =======================================================================================
-// =======================================================================================
 
 // Trigger: Pre-game marketing.
 // Upcoming Game → When new games for the week are announced (2–3 days before kickoff).
 // Last Chance → 2–3 hours before game start (or when <20% of squares left).
 
-// ==========================================================
 // Upcoming Game
-// ==========================================================
-
 async function UpcomingGamePost({ team1, team2, mediaToUpload, captionLink }) {
   const cta = getRandomCTA({ link });
 
@@ -515,7 +449,6 @@ Tiers available:
 
 NO FEES - Answer fast, win big!
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
@@ -523,10 +456,7 @@ NO FEES - Answer fast, win big!
   });
 }
 
-// ==========================================================
 // Upcoming Game
-// ==========================================================
-
 async function LastChancePost({
   team1,
   team2,
@@ -545,7 +475,6 @@ Biggest tier still open: $${highestTier}
 
 Don't miss out! 🎯
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
@@ -553,20 +482,13 @@ Don't miss out! 🎯
   });
 }
 
-// =======================================================================================
-// =======================================================================================
 // . Milestone / Special Events
-// =======================================================================================
-// =======================================================================================
 
 // Trigger: Periodically to build credibility + after payouts.
 // NO FEES Emphasis → Weekly reminder OR after payouts are processed.
 // Skill Celebration → After a notable fast answer win (especially when users confuse with “luck-based” games).
 
-// ==========================================================
 // Platform Milestone
-// ==========================================================
-
 async function PlatformMilestonePost({
   amount,
   totalWinners,
@@ -583,7 +505,6 @@ All skill, no luck!
 
 Thank you for making Square Trivia the fastest growing skill-based platform! 💪
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
@@ -591,10 +512,7 @@ Thank you for making Square Trivia the fastest growing skill-based platform! �
   });
 }
 
-// ==========================================================
 // Record Breaker Post Generator
-// ==========================================================
-
 async function RecordBreakerPost({
   winner,
   time,
@@ -611,7 +529,6 @@ Previous record: ${oldTime}s
 
 Think you can beat it? Speed pays! ⚡
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
@@ -619,20 +536,13 @@ Think you can beat it? Speed pays! ⚡
   });
 }
 
-// =======================================================================================
-// =======================================================================================
 // TRUST BUILDINGS
-// =======================================================================================
-// =======================================================================================
 
 // Trigger: Platform growth milestones or record events.
 // Platform Milestone → When total payouts cross a big milestone ($10k, $50k, $100k).
 // Record Breaker → When someone sets a new fastest-answer record.
 
-// ==========================================================
 // No Fees Post Generator
-// ==========================================================
-
 async function NoFeesPost({ mediaToUpload, captionLink }) {
   const cta = getRandomCTA({ link });
   const options = [
@@ -649,7 +559,6 @@ ${options}
 
 Your choice, your money!
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
@@ -657,10 +566,7 @@ Your choice, your money!
   });
 }
 
-// ==========================================================
 // Skill Celebration Post Generator
-// ==========================================================
-
 async function SkillCelebration({
   recentWinner,
   time,
@@ -684,7 +590,6 @@ ${comparisons}
 ${recentWinner} just proved it with a ${time}s answer for $${prize}!
 Speed Wins. Always. 🧠💰 
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
@@ -692,20 +597,13 @@ Speed Wins. Always. 🧠💰
   });
 }
 
-// =======================================================================================
-// =======================================================================================
 // Engagement Builders
-// =======================================================================================
-// =======================================================================================
 
 // Trigger: Weekly, to drive conversation and competition.
 // Referral Leaderboard → Weekly (Sunday night / Monday morning).
 // Team Rivalry → Post mid-week OR before a major rivalry game (Cowboys vs Eagles, Chiefs vs Bills, etc.).
 
-// ==========================================================
 // Team Rivalry Post Generator
-// ==========================================================
-
 async function TeamRivalryPost({
   teamA,
   teamB,
@@ -723,7 +621,6 @@ ${teamB} fans: ${teamBWins} wins this week
 
 Who knows their team better? Prove it on Sunday!
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
@@ -731,10 +628,7 @@ Who knows their team better? Prove it on Sunday!
   });
 }
 
-// ==========================================================
 // Referral Leaderboard Post Generator
-// ==========================================================
-
 async function ReferralLeaderboard({
   winners = [],
   mediaToUpload,
@@ -756,7 +650,6 @@ ${leaderboard}
 These players win on the board AND off the board.
 Speed Wins. Always. 💰
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
@@ -764,21 +657,14 @@ Speed Wins. Always. 💰
   });
 }
 
-// =======================================================================================
-// =======================================================================================
 // Platform-Specific Variations (Discussion Needed):
-// =======================================================================================
-// =======================================================================================
 
 // Twitter (Short) → Auto-adapt from Winner/Recap templates, compressed.
 // Instagram (Visual) → Use Winner Announcement + image card designs.
 // Telegram (Rich) → Winner templates expanded with Markdown formatting.
 // Platform-Specific Winner Post Generators
 
-// ==========================================================
 // Twitter (Short) Winner Post Generator
-// ==========================================================
-
 async function WinnerPostTwitter({ winnerName, prize, gameName, time }) {
   const cta = getRandomCTA({ link, time });
   const body = `
@@ -794,10 +680,7 @@ ${gameName}: Where speed pays 🏁
   return post;
 }
 
-// ==========================================================
 // Instagram (Visual) Winner Post Generator
-// ==========================================================
-
 async function WinnerPostInstagram({
   winnerName,
   team,
@@ -816,17 +699,13 @@ ${winnerName} turned their ${team} knowledge into $${prize} with a lightning-fas
 
 NO FEES. Just skill. Just speed. Just win. ⚡
   `;
-
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
   });
 }
 
-// ==========================================================
 // Telegram (Rich) Winner Post Generator
-// ==========================================================
-
 async function WinnerPostTelegram({
   winnerName,
   prize,
@@ -858,11 +737,7 @@ Think you could’ve been faster? Join now - NO FEES!
   return post;
 }
 
-// =======================================================================================
-// =======================================================================================
 // Exports
-// =======================================================================================
-// =======================================================================================
 
 module.exports = {
   // Winner Announcements
