@@ -86,7 +86,11 @@ async function fbVideoPost(videoUrl, description) {
 // 3. Facebook Text + Link Post
 async function fbFeedPost(message, link) {
   const url = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}/feed`;
-  const data = { message, link, access_token: FB_PAGE_ACCESS_TOKEN };
+  const data = {
+    message,
+    ...(link ? { link } : {}), // Only include link if provided
+    access_token: FB_PAGE_ACCESS_TOKEN,
+  };
 
   try {
     logInfo("Facebook Feed Post", { message, link });
@@ -326,16 +330,58 @@ function getRandomCTA(context = {}) {
 // const content = `${template}\n\n\n${ctaText}`;
 
 // ✅ Export reusable function
-async function postTweet(message) {
+async function postTweet({ message, link, imagePath, videoPath }) {
   try {
-    const tweet = await client.v2.tweet(message);
-    console.log("✅ Tweet posted successfully:", tweet.data.id);
-    return tweet;
+    let text = message || "";
+    if (link) text += `\n\n${link}`;
+
+    let mediaIds = [];
+
+    // ✅ Upload media if provided
+    if (imagePath) {
+      const mediaId = await client.v1.uploadMedia(imagePath);
+      mediaIds.push(mediaId);
+    } else if (videoPath) {
+      const mediaId = await client.v1.uploadMedia(videoPath, { type: "video" });
+      mediaIds.push(mediaId);
+    }
+
+    // ✅ Post tweet
+    const payload = mediaIds.length
+      ? { text, media: { media_ids: mediaIds } }
+      : { text };
+
+    const res = await client.v2.tweet(payload);
+    console.log("✅ Tweet posted successfully:", res.data.id);
+
+    return res;
   } catch (error) {
     console.error("❌ Failed to post tweet:", error);
     throw error;
   }
 }
+// Tweets can be posted in several formats:
+
+//Text only
+// await postTweet({ message: "Speed Wins. Always. ⚡" });
+
+// Text + Link
+// await postTweet({
+//   message: "Think you’re fast? Prove it →",
+//   link: "https://squaretrivia.com",
+// });
+
+//  Text + Image
+// await postTweet({
+//   message: "Big win today 🏆 #SquareTrivia",
+//   imagePath: "./media/winner.jpg",
+// });
+
+// Text + Video
+// await postTweet({
+//   message: "Watch how speed wins ⚡",
+//   videoPath: "./media/highlight.mp4",
+// });
 
 function getHashtags(context = {}) {
   const { category } = context; // e.g. "standard", "nfl", "bigwin"

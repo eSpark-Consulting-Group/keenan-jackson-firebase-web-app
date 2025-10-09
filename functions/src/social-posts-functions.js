@@ -7,12 +7,10 @@ const {
   igImageContainer,
   igVideoContainer,
   igPublishMedia,
-  tgSendMessage,
   getHashtags,
-  // tgGetMe,
-  // tgGetUpdates,
-  // tgSendPhoto,
-  // tgSendVideo,
+  tgSendMessage,
+  tgSendPhoto,
+  tgSendVideo,
 } = require("./social-posts");
 
 const hashTags = getHashtags();
@@ -26,15 +24,29 @@ async function postToAllPlatforms({ media, caption, link }) {
   const ext = media?.split(".").pop().toLowerCase();
 
   if (["jpg", "jpeg", "png"].includes(ext)) {
-    await fbImagePost(media, caption);
-    const container = await igImageContainer(media, caption);
-    await igPublishMedia(container.id);
+    // 📸 Image post
+    await fbImagePost(media, caption); // 📘 Facebook image post
+    await tgSendPhoto(media, caption); // 📲 Telegram image post
+    await postTweet({ message: caption, imagePath: media }); // 🐦 Twitter image post
+    const container = await igImageContainer(media, caption); // 📸 Instagram image container
+    await igPublishMedia(container.id); // Publish to Instagram
   } else if (ext === "mp4") {
-    await fbVideoPost(media, caption);
-    const container = await igVideoContainer(media, caption);
-    await igPublishMedia(container.id);
+    // 🎥 Video post
+    await fbVideoPost(media, caption); // 📘 Facebook video post
+    await tgSendVideo(media, caption); // 📲 Telegram video post
+    await postTweet({ message: caption, videoPath: media }); // 🐦 Twitter video post
+    const container = await igVideoContainer(media, caption); // 📸 Instagram video container
+    await igPublishMedia(container.id); // Publish to Instagram
   } else if (link) {
-    await fbFeedPost(caption, link);
+    // 🔗 Link post
+    await fbFeedPost(caption, link); // 📘 Facebook link post
+    await tgSendMessage(`${caption}\n\n${link}`); // 📲 Telegram link post
+    await postTweet({ message: caption, link }); // 🐦 Twitter link post
+  } else if (!media && !link && caption) {
+    // 📝 Text-only post
+    await fbFeedPost(caption); // 📘 Facebook text post
+    await tgSendMessage(caption); // 📲 Telegram text post
+    await postTweet({ message: caption });
   } else {
     throw new Error(`❌ Unsupported file type: .${ext}. Use JPG, PNG, or MP4.`);
   }
