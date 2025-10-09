@@ -21,6 +21,11 @@ const {
   fbFeedPost,
   postTweet,
 } = require("./social-posts");
+const {
+  BigWinPost,
+  StandardWinPost,
+  PhotoFinishPost,
+} = require("./social-posts-functions");
 // const { query, collection, where } = require("firebase/firestore");
 
 // Initialize admin if not already done
@@ -863,6 +868,7 @@ async function processWinner(winnerData) {
 
   // ✅ Determine caption template
   const isBigWin = prizeAmount >= 900;
+  const isPhotoFinish = Math.abs(answerTime - opponentTime) < 1000;
 
   const caption = isBigWin
     ? `🚨 ${displayName} just took home $${prizeAmount} with a blazing ${answerTime}s answer! Think you're faster? 🏃‍♂️\n\n${team1} vs ${team2} - Square ${position}\nSpeed Wins. Always.\n#SquareTrivia #SpeedWins`
@@ -919,38 +925,72 @@ async function processWinner(winnerData) {
       [`quarterScores.${quarter}.winnerUserId`]: userId,
     });
 
-  const mediaToUpload =
-    "https://www.aljazeera.com/wp-content/uploads/2022/04/2022-04-09T203047Z_934087426_RC2WJT9RAM94_RTRMADP_3_PAKISTAN-POLITICS-e1649569800725.jpg?resize=1170%2C780&quality=80";
-  const ext = mediaToUpload.split(".").pop().toLowerCase(); // Extract file extension
+  const mediaToUpload = "https://squaretrivia.com/logo.png";
+  // const ext = mediaToUpload.split(".").pop().toLowerCase(); // Extract file extension
   const captionLink = "https://squaretrivia.com";
+
   // ✅ Send notifications / social posts
-  try {
-    // Twitter
-    await postTweet(caption);
-    if (["jpg", "jpeg", "png"].includes(ext)) {
-      // Facebook Video
-      await fbImagePost(mediaToUpload, caption); // or you can handle specific image types if needed
-      // Instagram
-      const container = await igImageContainer(mediaToUpload, caption);
-      await igPublishMedia(container.id);
-    } else if (ext === "mp4") {
-      // Facebook
-      await fbVideoPost(mediaToUpload, caption);
-      // Instagram
-      const container = await igVideoContainer(mediaToUpload, caption);
-      await igPublishMedia(container.id);
-    } else if (captionLink && captionLink !== "") {
-      // Facebook Link
-      await fbFeedPost(caption, captionLink);
-    } else {
-      throw new Error(
-        `❌ Unsupported file type: .${ext}. Only JPG, PNG, or MP4 allowed.`
-      );
+  {
+    isBigWin
+      ? BigWinPost({
+          winner: displayName,
+          prize: prizeAmount,
+          time: answerTime,
+          team1: game.teams.home.name,
+          team2: game.teams.away.name,
+          square: position,
+          mediaToUpload: mediaToUpload,
+          captionLink: captionLink,
+        })
+      : StandardWinPost({
+          winner: displayName,
+          prize: prizeAmount,
+          team1: game.teams.home.name,
+          team2: game.teams.away.name,
+          time: answerTime,
+          mediaToUpload: mediaToUpload,
+          captionLink: captionLink,
+        });
+    {
+      isPhotoFinish &&
+        PhotoFinishPost({
+          winner: displayName, // todo: need to get winner info/name
+          loser: displayName, // todo: need to get loser info/name
+          diff: Math.round((answerTime - opponentTime) * 1000) / 1000,
+          winTime: answerTime,
+          loseTime: opponentTime,
+          mediaToUpload: mediaToUpload,
+          captionLink: captionLink,
+        });
     }
-    // await postTweet(caption);
-  } catch (err) {
-    console.error("⚠️ Social post failed", err);
   }
+  // try {
+  //   // Twitter
+  //   await postTweet(caption);
+  //   if (["jpg", "jpeg", "png"].includes(ext)) {
+  //     // Facebook Video
+  //     await fbImagePost(mediaToUpload, caption); // or you can handle specific image types if needed
+  //     // Instagram
+  //     const container = await igImageContainer(mediaToUpload, caption);
+  //     await igPublishMedia(container.id);
+  //   } else if (ext === "mp4") {
+  //     // Facebook
+  //     await fbVideoPost(mediaToUpload, caption);
+  //     // Instagram
+  //     const container = await igVideoContainer(mediaToUpload, caption);
+  //     await igPublishMedia(container.id);
+  //   } else if (captionLink && captionLink !== "") {
+  //     // Facebook Link
+  //     await fbFeedPost(caption, captionLink);
+  //   } else {
+  //     throw new Error(
+  //       `❌ Unsupported file type: .${ext}. Only JPG, PNG, or MP4 allowed.`
+  //     );
+  //   }
+  //   // await postTweet(caption);
+  // } catch (err) {
+  //   console.error("⚠️ Social post failed", err);
+  // }
 
   console.log(`🏆 Winner processed: ${displayName} - $${prizeAmount}`);
 
