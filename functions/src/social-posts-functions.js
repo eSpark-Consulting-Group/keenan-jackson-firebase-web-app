@@ -61,7 +61,138 @@ ${hashTags}`;
 
 // =======================================================================================
 // =======================================================================================
-// Platform Milestone Post Generator
+// 4. Game Promotion
+// =======================================================================================
+// =======================================================================================
+
+// Trigger: Pre-game marketing.
+// Upcoming Game → When new games for the week are announced (2–3 days before kickoff).
+// Last Chance → 2–3 hours before game start (or when <20% of squares left).
+
+// ==========================================================
+// Upcoming Game
+// ==========================================================
+
+async function UpcomingGamePost({ team1, team2, mediaToUpload, captionLink }) {
+  const cta = getRandomCTA({ link });
+
+  const body = `
+🏈 ${team1} vs ${team2} boards are LIVE!  
+
+Tiers available:  
+✅ $25 tier - Win $200/quarter  
+✅ $50 tier - Win $450/quarter  
+✅ $100 tier - Win $900/quarter  
+
+NO FEES - Answer fast, win big!
+  `;
+
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
+
+// ==========================================================
+// Upcoming Game
+// ==========================================================
+
+async function LastChancePost({
+  team1,
+  team2,
+  spotsLeft,
+  highestTier,
+  mediaToUpload,
+  captionLink,
+}) {
+  const cta = getRandomCTA({ link });
+
+  const body = `
+⏰ FINAL CALL: ${team1} vs ${team2} kicks off in 2 hours!  
+
+Still ${spotsLeft} squares available.  
+Biggest tier still open: $${highestTier}  
+
+Don't miss out! 🎯
+  `;
+
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
+
+// =======================================================================================
+// =======================================================================================
+// . Milestone / Special Events
+// =======================================================================================
+// =======================================================================================
+
+// Trigger: Periodically to build credibility + after payouts.
+// NO FEES Emphasis → Weekly reminder OR after payouts are processed.
+// Skill Celebration → After a notable fast answer win (especially when users confuse with “luck-based” games).
+
+// ==========================================================
+// Platform Milestone
+// ==========================================================
+
+async function PlatformMilestonePost({
+  amount,
+  totalWinners,
+  mediaToUpload,
+  captionLink,
+}) {
+  const cta = getRandomCTA({ link });
+  const body = `
+🎉 MILESTONE ALERT!  
+
+We've now paid out over $${amount} in prizes!  
+${totalWinners} winners and counting.  
+All skill, no luck!  
+
+Thank you for making Square Trivia the fastest growing skill-based platform! 💪
+  `;
+
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
+
+// ==========================================================
+// Record Breaker Post Generator
+// ==========================================================
+
+async function RecordBreakerPost({
+  winner,
+  time,
+  oldTime,
+  mediaToUpload,
+  captionLink,
+}) {
+  const cta = getRandomCTA({ link, time });
+  const body = `
+🚨 NEW RECORD! 🚨  
+
+${winner} just set the fastest answer time this week: ${time} seconds!  
+Previous record: ${oldTime}s  
+
+Think you can beat it? Speed pays! ⚡
+  `;
+
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
+
+// =======================================================================================
+// =======================================================================================
+// TRUST BUILDINGS
 // =======================================================================================
 // =======================================================================================
 
@@ -83,7 +214,6 @@ async function NoFeesPost({ mediaToUpload, captionLink }) {
     .join("\n");
 
   const body = `
-NO FEES Emphasis:
 Win $200? Get paid $200! NO FEES on Square Trivia!  
 
 ${options}
@@ -118,12 +248,12 @@ async function SkillCelebration({
     .join("\n");
 
   const body = `
-Skill Celebration
 What separates Square Trivia winners from everyone else?
 
 ${comparisons}
 
 ${recentWinner} just proved it with a ${time}s answer for $${prize}!
+Speed Wins. Always. 🧠💰 
   `;
 
   return postToAllPlatforms({
@@ -157,7 +287,6 @@ async function TeamRivalryPost({
 }) {
   const cta = getRandomCTA({ link });
   const body = `
-Team Rivalry
 Battle of the Fanbases! 🏈
 
 ${teamA} fans: ${teamAWins} wins this week  
@@ -191,12 +320,12 @@ async function ReferralLeaderboard({
     .join("\n");
 
   const body = `
-Referral Leaderboard
 🏆 This Week's Referral Winners:
 
 ${leaderboard}
 
 These players win on the board AND off the board.
+Speed Wins. Always. 💰
   `;
 
   return postToAllPlatforms({
@@ -228,7 +357,7 @@ ${winnerName} ➡️ $${prize}${time ? ` ⚡ ${time}s` : ""}
 
 ${gameName}: Where speed pays 🏁
 
-#SkillNotLuck #${gameName.replace(/\s+/g, "")}
+#SkillNotLuck
   `;
 
   const post = buildTemplate(body, cta);
@@ -307,7 +436,13 @@ Think you could’ve been faster? Join now - NO FEES!
 // =======================================================================================
 
 module.exports = {
-  // Milestone / Special Events
+  // Export Game Promotion Posts
+  UpcomingGamePost,
+  LastChancePost,
+  // Milestone / Special Event Posts
+  PlatformMilestonePost,
+  RecordBreakerPost,
+  //Trust Buildings
   NoFeesPost,
   SkillCelebration,
   // Export Engagement Builders
