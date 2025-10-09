@@ -59,6 +59,345 @@ ${hashTags}`;
 // Post Templates
 // ==========================================================
 //
+// =======================================================================================
+// =======================================================================================
+// 1. Winner Announcements
+// =======================================================================================
+// =======================================================================================
+
+// Trigger: Immediately after a game ends or a winner is declared.
+// Big Win Template → When prize ≥ $100 or top-tier win.
+// Standard Win → For normal wins (mid-tier, typical payouts).
+// Photo Finish → When the win margin is less than 1 second between winner and runner-up.
+
+// ==========================================================
+// Big Win Post Generator
+// ==========================================================
+
+async function BigWinPost({
+  winner,
+  prize,
+  time,
+  team1,
+  team2,
+  square,
+  mediaToUpload,
+  captionLink,
+}) {
+  const cta = getRandomCTA({ link: captionLink });
+
+  const body = `
+🚨 ${winner} just took home $${prize} with a blazing ${time}s answer! Think you're faster? 🏃‍♂️  
+
+${team1} vs ${team2} - Square ${square}  
+Speed Wins. Always.  
+#SquareTrivia #SpeedWins
+  `;
+
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
+
+// ==========================================================
+// Standard Win Post Generator
+// ==========================================================
+
+async function StandardWinPost({
+  winner,
+  prize,
+  team1,
+  team2,
+  time,
+  mediaToUpload,
+  captionLink,
+}) {
+  const cta = getRandomCTA({ link: captionLink });
+
+  const body = `
+BOOM! 💥 $${prize} win for ${winner} on the ${team1} vs ${team2} board!  
+Answer time: ${time} seconds ⚡  
+
+Speed Wins. Always.
+  `;
+
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
+
+// ==========================================================
+// Photo Finish Post Generator
+// ==========================================================
+
+async function PhotoFinishPost({
+  winner,
+  loser,
+  diff,
+  winTime,
+  loseTime,
+  mediaToUpload,
+  captionLink,
+}) {
+  const cta = getRandomCTA({ link: captionLink });
+
+  const body = `
+INSANE FINISH! 🏁  
+${winner} beats ${loser} by just ${diff} seconds!  
+Winner: ${winTime}s  
+Runner-up: ${loseTime}s  
+
+Every millisecond counts!  
+Speed Wins. Always. 📸
+  `;
+
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
+// =======================================================================================
+// =======================================================================================
+// 3. Daily/Weekly Summaries
+// =======================================================================================
+// =======================================================================================
+
+// Trigger: Before and during a board/game filling.
+// Board Going Fast → When a board is >70% full.
+// New Board Alert → As soon as a new game board is created.
+// Final Call → 1–2 hours before kickoff/start.
+// Prime Squares Alert → When statistically strong/“hot” squares are still unclaimed.
+// Board Full Announcement → Once a board is sold out (100% full).
+// Multi-Game Update → On days with multiple live games (daily snapshot).
+// Tier Status Update → When high-value tiers are nearly sold out but not full.
+
+// ==========================================================
+// Board Going Fast
+// ==========================================================
+
+async function BoardGoingFastPost({
+  team1,
+  team2,
+  tiers,
+  mediaToUpload,
+  captionLink,
+}) {
+  // tiers example: [{tier: 100, left: 12}, {tier: 50, left: 8}, {tier: 25, left: 0}]
+  const cta = getRandomCTA({ link });
+
+  const tierLines = tiers
+    .map(
+      (t) =>
+        `$${t.tier} Tier: ${t.left > 0 ? `${t.left} squares left` : "SOLD OUT"}`
+    )
+    .join("\n");
+
+  const body = `
+🔥 ${team1} vs ${team2} filling up FAST!  
+
+${tierLines}
+
+Get your square before kickoff!  
+Speed Wins. Always. ⚡
+  `;
+
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
+// ==========================================================
+// New Board Alert
+// ==========================================================
+
+async function NewBoardAlertPost({
+  team1,
+  team2,
+  day,
+  time,
+  mediaToUpload,
+  captionLink,
+}) {
+  const cta = getRandomCTA({ link });
+
+  const body = `
+🚨 NEW BOARD LIVE 🚨  
+
+${team1} vs ${team2} - ${day} ${time}  
+
+All tiers available NOW:  
+💰 $25 → Win $200/quarter  
+💰 $50 → Win $450/quarter  
+💰 $100 → Win $900/quarter  
+
+First come, first served!  
+Speed Wins. Always.
+  `;
+
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
+// ==========================================================
+// Final Call
+// ==========================================================
+
+async function FinalCallPost({
+  team1,
+  team2,
+  timeLeft,
+  squaresLeft,
+  mediaToUpload,
+  captionLink,
+}) {
+  const cta = getRandomCTA({ link });
+
+  const body = `
+⏰ LAST CHANCE: ${team1} vs ${team2}  
+
+Game starts in ${timeLeft}!  
+${squaresLeft} squares remaining  
+
+Don't watch from the sidelines.  
+Speed Wins. Always. 🎯
+  `;
+
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
+// ==========================================================
+// Prime Squares Alert
+// ==========================================================
+
+async function PrimeSquaresAlertPost({
+  team1,
+  team2,
+  openSquares,
+  mediaToUpload,
+  captionLink,
+}) {
+  // openSquares example: ["0-7", "3-4", "7-0"]
+  const cta = getRandomCTA({ link });
+
+  const body = `
+👀 Prime squares still available!  
+
+${team1} vs ${team2}  
+${openSquares.map((sq) => `Square ${sq}: OPEN`).join("\n")}  
+
+These numbers hit often. Claim yours!  
+Speed Wins. Always.
+  `;
+
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
+// ==========================================================
+// Board Full Announcement
+// ==========================================================
+
+async function BoardFullAnnouncementPost({
+  team1,
+  team2,
+  totalPrize,
+  mediaToUpload,
+  captionLink,
+}) {
+  const cta = getRandomCTA({ link });
+
+  const body = `
+SOLD OUT! ${team1} vs ${team2} is LOCKED IN! 🔒  
+
+100 players competing for $${totalPrize}  
+Fastest fingers will win.  
+
+Check other games or join the waitlist.  
+Speed Wins. Always. 💪
+  `;
+
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
+// ==========================================================
+// Multi-Game Update
+// ==========================================================
+
+async function MultiGameUpdatePost({ games, mediaToUpload, captionLink }) {
+  // games example: [{match: "Cowboys vs Eagles", fill: "85%"}, ...]
+  const cta = getRandomCTA({ link });
+
+  const gameLines = games.map((g) => `${g.match}: ${g.fill} FULL`).join("\n");
+
+  const body = `
+📊 Sunday Board Status:  
+
+${gameLines}
+
+Get in NOW before they're gone!  
+Speed Wins. Always.
+  `;
+
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
+// ==========================================================
+// Tier Status Update
+// ==========================================================
+
+async function TierStatusUpdatePost({
+  team1,
+  team2,
+  tiers,
+  mediaToUpload,
+  captionLink,
+}) {
+  // tiers example: [{tier: 1000, left: 2}, {tier: 500, left: 0}, ...]
+  const cta = getRandomCTA({ link });
+
+  const tierLines = tiers
+    .map(
+      (t) =>
+        `$${t.tier} Tier: ${
+          t.left > 0 ? `${t.left} squares left!` : "SOLD OUT"
+        }`
+    )
+    .join("\n");
+
+  const body = `
+🎯 ${team1} vs ${team2} Availability:  
+
+${tierLines}
+
+Big money squares going fast!  
+Speed Wins. Always. 💰
+  `;
+
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
 
 // =======================================================================================
 // =======================================================================================
@@ -514,6 +853,18 @@ Think you could’ve been faster? Join now - NO FEES!
 // =======================================================================================
 
 module.exports = {
+  // Winner Announcements
+  BigWinPost,
+  StandardWinPost,
+  PhotoFinishPost,
+  //2. Board Status & Promotions
+  BoardGoingFastPost,
+  NewBoardAlertPost,
+  FinalCallPost,
+  PrimeSquaresAlertPost,
+  BoardFullAnnouncementPost,
+  MultiGameUpdatePost,
+  TierStatusUpdatePost,
   // Daily/Weekly Summaries
   DailyRecapPost,
   WeeklyChampionPost,
