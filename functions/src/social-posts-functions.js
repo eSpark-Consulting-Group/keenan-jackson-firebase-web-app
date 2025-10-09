@@ -58,6 +58,84 @@ ${hashTags}`;
 // ==========================================================
 // Post Templates
 // ==========================================================
+//
+
+// =======================================================================================
+// =======================================================================================
+// 3. Daily/Weekly Summaries
+// =======================================================================================
+// =======================================================================================
+
+// Trigger: Scheduled posts (auto-cron).
+// Daily Recap → End of each day (summarize wins, biggest prize, fastest player).
+// Weekly Champion → Every Sunday evening or Monday morning (show leaderboard).
+
+// ==========================================================
+// Daily Recap
+// ==========================================================
+
+async function DailyRecapPost({
+  totalPrizes,
+  winnerCount,
+  fastestTime,
+  fastestUser,
+  biggestWin,
+  mediaToUpload,
+  captionLink,
+}) {
+  const cta = getRandomCTA({ link });
+
+  const body = `
+📊 Today's Square Trivia Stats:  
+💰 $${totalPrizes} won  
+🏆 ${winnerCount} winners  
+⚡ Fastest: ${fastestTime}s by ${fastestUser}  
+🔥 Biggest: $${biggestWin}  
+
+Your sports knowledge = real money!
+  `;
+
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
+// ==========================================================
+// Weekly Champion
+// ==========================================================
+
+async function WeeklyChampionPost({
+  winner1,
+  amount1,
+  wins1,
+  winner2,
+  amount2,
+  wins2,
+  winner3,
+  amount3,
+  wins3,
+  mediaToUpload,
+  captionLink,
+}) {
+  const cta = getRandomCTA({ link });
+
+  const body = `
+👑 This Week's Square Trivia Champions:  
+
+🥇 ${winner1} - $${amount1} (${wins1} wins)  
+🥈 ${winner2} - $${amount2} (${wins2} wins)  
+🥉 ${winner3} - $${amount3} (${wins3} wins)  
+
+Think you can make next week's list? 🎯
+  `;
+
+  return postToAllPlatforms({
+    media: mediaToUpload,
+    caption: buildTemplate(body, cta),
+    link: captionLink,
+  });
+}
 
 // =======================================================================================
 // =======================================================================================
@@ -436,6 +514,9 @@ Think you could’ve been faster? Join now - NO FEES!
 // =======================================================================================
 
 module.exports = {
+  // Daily/Weekly Summaries
+  DailyRecapPost,
+  WeeklyChampionPost,
   // Export Game Promotion Posts
   UpcomingGamePost,
   LastChancePost,
