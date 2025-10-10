@@ -703,7 +703,7 @@ exports.telegramWebhook = functions.https.onRequest(async (req, res) => {
 exports.sendTriviaAttemptNotifications = functions.pubsub
   .schedule("every 3 hours")
   .timeZone("UTC")
-  .onRun(async () => {
+  .onRun(async (context) => {
     const usersSnapshot = await admin.firestore().collection("users").get();
 
     const promises = [];
@@ -737,7 +737,7 @@ exports.sendTriviaAttemptNotifications = functions.pubsub
 exports.sendGameReminders = functions.pubsub
   .schedule("every 3 hours")
   .timeZone("UTC")
-  .onRun(async () => {
+  .onRun(async (context) => {
     const now = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(now.getDate() + 1);
@@ -799,7 +799,7 @@ exports.sendGameReminders = functions.pubsub
 
 exports.sendPayoutMessages = functions.pubsub
   .schedule("every 5 minutes")
-  .onRun(async () => {
+  .onRun(async (context) => {
     try {
       logger.info("Hello Payout Function");
       const winnersSnap = await db
@@ -1027,7 +1027,7 @@ exports.checkCancelledGames = functions.pubsub
 exports.checkBoardsFillingFast = functions.pubsub
   .schedule("every 5 minutes")
   .timeZone("America/Denver")
-  .onRun(async () => {
+  .onRun(async (context) => {
     console.log("🚀 Checking boards filling fast...");
 
     const gamesSnap = await db
@@ -1113,7 +1113,7 @@ exports.checkBoardsFillingFast = functions.pubsub
 
 exports.autoTweet = functions.pubsub
   .schedule("every 1 minutes")
-  .onRun(async () => {
+  .onRun(async (context) => {
     // await twPublish(`Hello World From Node Js ${Date.now()}`);
     return null;
   });

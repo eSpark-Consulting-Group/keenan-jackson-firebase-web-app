@@ -766,7 +766,7 @@ async function cleanupOldClaims(boardId, board, currentQuarter, game) {
 
 exports.cleanupClaims = functions.pubsub
   .schedule("every 2 minutes")
-  .onRun(async () => {
+  .onRun(async (context) => {
     console.log("🧹 Running scheduled cleanup job...");
 
     const boardsSnapshot = await db.collection("boards").get();

@@ -19,7 +19,7 @@ const db = admin.firestore();
 exports.dailyRecapTrigger = functions.pubsub
   .schedule("every day 23:59")
   .timeZone("America/Denver")
-  .onRun(async () => {
+  .onRun(async (context) => {
     const now = new Date();
     const startOfDay = new Date(
       Date.UTC(
@@ -95,7 +95,7 @@ exports.dailyRecapTrigger = functions.pubsub
 exports.weeklyChampionTrigger = functions.pubsub
   .schedule("every sunday 23:59")
   .timeZone("America/Denver")
-  .onRun(async () => {
+  .onRun(async (context) => {
     const now = new Date();
     const startOfWeek = new Date(now);
     startOfWeek.setUTCDate(now.getUTCDate() - 7);
@@ -158,7 +158,7 @@ exports.weeklyChampionTrigger = functions.pubsub
 exports.noFeesTrigger = functions.pubsub
   .schedule("every friday 18:00")
   .timeZone("America/Denver")
-  .onRun(async () => {
+  .onRun(async (context) => {
     console.log("🚀 Running NoFeesPost trigger...");
 
     await NoFeesPost({
@@ -178,7 +178,7 @@ exports.noFeesTrigger = functions.pubsub
 exports.skillCelebrationTrigger = functions.pubsub
   .schedule("every 3 hours")
   .timeZone("America/Denver")
-  .onRun(async () => {
+  .onRun(async (context) => {
     console.log("⚡ Running SkillCelebration trigger...");
 
     const snapshot = await db
@@ -223,9 +223,9 @@ exports.skillCelebrationTrigger = functions.pubsub
  * Runs every 6 hours — posts when total payouts cross a major milestone
  */
 exports.platformMilestoneTrigger = functions.pubsub
-  .schedule("every 24 hours")
+  .schedule("every 12 hours")
   .timeZone("America/Denver")
-  .onRun(async () => {
+  .onRun(async (context) => {
     console.log("🚀 Checking for payout milestones...");
 
     const snapshot = await db.collection("winners").get();
@@ -281,7 +281,7 @@ exports.platformMilestoneTrigger = functions.pubsub
 exports.recordBreakerTrigger = functions.pubsub
   .schedule("every 1 hours")
   .timeZone("America/Denver")
-  .onRun(async () => {
+  .onRun(async (context) => {
     console.log("⚡ Checking for record-breaking answers...");
 
     const snapshot = await db
