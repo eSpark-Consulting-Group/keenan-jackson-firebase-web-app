@@ -13,6 +13,8 @@ const {
   BoardGoingFastPost,
   LastChancePost,
   BoardFullAnnouncementPost,
+  FinalCallPost,
+  TierStatusUpdatePost,
 } = require("./social-posts-functions");
 
 const db = admin.firestore();
@@ -188,7 +190,10 @@ async function handleGrantTelegramAccess(userId, telegramUsername, tier) {
     return { success: false, message: err.message || "Grant failed" };
   }
 }
-
+let gameTime;
+const now = new Date();
+const timeDiffMs = gameTime - now;
+const timeDiffHrs = timeDiffMs / (1000 * 60 * 60);
 async function handleGameCommand(chatId) {
   const gamesSnapshot = await admin.firestore().collection("games").get();
 
@@ -201,7 +206,7 @@ async function handleGameCommand(chatId) {
 
   gamesSnapshot.forEach((doc) => {
     const game = doc.data();
-
+    gameTime = game.gameDate;
     let formattedDate = "";
     if (game.gameDate && game.gameDate.toDate) {
       formattedDate = game.gameDate.toDate().toLocaleDateString("en-US", {
@@ -1034,6 +1039,8 @@ exports.checkBoardsFillingFast = functions.pubsub
   .onRun(async (context) => {
     console.log("🚀 Checking boards filling fast...");
 
+    const now = new Date();
+
     const gamesSnap = await db
       .collection("games")
       .where("status", "==", "active")
@@ -1045,6 +1052,11 @@ exports.checkBoardsFillingFast = functions.pubsub
 
       const team1 = game.teams?.home || "Home Team";
       const team2 = game.teams?.away || "Away Team";
+
+      const startTime = game.startTime?.toDate
+        ? game.startTime.toDate()
+        : new Date(game.startTime);
+      const timeDiffHrs = (startTime - now) / (1000 * 60 * 60);
 
       const currentQuarterNum = Number(game.currentQuarter) || 1;
       const boundedQuarter = Math.min(Math.max(currentQuarterNum, 1), 4);
@@ -1060,106 +1072,196 @@ exports.checkBoardsFillingFast = functions.pubsub
         const boardId = boardDoc.id;
 
         const tierId = board.tierId || "unknown_tier";
-        const totalSquares = 50;
+        const totalSquares = board.totalSquares || 50;
         const claimedSquares = (board.squares || []).length;
         const fillPercent = (claimedSquares / totalSquares) * 100;
 
-        // Unique key per game + quarter + tier
         const postKey = `${gameId}_Q${boundedQuarter}_${tierId}`;
         const postRef = db.collection("fastFillPosts").doc(postKey);
-        const postSnap = await postRef.get();
+        const existingPost = await postRef.get();
+        const lastPostedAt = existingPost.exists
+          ? existingPost.data().postedAt?.toDate()
+          : null;
+        const timeSinceLastPost = lastPostedAt
+          ? (now - lastPostedAt) / (1000 * 60)
+          : Infinity;
 
-        if (postSnap.exists) continue;
+        // 🧠 DEBOUNCE RULE: Only allow a new post every 30 min per board/tier
+        if (timeSinceLastPost < 30) {
+          console.log(
+            `⏳ Skipping ${boardId} (${tierId}) — posted ${timeSinceLastPost.toFixed(
+              1
+            )}m ago`
+          );
+          continue;
+        }
 
+        // ---------------------------
+        // 🎯 FULL BOARD ANNOUNCEMENT
+        // ---------------------------
+        if (fillPercent === 100) {
+          console.log(
+            `🎯 [${gameId}] ${quarterLabel} - ${tierId} board ${boardId} is FULL!`
+          );
+
+          await BoardFullAnnouncementPost({
+            team1,
+            team2,
+            totalPrize: board.prizeAmount,
+            mediaToUpload: "https://squaretrivia.com/logo.png",
+            captionLink: "https://squaretrivia.com",
+          });
+
+          await postRef.set({
+            gameId,
+            quarter: boundedQuarter,
+            quarterLabel,
+            tierId,
+            boardId,
+            fillPercent,
+            type: "boardFull",
+            postedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+
+          continue; // No need to check other conditions once full
+        }
+
+        // ---------------------------
+        // ⚡ FAST FILL (70%+ but <100%)
+        // ---------------------------
         if (fillPercent >= 70 && fillPercent < 100) {
-          // 🔸 Fast-Fill Post (70%+ but not full)
           console.log(
             `📣 [${gameId}] ${quarterLabel} - ${tierId} board ${boardId} is ${fillPercent.toFixed(
               1
             )}% filled — posting fast-fill announcement...`
           );
 
-          try {
-            await BoardGoingFastPost({
-              team1,
-              team2,
-              tier: tierId,
-              totalClaims: { total: totalSquares, claimed: claimedSquares },
-              mediaToUpload: "https://squaretrivia.com/logo.png",
-              captionLink: "https://squaretrivia.com",
-            });
+          await BoardGoingFastPost({
+            team1,
+            team2,
+            tier: tierId,
+            totalClaims: { total: totalSquares, claimed: claimedSquares },
+            mediaToUpload: "https://squaretrivia.com/logo.png",
+            captionLink: "https://squaretrivia.com",
+          });
 
-            await postRef.set({
-              gameId,
-              quarter: boundedQuarter,
-              quarterLabel,
-              tierId,
-              boardId,
-              fillPercent,
-              type: "fastFill",
-              postedAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
+          await postRef.set({
+            gameId,
+            quarter: boundedQuarter,
+            quarterLabel,
+            tierId,
+            boardId,
+            fillPercent,
+            type: "fastFill",
+            postedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
 
-            console.log(
-              `✅ Fast-fill post published for ${gameId} ${quarterLabel} ${tierId}`
-            );
-          } catch (err) {
-            console.error(
-              `❌ Error posting fast-fill for ${gameId} ${quarterLabel} ${tierId} [${boardId}]`,
-              err
-            );
-          }
-        } else if (fillPercent === 100) {
-          // 🔸 Full Board Announcement (100%)
-          console.log(
-            `🎯 [${gameId}] ${quarterLabel} - ${tierId} board ${boardId} is FULL!`
-          );
-
-          try {
-            await BoardFullAnnouncementPost({
-              team1,
-              team2,
-              totalPrize: board.prizeAmount,
-              mediaToUpload: "https://squaretrivia.com/logo.png",
-              captionLink: "https://squaretrivia.com",
-            });
-
-            await postRef.set({
-              gameId,
-              quarter: boundedQuarter,
-              quarterLabel,
-              tierId,
-              boardId,
-              fillPercent,
-              type: "boardFull",
-              postedAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
-
-            console.log(
-              `🏁 Full board announcement published for ${gameId} ${quarterLabel} ${tierId}`
-            );
-          } catch (err) {
-            console.error(
-              `❌ Error posting full-board announcement for ${gameId} ${quarterLabel} ${tierId} [${boardId}]`,
-              err
-            );
-          }
-        } else if (fillPercent < 20) {
-          // 🔸 Last Chance Post (<20%)
+        // ---------------------------
+        // ⚠️ LAST CHANCE (<20%)
+        // ---------------------------
+        if (fillPercent < 20 && timeDiffHrs > 2 && timeDiffHrs <= 3) {
           console.log(
             `⚠️ [${gameId}] ${quarterLabel} - ${tierId} board ${boardId} is only ${fillPercent.toFixed(
               1
             )}% filled — posting last-chance reminder...`
           );
 
-          try {
-            const spotsLeft = totalSquares - claimedSquares;
+          const spotsLeft = totalSquares - claimedSquares;
 
-            await LastChancePost({
+          await LastChancePost({
+            team1,
+            team2,
+            spotsLeft,
+            highestTier: tierId,
+            mediaToUpload: "https://squaretrivia.com/logo.png",
+            captionLink: "https://squaretrivia.com",
+          });
+
+          await postRef.set({
+            gameId,
+            quarter: boundedQuarter,
+            quarterLabel,
+            tierId,
+            boardId,
+            fillPercent,
+            type: "lastChance",
+            postedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+
+        // ---------------------------
+        // ⏰ FINAL CALL (1–2 hours before game)
+        // ---------------------------
+        if (timeDiffHrs > 1 && timeDiffHrs <= 2) {
+          console.log(
+            `⏰ [${gameId}] Final Call — ${team1} vs ${team2} starts in ${timeDiffHrs.toFixed(
+              1
+            )}h. Posting final call!`
+          );
+
+          const squaresLeft = totalSquares - claimedSquares;
+
+          await FinalCallPost({
+            team1,
+            team2,
+            timeLeft: `${Math.round(timeDiffHrs * 60)} minutes`,
+            squaresLeft,
+            mediaToUpload: "https://squaretrivia.com/logo.png",
+            captionLink: "https://squaretrivia.com",
+          });
+
+          await postRef.set({
+            gameId,
+            quarter: boundedQuarter,
+            quarterLabel,
+            tierId,
+            boardId,
+            fillPercent,
+            type: "finalCall",
+            postedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+
+        // ---------------------------
+        // 💎 PREMIUM TIER STATUS UPDATES
+        // ---------------------------
+        const premiumTiers = ["tier_100", "tier_250", "tier_500", "tier_1000"];
+
+        if (
+          premiumTiers.includes(tierId) &&
+          fillPercent >= 70 &&
+          fillPercent < 100
+        ) {
+          const existingTierPost = await db
+            .collection("fastFillPosts")
+            .where("gameId", "==", gameId)
+            .where("quarter", "==", boundedQuarter)
+            .where("type", "==", "tierStatusUpdate")
+            .limit(1)
+            .get();
+
+          if (existingTierPost.empty) {
+            const tierDocs = await db
+              .collection("boards")
+              .where("gameId", "==", gameId)
+              .where("tierId", "in", premiumTiers)
+              .get();
+
+            const tiers = tierDocs.docs.map((doc) => {
+              const d = doc.data();
+              const total = d.totalSquares || 100;
+              const claimed = (d.squares || []).length;
+              const left = total - claimed;
+              return { tier: Number(d.tierId.replace("tier_", "")), left };
+            });
+
+            tiers.sort((a, b) => b.tier - a.tier);
+
+            await TierStatusUpdatePost({
               team1,
               team2,
-              spotsLeft,
-              highestTier: tierId,
+              tiers,
               mediaToUpload: "https://squaretrivia.com/logo.png",
               captionLink: "https://squaretrivia.com",
             });
@@ -1171,24 +1273,24 @@ exports.checkBoardsFillingFast = functions.pubsub
               tierId,
               boardId,
               fillPercent,
-              type: "lastChance",
+              type: "tierStatusUpdate",
+              tiersSnapshot: tiers,
               postedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
 
             console.log(
-              `🕒 Last-chance post published for ${gameId} ${quarterLabel} ${tierId}`
+              `✅ Tier status update posted for ${gameId} ${quarterLabel}`
             );
-          } catch (err) {
-            console.error(
-              `❌ Error posting last-chance reminder for ${gameId} ${quarterLabel} ${tierId} [${boardId}]`,
-              err
+          } else {
+            console.log(
+              `🟡 Skipping tier status — one already posted for ${gameId} ${quarterLabel}`
             );
           }
         }
       }
     }
 
-    console.log("✅ All active games checked.");
+    console.log("✅ All active games checked and processed.");
     return null;
   });
 

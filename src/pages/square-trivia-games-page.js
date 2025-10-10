@@ -28,6 +28,7 @@ export default function Games() {
   const { userData } = useAuth();
   const navigate = useNavigate();
   const [games, setGames] = useState([]);
+  console.log(games);
   const [loading, setLoading] = useState(true);
   const [selectedSport, setSelectedSport] = useState("all");
   const [selectedTier, setSelectedTier] = useState("all");
