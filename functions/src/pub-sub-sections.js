@@ -3,6 +3,8 @@ const admin = require("firebase-admin");
 const {
   DailyRecapPost,
   WeeklyChampionPost,
+  NoFeesPost,
+  SkillCelebration,
 } = require("./social-posts-functions");
 
 admin.initializeApp();
@@ -144,5 +146,72 @@ exports.weeklyChampionTrigger = functions.pubsub
     });
 
     console.log("✅ Weekly Champion Post published successfully.");
+    return null;
+  });
+
+/**
+ * WEEKLY "NO FEES" REMINDER
+ * Runs every Friday at 6 PM (America/Denver)
+ */
+exports.noFeesTrigger = functions.pubsub
+  .schedule("every friday 18:00")
+  .timeZone("America/Denver")
+  .onRun(async () => {
+    console.log("🚀 Running NoFeesPost trigger...");
+
+    await NoFeesPost({
+      mediaToUpload: null,
+      captionLink: "https://squaretrivia.com",
+    });
+
+    console.log("✅ No Fees Post published successfully.");
+    return null;
+  });
+
+/**
+ * SKILL CELEBRATION POST
+ * Runs every 3 hours (America/Denver)
+ * Finds the most recent winner with answerTime < 1s
+ */
+exports.skillCelebrationTrigger = functions.pubsub
+  .schedule("every 3 hours")
+  .timeZone("America/Denver")
+  .onRun(async () => {
+    console.log("⚡ Running SkillCelebration trigger...");
+
+    const snapshot = await db
+      .collection("winners")
+      .orderBy("createdAt.seconds", "desc")
+      .limit(20)
+      .get();
+
+    if (snapshot.empty) {
+      console.log("⚠️ No winners found.");
+      return null;
+    }
+
+    const winners = snapshot.docs.map((doc) => doc.data());
+    const notable = winners.find((w) => w.answerTime && w.answerTime < 1);
+
+    if (!notable) {
+      console.log("⏸ No fast winners found (<1s).");
+      return null;
+    }
+
+    const recentWinner = notable.user?.displayName || "Anonymous";
+    const time = notable.answerTime.toFixed(2);
+    const prize = notable.prizeAmount || 0;
+
+    await SkillCelebration({
+      recentWinner,
+      time,
+      prize,
+      mediaToUpload: null,
+      captionLink: "https://squaretrivia.com",
+    });
+
+    console.log(
+      `✅ Skill Celebration posted for ${recentWinner} (${time}s / $${prize})`
+    );
     return null;
   });
