@@ -8,7 +8,6 @@ const { default: axios } = require("axios");
 // import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 const { logger } = require("firebase-functions");
 const { GAME_CONFIG } = require("./constants-configuration-fixed");
-const { TwitterApi } = require("twitter-api-v2");
 const {
   BoardGoingFastPost,
   LastChancePost,
@@ -87,25 +86,6 @@ const enhancedUserSchema = {
     youtubetv: { eligible: false, converted: false },
   },
 };
-
-const client = new TwitterApi({
-  appKey: process.env.X_CONSUMER_KEY,
-  appSecret: process.env.X_CONSUMER_SECRET,
-  accessToken: process.env.X_ACCESS_TOKEN,
-  accessSecret: process.env.X_ACCESS_TOKEN_SECRET,
-});
-
-// ✅ Export reusable function
-async function twPublish(message) {
-  try {
-    const tweet = await client.v2.tweet(message);
-    console.log("✅ Tweet posted successfully:", tweet.data.id);
-    return tweet;
-  } catch (error) {
-    console.error("❌ Failed to post tweet:", error);
-    throw error;
-  }
-}
 
 const TELEGRAM_BOT_TOKEN = "7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ";
 
@@ -190,10 +170,6 @@ async function handleGrantTelegramAccess(userId, telegramUsername, tier) {
     return { success: false, message: err.message || "Grant failed" };
   }
 }
-let gameTime;
-const now = new Date();
-const timeDiffMs = gameTime - now;
-const timeDiffHrs = timeDiffMs / (1000 * 60 * 60);
 async function handleGameCommand(chatId) {
   const gamesSnapshot = await admin.firestore().collection("games").get();
 
@@ -206,7 +182,6 @@ async function handleGameCommand(chatId) {
 
   gamesSnapshot.forEach((doc) => {
     const game = doc.data();
-    gameTime = game.gameDate;
     let formattedDate = "";
     if (game.gameDate && game.gameDate.toDate) {
       formattedDate = game.gameDate.toDate().toLocaleDateString("en-US", {
@@ -1291,13 +1266,6 @@ exports.checkBoardsFillingFast = functions.pubsub
     }
 
     console.log("✅ All active games checked and processed.");
-    return null;
-  });
-
-exports.autoTweet = functions.pubsub
-  .schedule("every 1 minutes")
-  .onRun(async (context) => {
-    // await twPublish(`Hello World From Node Js ${Date.now()}`);
     return null;
   });
 
