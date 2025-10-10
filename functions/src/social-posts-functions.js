@@ -79,8 +79,8 @@ async function BigWinPost({
   team1,
   team2,
   square,
-  mediaToUpload,
-  captionLink,
+  mediaToUpload = "https://squaretrivia.com/logo.png",
+  captionLink = "https://squaretrivia.com",
 }) {
   const cta = getRandomCTA({ link: captionLink });
 
@@ -105,8 +105,8 @@ async function StandardWinPost({
   team1,
   team2,
   time,
-  mediaToUpload,
-  captionLink,
+  mediaToUpload = "https://squaretrivia.com/logo.png",
+  captionLink = "https://squaretrivia.com",
 }) {
   const cta = getRandomCTA({ link: captionLink });
 
@@ -130,8 +130,8 @@ async function PhotoFinishPost({
   diff,
   winTime,
   loseTime,
-  mediaToUpload,
-  captionLink,
+  mediaToUpload = "https://squaretrivia.com/logo.png",
+  captionLink = "https://squaretrivia.com",
 }) {
   const cta = getRandomCTA({ link: captionLink });
 
@@ -167,8 +167,8 @@ async function BoardGoingFastPost({
   team1,
   team2,
   tiers,
-  mediaToUpload,
-  captionLink,
+  mediaToUpload = "https://squaretrivia.com/logo.png",
+  captionLink = "https://squaretrivia.com",
 }) {
   // tiers example: [{tier: 100, left: 12}, {tier: 50, left: 8}, {tier: 25, left: 0}]
   const cta = getRandomCTA({ link });
@@ -201,8 +201,8 @@ async function NewBoardAlertPost({
   team2,
   day,
   time,
-  mediaToUpload,
-  captionLink,
+  mediaToUpload = "https://squaretrivia.com/logo.png",
+  captionLink = "https://squaretrivia.com",
 }) {
   const cta = getRandomCTA({ link });
 
@@ -232,8 +232,8 @@ async function FinalCallPost({
   team2,
   timeLeft,
   squaresLeft,
-  mediaToUpload,
-  captionLink,
+  mediaToUpload = "https://squaretrivia.com/logo.png",
+  captionLink = "https://squaretrivia.com",
 }) {
   const cta = getRandomCTA({ link });
 
@@ -258,8 +258,8 @@ async function PrimeSquaresAlertPost({
   team1,
   team2,
   openSquares,
-  mediaToUpload,
-  captionLink,
+  mediaToUpload = "https://squaretrivia.com/logo.png",
+  captionLink = "https://squaretrivia.com",
 }) {
   // openSquares example: ["0-7", "3-4", "7-0"]
   const cta = getRandomCTA({ link });
@@ -285,8 +285,8 @@ async function BoardFullAnnouncementPost({
   team1,
   team2,
   totalPrize,
-  mediaToUpload,
-  captionLink,
+  mediaToUpload = "https://squaretrivia.com/logo.png",
+  captionLink = "https://squaretrivia.com",
 }) {
   const cta = getRandomCTA({ link });
 
@@ -333,8 +333,8 @@ async function TierStatusUpdatePost({
   team1,
   team2,
   tiers,
-  mediaToUpload,
-  captionLink,
+  mediaToUpload = "https://squaretrivia.com/logo.png",
+  captionLink = "https://squaretrivia.com",
 }) {
   // tiers example: [{tier: 1000, left: 2}, {tier: 500, left: 0}, ...]
   const cta = getRandomCTA({ link });
@@ -376,8 +376,8 @@ async function DailyRecapPost({
   fastestTime,
   fastestUser,
   biggestWin,
-  mediaToUpload,
-  captionLink,
+  mediaToUpload = "https://squaretrivia.com/logo.png",
+  captionLink = "https://squaretrivia.com",
 }) {
   const cta = getRandomCTA({ link });
 
@@ -408,8 +408,8 @@ async function WeeklyChampionPost({
   winner3,
   amount3,
   wins3,
-  mediaToUpload,
-  captionLink,
+  mediaToUpload = "https://squaretrivia.com/logo.png",
+  captionLink = "https://squaretrivia.com",
 }) {
   const cta = getRandomCTA({ link });
 
@@ -462,8 +462,8 @@ async function LastChancePost({
   team2,
   spotsLeft,
   highestTier,
-  mediaToUpload,
-  captionLink,
+  mediaToUpload = "https://squaretrivia.com/logo.png",
+  captionLink = "https://squaretrivia.com",
 }) {
   const cta = getRandomCTA({ link });
 
@@ -492,8 +492,8 @@ Don't miss out! 🎯
 async function PlatformMilestonePost({
   amount,
   totalWinners,
-  mediaToUpload,
-  captionLink,
+  mediaToUpload = "https://squaretrivia.com/logo.png",
+  captionLink = "https://squaretrivia.com",
 }) {
   const cta = getRandomCTA({ link });
   const body = `
@@ -517,8 +517,8 @@ async function RecordBreakerPost({
   winner,
   time,
   oldTime,
-  mediaToUpload,
-  captionLink,
+  mediaToUpload = "https://squaretrivia.com/logo.png",
+  captionLink = "https://squaretrivia.com",
 }) {
   const cta = getRandomCTA({ link, time });
   const body = `
@@ -571,8 +571,8 @@ async function SkillCelebration({
   recentWinner,
   time,
   prize,
-  mediaToUpload,
-  captionLink,
+  mediaToUpload = "https://squaretrivia.com/logo.png",
+  captionLink = "https://squaretrivia.com",
 }) {
   const cta = getRandomCTA({ link, time });
   const comparisons = [
@@ -609,8 +609,8 @@ async function TeamRivalryPost({
   teamB,
   teamAWins,
   teamBWins,
-  mediaToUpload,
-  captionLink,
+  mediaToUpload = "https://squaretrivia.com/logo.png",
+  captionLink = "https://squaretrivia.com",
 }) {
   const cta = getRandomCTA({ link });
   const body = `
@@ -631,8 +631,8 @@ Who knows their team better? Prove it on Sunday!
 // Referral Leaderboard Post Generator
 async function ReferralLeaderboard({
   winners = [],
-  mediaToUpload,
-  captionLink,
+  mediaToUpload = "https://squaretrivia.com/logo.png",
+  captionLink = "https://squaretrivia.com",
 }) {
   const cta = getRandomCTA({ link });
   const leaderboard = winners
