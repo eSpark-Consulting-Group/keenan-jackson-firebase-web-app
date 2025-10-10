@@ -14,6 +14,7 @@ const {
   BoardFullAnnouncementPost,
   FinalCallPost,
   TierStatusUpdatePost,
+  UpcomingGamePost,
 } = require("./social-posts-functions");
 
 const db = admin.firestore();
@@ -1163,6 +1164,48 @@ exports.checkBoardsFillingFast = functions.pubsub
             type: "lastChance",
             postedAt: admin.firestore.FieldValue.serverTimestamp(),
           });
+        }
+
+        // ---------------------------
+        // 📅 UPCOMING GAME ANNOUNCEMENT (2–3 days before kickoff)
+        // ---------------------------
+        if (timeDiffHrs >= 48 && timeDiffHrs <= 72) {
+          console.log(
+            `📅 [${gameId}] Upcoming Game — ${team1} vs ${team2} starts in ~${Math.round(
+              timeDiffHrs / 24
+            )} days. Posting upcoming game alert!`
+          );
+
+          try {
+            await UpcomingGamePost({
+              team1,
+              team2,
+              mediaToUpload: "https://squaretrivia.com/logo.png",
+              captionLink: "https://squaretrivia.com",
+            });
+
+            await postRef.set({
+              gameId,
+              quarter: boundedQuarter,
+              quarterLabel,
+              tierId,
+              boardId,
+              fillPercent,
+              type: "upcomingGame",
+              postedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+
+            console.log(
+              `✅ Upcoming game announcement posted for ${team1} vs ${team2} (${Math.round(
+                timeDiffHrs / 24
+              )} days before start)`
+            );
+          } catch (err) {
+            console.error(
+              `❌ Error posting upcoming game alert for ${gameId} ${quarterLabel} ${tierId} [${boardId}]`,
+              err
+            );
+          }
         }
 
         // ---------------------------
