@@ -166,31 +166,40 @@ Speed Wins. Always. 📸
 async function BoardGoingFastPost({
   team1,
   team2,
-  tiers,
-  mediaToUpload = "https://squaretrivia.com/logo.png",
-  captionLink = "https://squaretrivia.com",
+  tier,
+  totalClaims,
+  mediaToUpload,
+  captionLink,
 }) {
-  // tiers example: [{tier: 100, left: 12}, {tier: 50, left: 8}, {tier: 25, left: 0}]
-  const cta = getRandomCTA({ link });
+  const total = totalClaims?.total || 0;
+  const claimed = totalClaims?.claimed || 0;
+  const left = Math.max(total - claimed, 0);
+  const leftPercent = total > 0 ? ((claimed / total) * 100).toFixed(0) : 0;
 
-  const tierLines = tiers
-    .map(
-      (t) =>
-        `$${t.tier} Tier: ${t.left > 0 ? `${t.left} squares left` : "SOLD OUT"}`
-    )
-    .join("\n");
+  // 🧩 Extract numeric value if tier is like "tier_25"
+  const tierValue =
+    typeof tier === "string" && tier.startsWith("tier_")
+      ? tier.replace("tier_", "")
+      : tier;
+
+  const tierLine = `$${tierValue} Tier: ${
+    left > 0 ? `${left} squares left (${leftPercent}% filled)` : "SOLD OUT"
+  }`;
+
+  const cta = getRandomCTA({ link: captionLink });
 
   const body = `
 🔥 ${team1} vs ${team2} filling up FAST!  
 
-${tierLines}
+${tierLine}
 
 Get your square before kickoff!  
 Speed Wins. Always. ⚡
   `;
+
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body.trim(), cta),
     link: captionLink,
   });
 }

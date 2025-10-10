@@ -127,8 +127,8 @@ class ApiSportsService {
           count: response.data?.response?.length,
         });
 
-        apiGame = response.data?.response?.[0] || null;
-        // apiGame = DUMMY_GAMES;
+        // apiGame = response.data?.response?.[0] || null;
+        apiGame = DUMMY_GAMES;
         logger.info("API GAME HAI", { apiGame });
       } else if (sport === "CFB") {
         // --- CFB: Single game from ESPN ---
@@ -281,9 +281,12 @@ class ApiSportsService {
   async parseGameData(apiGame, sport) {
     logger.info("API GAME IN PARSE GAME ", { apiGame });
 
-    const game = apiGame?.game;
-    const teams = apiGame?.teams;
-    const scores = apiGame?.scores;
+    // const game = apiGame?.game;
+    // const teams = apiGame?.teams;
+    // const scores = apiGame?.scores;
+    const game = apiGame[0]?.game;
+    const teams = apiGame[0]?.teams;
+    const scores = apiGame[0]?.scores;
 
     logger.info("GAMMME parse Game: ", { game, teams, scores });
 
