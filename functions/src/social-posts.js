@@ -208,43 +208,6 @@ async function tgPublish({ text, media, caption = "" }) {
 // Firebase HTTPS Function Wrapper
 // =============================
 
-exports.apiTest = functions.https.onRequest(async (req, res) => {
-  try {
-    logInfo("API Test Triggered", req.query || req.body);
-    // SAMPLE CALLS (uncomment one at a time to test)
-
-    // Facebook;
-    // const result = await fbImagePost(
-    //   "https://yourdomain.com/photo.jpg",
-    //   "Hello FB!"
-    // );
-
-    // Instagram
-    // const container = await igImageContainer("https://yourdomain.com/photo.jpg", "Hello IG!");
-    // const result = await igPublish(container.id);
-
-    // const container = await igVideoContainer("https://yourdomain.com/video.jpg", "Hello IG!");
-    // const result = await igPublish(container.id);
-
-    // Telegram
-    // const result = await tgSendMessage("Hello from Firebase Functions!");
-    // const result = await tgGetMe();
-    // const result = await tgGetUpdates();
-
-    res.json({
-      success: true,
-      message: "API call success",
-      // data: result,
-    });
-  } catch (error) {
-    logError("API Test Handler", error);
-    res.status(500).json({
-      success: false,
-      error: error.response?.data || error.message,
-    });
-  }
-});
-
 const CTA_VARIATIONS = [
   "Speed Wins. Always. Play now → {link}",
   "Your speed = Your winnings 💰",
@@ -295,7 +258,7 @@ function getRandomCTA(context = {}) {
 // const content = `${template}\n\n\n${ctaText}`;
 
 // ✅ Export reusable function
-async function postTweet({ message, link, imagePath, videoPath }) {
+async function twPublish({ message, link, imagePath, videoPath }) {
   try {
     let text = message || "";
     if (link) text += `\n\n${link}`;
@@ -325,28 +288,6 @@ async function postTweet({ message, link, imagePath, videoPath }) {
     throw error;
   }
 }
-// Tweets can be posted in several formats:
-
-//Text only
-// await postTweet({ message: "Speed Wins. Always. ⚡" });
-
-// Text + Link
-// await postTweet({
-//   message: "Think you’re fast? Prove it →",
-//   link: "https://squaretrivia.com",
-// });
-
-//  Text + Image
-// await postTweet({
-//   message: "Big win today 🏆 #SquareTrivia",
-//   imagePath: "./media/winner.jpg",
-// });
-
-// Text + Video
-// await postTweet({
-//   message: "Watch how speed wins ⚡",
-//   videoPath: "./media/highlight.mp4",
-// });
 
 function getHashtags(context = {}) {
   const { category } = context; // e.g. "standard", "nfl", "bigwin"
@@ -374,15 +315,6 @@ function getHashtags(context = {}) {
   return shuffled.join(" ");
 }
 
-// getHashtags({ category: "nfl" });
-// → "#SpeedWins #SundaySquares #FastestFingerWins #NFLSunday"
-
-// getHashtags({ category: "bigwin" });
-// → "#TriviaMaster #SpeedPays #BigWin #SpeedWinsAlways"
-
-// getHashtags();
-// → "#NoFees #SquareTrivia #SpeedWins #SpeedWinsAlways #WinWithSpeed"
-
 // =============================
 // Exports for local use
 // =============================
@@ -392,7 +324,7 @@ module.exports = {
   getHashtags,
   tgGetMe,
   tgGetUpdates,
-  postTweet,
+  twPublish,
   fbPublish,
   igPublish,
   tgPublish,

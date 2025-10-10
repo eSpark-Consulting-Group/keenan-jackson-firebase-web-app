@@ -90,7 +90,7 @@ const client = new TwitterApi({
 });
 
 // ✅ Export reusable function
-async function postTweet(message) {
+async function twPublish(message) {
   try {
     const tweet = await client.v2.tweet(message);
     console.log("✅ Tweet posted successfully:", tweet.data.id);
@@ -1114,7 +1114,7 @@ exports.checkBoardsFillingFast = functions.pubsub
 exports.autoTweet = functions.pubsub
   .schedule("every 1 minutes")
   .onRun(async () => {
-    // await postTweet(`Hello World From Node Js ${Date.now()}`);
+    // await twPublish(`Hello World From Node Js ${Date.now()}`);
     return null;
   });
 

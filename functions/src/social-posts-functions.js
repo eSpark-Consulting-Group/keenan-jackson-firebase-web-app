@@ -1,7 +1,7 @@
 const { logger } = require("firebase-functions");
 const {
   getRandomCTA,
-  postTweet,
+  twPublish,
   fbPublish,
   igPublish,
   getHashtags,
@@ -30,24 +30,24 @@ async function postToAllPlatforms({ media, caption, link }) {
       // 📸 Image post
       await fbPublish({ media, caption });
       await tgPublish({ media: media, caption: caption });
-      await postTweet({ message: caption, imagePath: media });
+      await twPublish({ message: caption, imagePath: media });
       await igPublish({ media, caption, type: "IMAGE" });
     } else if (ext === "mp4") {
       // 🎥 Video post
       await fbPublish({ media, caption });
       await tgPublish({ media: media, caption: caption });
-      await postTweet({ message: caption, videoPath: media });
+      await twPublish({ message: caption, videoPath: media });
       await igPublish({ media, caption, type: "VIDEO" });
     } else if (link) {
       // 🔗 Link post
       await fbPublish({ link, caption });
       await tgPublish({ caption: `${caption}\n\n${link}` });
-      await postTweet({ message: caption, link });
+      await twPublish({ message: caption, link });
     } else if (!media && !link && caption) {
       // 📝 Text-only post
       await fbPublish({ caption });
       await tgPublish({ caption: caption });
-      await postTweet({ message: caption });
+      await twPublish({ message: caption });
     } else {
       throw new Error(
         `❌ Unsupported file type: .${ext || "unknown"}. Use JPG, PNG, or MP4.`
@@ -689,7 +689,7 @@ ${gameName}: Where speed pays 🏁
   `;
 
   const post = buildTemplate(body, cta);
-  await postTweet(post);
+  await twPublish(post);
   return post;
 }
 
@@ -748,7 +748,7 @@ Think you could’ve been faster? Join now - NO FEES!
   `;
 
   const post = buildTemplate(body, cta);
-  await tgSendMessage(post);
+  await igPublish({ caption: post });
   return post;
 }
 
