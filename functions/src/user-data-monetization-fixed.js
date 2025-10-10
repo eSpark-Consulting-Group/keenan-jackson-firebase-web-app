@@ -9,7 +9,11 @@ const { default: axios } = require("axios");
 const { logger } = require("firebase-functions");
 const { GAME_CONFIG } = require("./constants-configuration-fixed");
 const { TwitterApi } = require("twitter-api-v2");
-const { BoardGoingFastPost } = require("./social-posts-functions");
+const {
+  BoardGoingFastPost,
+  LastChancePost,
+  BoardFullAnnouncementPost,
+} = require("./social-posts-functions");
 
 const db = admin.firestore();
 require("dotenv").config();
@@ -1067,11 +1071,12 @@ exports.checkBoardsFillingFast = functions.pubsub
 
         if (postSnap.exists) continue;
 
-        if (fillPercent >= 70) {
+        if (fillPercent >= 70 && fillPercent < 100) {
+          // 🔸 Fast-Fill Post (70%+ but not full)
           console.log(
             `📣 [${gameId}] ${quarterLabel} - ${tierId} board ${boardId} is ${fillPercent.toFixed(
               1
-            )}% filled — posting...`
+            )}% filled — posting fast-fill announcement...`
           );
 
           try {
@@ -1091,6 +1096,7 @@ exports.checkBoardsFillingFast = functions.pubsub
               tierId,
               boardId,
               fillPercent,
+              type: "fastFill",
               postedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
 
@@ -1099,7 +1105,82 @@ exports.checkBoardsFillingFast = functions.pubsub
             );
           } catch (err) {
             console.error(
-              `❌ Error posting for ${gameId} ${quarterLabel} ${tierId} [${boardId}]`,
+              `❌ Error posting fast-fill for ${gameId} ${quarterLabel} ${tierId} [${boardId}]`,
+              err
+            );
+          }
+        } else if (fillPercent === 100) {
+          // 🔸 Full Board Announcement (100%)
+          console.log(
+            `🎯 [${gameId}] ${quarterLabel} - ${tierId} board ${boardId} is FULL!`
+          );
+
+          try {
+            await BoardFullAnnouncementPost({
+              team1,
+              team2,
+              totalPrize: board.prizeAmount,
+              mediaToUpload: "https://squaretrivia.com/logo.png",
+              captionLink: "https://squaretrivia.com",
+            });
+
+            await postRef.set({
+              gameId,
+              quarter: boundedQuarter,
+              quarterLabel,
+              tierId,
+              boardId,
+              fillPercent,
+              type: "boardFull",
+              postedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+
+            console.log(
+              `🏁 Full board announcement published for ${gameId} ${quarterLabel} ${tierId}`
+            );
+          } catch (err) {
+            console.error(
+              `❌ Error posting full-board announcement for ${gameId} ${quarterLabel} ${tierId} [${boardId}]`,
+              err
+            );
+          }
+        } else if (fillPercent < 20) {
+          // 🔸 Last Chance Post (<20%)
+          console.log(
+            `⚠️ [${gameId}] ${quarterLabel} - ${tierId} board ${boardId} is only ${fillPercent.toFixed(
+              1
+            )}% filled — posting last-chance reminder...`
+          );
+
+          try {
+            const spotsLeft = totalSquares - claimedSquares;
+
+            await LastChancePost({
+              team1,
+              team2,
+              spotsLeft,
+              highestTier: tierId,
+              mediaToUpload: "https://squaretrivia.com/logo.png",
+              captionLink: "https://squaretrivia.com",
+            });
+
+            await postRef.set({
+              gameId,
+              quarter: boundedQuarter,
+              quarterLabel,
+              tierId,
+              boardId,
+              fillPercent,
+              type: "lastChance",
+              postedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+
+            console.log(
+              `🕒 Last-chance post published for ${gameId} ${quarterLabel} ${tierId}`
+            );
+          } catch (err) {
+            console.error(
+              `❌ Error posting last-chance reminder for ${gameId} ${quarterLabel} ${tierId} [${boardId}]`,
               err
             );
           }
