@@ -244,7 +244,10 @@ exports.platformMilestoneTrigger = functions.pubsub
     const totalWinners = winners.length;
 
     // milestones to track
-    const milestones = [10000, 50000, 100000, 250000, 500000, 1000000];
+    const milestones = [
+      10000, 50000, 100000, 250000, 500000, 1000000, 5000000, 10000000,
+      50000000, 100000000,
+    ];
     const lastMilestoneRef = db.collection("system").doc("milestoneTracker");
     const lastMilestoneDoc = await lastMilestoneRef.get();
     const lastMilestone = lastMilestoneDoc.exists
@@ -336,7 +339,7 @@ exports.recordBreakerTrigger = functions.pubsub
  * Runs weekly (Monday 9:00 AM Denver time)
  */
 exports.referralLeaderboardTrigger = functions.pubsub
-  .schedule("0 9 * * MON")
+  .schedule("0 9 * * MON") // Runs weekly (Monday 9:00 AM Denver time)
   .timeZone("America/Denver")
   .onRun(async () => {
     console.log("🏆 Running Referral Leaderboard Trigger...");
@@ -384,7 +387,7 @@ exports.referralLeaderboardTrigger = functions.pubsub
  * Runs mid-week (Wednesday 11:00 AM Denver time)
  */
 exports.teamRivalryTrigger = functions.pubsub
-  .schedule("0 11 * * WED")
+  .schedule("0 11 * * WED") // Runs mid-week (Wednesday 11:00 AM Denver time)
   .timeZone("America/Denver")
   .onRun(async () => {
     console.log("⚔️ Running Team Rivalry Trigger...");
