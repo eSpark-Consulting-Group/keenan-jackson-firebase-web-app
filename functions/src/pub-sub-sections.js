@@ -5,6 +5,8 @@ const {
   WeeklyChampionPost,
   NoFeesPost,
   SkillCelebration,
+  RecordBreakerPost,
+  PlatformMilestonePost,
 } = require("./social-posts-functions");
 
 admin.initializeApp();
@@ -212,6 +214,117 @@ exports.skillCelebrationTrigger = functions.pubsub
 
     console.log(
       `✅ Skill Celebration posted for ${recentWinner} (${time}s / $${prize})`
+    );
+    return null;
+  });
+
+/**
+ * PLATFORM MILESTONE CHECKER
+ * Runs every 6 hours — posts when total payouts cross a major milestone
+ */
+exports.platformMilestoneTrigger = functions.pubsub
+  .schedule("every 24 hours")
+  .timeZone("America/Denver")
+  .onRun(async () => {
+    console.log("🚀 Checking for payout milestones...");
+
+    const snapshot = await db.collection("winners").get();
+    if (snapshot.empty) {
+      console.log("⚠️ No winners found.");
+      return null;
+    }
+
+    const winners = snapshot.docs.map((doc) => doc.data());
+    const totalPayouts = winners.reduce(
+      (sum, w) => sum + (w.prizeAmount || 0),
+      0
+    );
+    const totalWinners = winners.length;
+
+    // milestones to track
+    const milestones = [10000, 50000, 100000, 250000, 500000, 1000000];
+    const lastMilestoneRef = db.collection("system").doc("milestoneTracker");
+    const lastMilestoneDoc = await lastMilestoneRef.get();
+    const lastMilestone = lastMilestoneDoc.exists
+      ? lastMilestoneDoc.data().lastAmount
+      : 0;
+
+    // find next milestone reached
+    const crossed = milestones.find(
+      (m) => totalPayouts >= m && lastMilestone < m
+    );
+
+    if (!crossed) {
+      console.log("⏸ No new milestones reached yet.");
+      return null;
+    }
+
+    console.log(`🎉 Milestone crossed: $${crossed}`);
+    await PlatformMilestonePost({
+      amount: crossed.toLocaleString(),
+      totalWinners,
+      mediaToUpload: null,
+      captionLink: "https://squaretrivia.com",
+    });
+
+    // Update tracker
+    await lastMilestoneRef.set({ lastAmount: crossed }, { merge: true });
+
+    console.log(`✅ Milestone Post published for $${crossed}`);
+    return null;
+  });
+
+/**
+ * RECORD BREAKER CHECKER
+ * Runs every hour — posts when a new fastest-answer record is set
+ */
+exports.recordBreakerTrigger = functions.pubsub
+  .schedule("every 1 hours")
+  .timeZone("America/Denver")
+  .onRun(async () => {
+    console.log("⚡ Checking for record-breaking answers...");
+
+    const snapshot = await db
+      .collection("winners")
+      .orderBy("answerTime", "asc")
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      console.log("⚠️ No winners found.");
+      return null;
+    }
+
+    const fastest = snapshot.docs[0].data();
+    const currentFastestTime = fastest.answerTime;
+    const winner = fastest.user?.displayName || "Anonymous";
+
+    // Get previous record from Firestore tracker
+    const recordRef = db.collection("system").doc("recordTracker");
+    const recordDoc = await recordRef.get();
+    const lastRecord = recordDoc.exists ? recordDoc.data().fastestTime : null;
+
+    if (lastRecord && currentFastestTime >= lastRecord) {
+      console.log("⏸ No new record set yet.");
+      return null;
+    }
+
+    await RecordBreakerPost({
+      winner,
+      time: currentFastestTime.toFixed(3),
+      oldTime: lastRecord ? lastRecord.toFixed(3) : "—",
+      mediaToUpload: null,
+      captionLink: "https://squaretrivia.com",
+    });
+
+    // Update tracker
+    await recordRef.set(
+      { fastestTime: currentFastestTime, winner },
+      { merge: true }
+    );
+
+    console.log(
+      `✅ New RecordBreaker post published (${currentFastestTime}s by ${winner})`
     );
     return null;
   });
