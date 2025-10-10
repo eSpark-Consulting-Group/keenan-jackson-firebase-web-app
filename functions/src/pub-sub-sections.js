@@ -7,6 +7,8 @@ const {
   SkillCelebration,
   RecordBreakerPost,
   PlatformMilestonePost,
+  ReferralLeaderboard,
+  TeamRivalryPost,
 } = require("./social-posts-functions");
 
 admin.initializeApp();
@@ -19,7 +21,7 @@ const db = admin.firestore();
 exports.dailyRecapTrigger = functions.pubsub
   .schedule("every day 23:59")
   .timeZone("America/Denver")
-  .onRun(async (context) => {
+  .onRun(async () => {
     const now = new Date();
     const startOfDay = new Date(
       Date.UTC(
@@ -95,7 +97,7 @@ exports.dailyRecapTrigger = functions.pubsub
 exports.weeklyChampionTrigger = functions.pubsub
   .schedule("every sunday 23:59")
   .timeZone("America/Denver")
-  .onRun(async (context) => {
+  .onRun(async () => {
     const now = new Date();
     const startOfWeek = new Date(now);
     startOfWeek.setUTCDate(now.getUTCDate() - 7);
@@ -158,7 +160,7 @@ exports.weeklyChampionTrigger = functions.pubsub
 exports.noFeesTrigger = functions.pubsub
   .schedule("every friday 18:00")
   .timeZone("America/Denver")
-  .onRun(async (context) => {
+  .onRun(async () => {
     console.log("🚀 Running NoFeesPost trigger...");
 
     await NoFeesPost({
@@ -178,7 +180,7 @@ exports.noFeesTrigger = functions.pubsub
 exports.skillCelebrationTrigger = functions.pubsub
   .schedule("every 3 hours")
   .timeZone("America/Denver")
-  .onRun(async (context) => {
+  .onRun(async () => {
     console.log("⚡ Running SkillCelebration trigger...");
 
     const snapshot = await db
@@ -225,7 +227,7 @@ exports.skillCelebrationTrigger = functions.pubsub
 exports.platformMilestoneTrigger = functions.pubsub
   .schedule("every 12 hours")
   .timeZone("America/Denver")
-  .onRun(async (context) => {
+  .onRun(async () => {
     console.log("🚀 Checking for payout milestones...");
 
     const snapshot = await db.collection("winners").get();
@@ -281,7 +283,7 @@ exports.platformMilestoneTrigger = functions.pubsub
 exports.recordBreakerTrigger = functions.pubsub
   .schedule("every 1 hours")
   .timeZone("America/Denver")
-  .onRun(async (context) => {
+  .onRun(async () => {
     console.log("⚡ Checking for record-breaking answers...");
 
     const snapshot = await db
@@ -325,6 +327,107 @@ exports.recordBreakerTrigger = functions.pubsub
 
     console.log(
       `✅ New RecordBreaker post published (${currentFastestTime}s by ${winner})`
+    );
+    return null;
+  });
+
+/**
+ * REFERRAL LEADERBOARD TRIGGER
+ * Runs weekly (Monday 9:00 AM Denver time)
+ */
+exports.referralLeaderboardTrigger = functions.pubsub
+  .schedule("0 9 * * MON")
+  .timeZone("America/Denver")
+  .onRun(async () => {
+    console.log("🏆 Running Referral Leaderboard Trigger...");
+
+    const lastWeek = new Date();
+    lastWeek.setDate(lastWeek.getDate() - 7);
+
+    // Get users who referred others within the last week
+    const snapshot = await db
+      .collection("users")
+      .where("referrals", ">", 0)
+      .get();
+
+    if (snapshot.empty) {
+      console.log("⚠️ No referral data found.");
+      return null;
+    }
+
+    const leaderboard = snapshot.docs
+      .map((doc) => {
+        const d = doc.data();
+        const referrals = d.referrals || 0;
+        const totalEarned = d.totalEarned || 0;
+        return {
+          name: d.displayName || "Anonymous",
+          referrals,
+          amount: totalEarned,
+        };
+      })
+      .sort((a, b) => b.referrals - a.referrals)
+      .slice(0, 5);
+
+    await ReferralLeaderboard({
+      winners: leaderboard,
+      mediaToUpload: null,
+      captionLink: "https://squaretrivia.com/referrals",
+    });
+
+    console.log("✅ Referral Leaderboard post published.");
+    return null;
+  });
+
+/**
+ * TEAM RIVALRY TRIGGER
+ * Runs mid-week (Wednesday 11:00 AM Denver time)
+ */
+exports.teamRivalryTrigger = functions.pubsub
+  .schedule("0 11 * * WED")
+  .timeZone("America/Denver")
+  .onRun(async () => {
+    console.log("⚔️ Running Team Rivalry Trigger...");
+
+    // Example rivalry list (expand or fetch dynamically)
+    const rivalries = [
+      { teamA: "Cowboys", teamB: "Eagles" },
+      { teamA: "Chiefs", teamB: "Bills" },
+      { teamA: "49ers", teamB: "Rams" },
+    ];
+
+    // Pick a random rivalry each week
+    const matchup = rivalries[Math.floor(Math.random() * rivalries.length)];
+
+    // Count recent team wins (past week)
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    const snapshot = await db
+      .collection("winners")
+      .where("createdAt", ">", weekAgo)
+      .get();
+
+    let teamAWins = 0,
+      teamBWins = 0;
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      const team = data.team || "";
+      if (team === matchup.teamA) teamAWins++;
+      if (team === matchup.teamB) teamBWins++;
+    });
+
+    await TeamRivalryPost({
+      teamA: matchup.teamA,
+      teamB: matchup.teamB,
+      teamAWins,
+      teamBWins,
+      mediaToUpload: null,
+      captionLink: "https://squaretrivia.com",
+    });
+
+    console.log(
+      `✅ Rivalry post published: ${matchup.teamA} vs ${matchup.teamB}`
     );
     return null;
   });
