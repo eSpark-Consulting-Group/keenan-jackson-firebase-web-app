@@ -82,7 +82,6 @@ async function BigWinPost({
   captionLink,
 }) {
   const cta = getRandomCTA({ link: captionLink });
-
   const body = `
 🚨 ${winner} just took home $${prize} with a blazing ${time}s answer! Think you're faster? 🏃‍♂️  
 
@@ -108,7 +107,6 @@ async function StandardWinPost({
   captionLink,
 }) {
   const cta = getRandomCTA({ link: captionLink });
-
   const body = `
 BOOM! 💥 $${prize} win for ${winner} on the ${team1} vs ${team2} board!  
 Answer time: ${time} seconds ⚡  
@@ -133,7 +131,6 @@ async function PhotoFinishPost({
   captionLink,
 }) {
   const cta = getRandomCTA({ link: captionLink });
-
   const body = `
 INSANE FINISH! 🏁  
 ${winner} beats ${loser} by just ${diff} seconds!  
@@ -165,31 +162,39 @@ Speed Wins. Always. 📸
 async function BoardGoingFastPost({
   team1,
   team2,
-  tiers,
+  tier,
+  totalClaims,
   mediaToUpload,
   captionLink,
 }) {
-  // tiers example: [{tier: 100, left: 12}, {tier: 50, left: 8}, {tier: 25, left: 0}]
+  const total = totalClaims?.total || 0;
+  const claimed = totalClaims?.claimed || 0;
+  const left = Math.max(total - claimed, 0);
+  const leftPercent = total > 0 ? ((claimed / total) * 100).toFixed(0) : 0;
+
+  // 🧩 Extract numeric value if tier is like "tier_25"
+  const tierValue =
+    typeof tier === "string" && tier.startsWith("tier_")
+      ? tier.replace("tier_", "")
+      : tier;
+
+  const tierLine = `$${tierValue} Tier: ${
+    left > 0 ? `${left} squares left (${leftPercent}% filled)` : "SOLD OUT"
+  }`;
+
   const cta = getRandomCTA({ link: captionLink });
-
-  const tierLines = tiers
-    .map(
-      (t) =>
-        `$${t.tier} Tier: ${t.left > 0 ? `${t.left} squares left` : "SOLD OUT"}`
-    )
-    .join("\n");
-
   const body = `
 🔥 ${team1} vs ${team2} filling up FAST!  
 
-${tierLines}
+${tierLine}
 
 Get your square before kickoff!  
 Speed Wins. Always. ⚡
   `;
+
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body.trim(), cta),
     link: captionLink,
   });
 }
@@ -204,7 +209,6 @@ async function NewBoardAlertPost({
   captionLink,
 }) {
   const cta = getRandomCTA({ link: captionLink });
-
   const body = `
 🚨 NEW BOARD LIVE 🚨  
 
@@ -235,7 +239,6 @@ async function FinalCallPost({
   captionLink,
 }) {
   const cta = getRandomCTA({ link: captionLink });
-
   const body = `
 ⏰ LAST CHANCE: ${team1} vs ${team2}  
 
@@ -262,7 +265,6 @@ async function PrimeSquaresAlertPost({
 }) {
   // openSquares example: ["0-7", "3-4", "7-0"]
   const cta = getRandomCTA({ link: captionLink });
-
   const body = `
 👀 Prime squares still available!  
 
@@ -288,7 +290,6 @@ async function BoardFullAnnouncementPost({
   captionLink,
 }) {
   const cta = getRandomCTA({ link: captionLink });
-
   const body = `
 SOLD OUT! ${team1} vs ${team2} is LOCKED IN! 🔒  
 
@@ -311,7 +312,6 @@ async function MultiGameUpdatePost({ games, mediaToUpload, captionLink }) {
   const cta = getRandomCTA({ link: captionLink });
 
   const gameLines = games.map((g) => `${g.match}: ${g.fill} FULL`).join("\n");
-
   const body = `
 📊 Sunday Board Status:  
 
@@ -346,7 +346,6 @@ async function TierStatusUpdatePost({
         }`
     )
     .join("\n");
-
   const body = `
 🎯 ${team1} vs ${team2} Availability:  
 
@@ -379,7 +378,6 @@ async function DailyRecapPost({
   captionLink,
 }) {
   const cta = getRandomCTA({ link: captionLink });
-
   const body = `
 📊 Today's Square Trivia Stats:  
 💰 $${totalPrizes} won  
@@ -411,7 +409,6 @@ async function WeeklyChampionPost({
   captionLink,
 }) {
   const cta = getRandomCTA({ link: captionLink });
-
   const body = `
 👑 This Week's Square Trivia Champions:  
 
@@ -437,7 +434,6 @@ Think you can make next week's list? 🎯
 // Upcoming Game
 async function UpcomingGamePost({ team1, team2, mediaToUpload, captionLink }) {
   const cta = getRandomCTA({ link: captionLink });
-
   const body = `
 🏈 ${team1} vs ${team2} boards are LIVE!  
 
@@ -465,7 +461,6 @@ async function LastChancePost({
   captionLink,
 }) {
   const cta = getRandomCTA({ link: captionLink });
-
   const body = `
 ⏰ FINAL CALL: ${team1} vs ${team2} kicks off in 2 hours!  
 
@@ -550,7 +545,6 @@ async function NoFeesPost({ mediaToUpload, captionLink }) {
   ]
     .map((o) => `${o.icon} ${o.title}: ${o.detail}`)
     .join("\n");
-
   const body = `
 Win $200? Get paid $200! NO FEES on Square Trivia!  
 
@@ -580,7 +574,6 @@ async function SkillCelebration({
   ]
     .map((c) => `${c.label}: ${c.icon} ${c.desc}`)
     .join("\n");
-
   const body = `
 What separates Square Trivia winners from everyone else?
 
@@ -640,7 +633,6 @@ async function ReferralLeaderboard({
         `${i + 1}. ${w.name}: $${w.amount} won from ${w.referrals} referrals`
     )
     .join("\n");
-
   const body = `
 🏆 This Week's Referral Winners:
 

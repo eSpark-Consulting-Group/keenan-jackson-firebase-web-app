@@ -187,9 +187,9 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
         headers: { "x-apisports-key": process.env.REACT_APP_APISPORTS_KEY },
       });
       logger.info("GOT NFL GAMES: ", { data: response?.data?.response });
-      games = response.data?.response || [];
+      // games = response.data?.response || [];
 
-      // games = DUMMY_GAMES || [];
+      games = DUMMY_GAMES || [];
 
       // ✅ handle gameType filtering
       if (gameType === "regular") {

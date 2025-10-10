@@ -538,6 +538,7 @@ exports.determineWinners = functions.pubsub
                   answerTime: winner.answerTime,
                   isSoloWin: false,
                   opponentTime: loser.answerTime,
+                  looserUserId: loser.userId,
                 });
 
                 // Loser
@@ -836,6 +837,7 @@ async function processWinner(winnerData) {
     instantPayoutFee,
     consolationSquareGranted,
     processedBy,
+    looserUserId,
   } = winnerData;
 
   // ✅ Tier prize mapping
@@ -857,6 +859,17 @@ async function processWinner(winnerData) {
 
   const displayName =
     userData.displayName || userData.email || "Unknown Player";
+
+  let displayLooserName = "";
+
+  if (!isSoloWin) {
+    const looserSnap = await db.collection("users").doc(looserUserId).get();
+    if (!looserSnap.exists) throw new Error(`User ${looserUserId} not found`);
+    const looserData = looserSnap.data();
+
+    displayLooserName =
+      looserData.displayName || looserData.email || "Unknown Player";
+  }
 
   // ✅ Get game info
   const gameSnap = await db.collection("games").doc(gameId).get();
@@ -936,8 +949,8 @@ async function processWinner(winnerData) {
           winner: displayName,
           prize: prizeAmount,
           time: answerTime,
-          team1: game.teams.home.name,
-          team2: game.teams.away.name,
+          team1,
+          team2,
           square: position,
           mediaToUpload: mediaToUpload,
           captionLink: captionLink,
@@ -945,8 +958,8 @@ async function processWinner(winnerData) {
       : StandardWinPost({
           winner: displayName,
           prize: prizeAmount,
-          team1: game.teams.home.name,
-          team2: game.teams.away.name,
+          team1,
+          team2,
           time: answerTime,
           mediaToUpload: mediaToUpload,
           captionLink: captionLink,
@@ -955,8 +968,8 @@ async function processWinner(winnerData) {
       isPhotoFinish &&
         PhotoFinishPost({
           winner: displayName, // todo: need to get winner info/name
-          loser: displayName, // todo: need to get loser info/name
-          diff: Math.round((answerTime - opponentTime) * 1000) / 1000,
+          loser: displayLooserName, // todo: need to get loser info/name
+          diff: Math.round((opponentTime - answerTime) * 1000) / 1000,
           winTime: answerTime,
           loseTime: opponentTime,
           mediaToUpload: mediaToUpload,
