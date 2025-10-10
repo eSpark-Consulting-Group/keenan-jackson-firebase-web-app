@@ -47,58 +47,49 @@ function logError(context, error) {
 // Facebook Graph API Functions
 // =============================
 
-// 1. Facebook Image Post
-async function fbImagePost(imageUrl, caption) {
-  const url = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}/photos`;
-  const data = { url: imageUrl, caption, access_token: FB_PAGE_ACCESS_TOKEN };
+// Unified Facebook Post (Image, Video, Text, or Link)
+async function fbPublish({ media, caption, link }) {
+  const ext = media?.split(".").pop().toLowerCase();
+  let url, data, type;
 
   try {
-    logInfo("Facebook Image Post", { url, caption });
+    // Determine endpoint & payload
+    if (["jpg", "jpeg", "png"].includes(ext)) {
+      // 🖼️ Image Post
+      type = "Image";
+      url = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}/photos`;
+      data = { url: media, caption, access_token: FB_PAGE_ACCESS_TOKEN };
+    } else if (ext === "mp4") {
+      // 🎥 Video Post
+      type = "Video";
+      url = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}/videos`;
+      data = {
+        file_url: media,
+        description: caption,
+        access_token: FB_PAGE_ACCESS_TOKEN,
+      };
+    } else if (link) {
+      // 🔗 Link Post
+      type = "Link";
+      url = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}/feed`;
+      data = { message: caption, link, access_token: FB_PAGE_ACCESS_TOKEN };
+    } else if (!media && caption) {
+      // 📝 Text-only Post
+      type = "Text";
+      url = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}/feed`;
+      data = { message: caption, access_token: FB_PAGE_ACCESS_TOKEN };
+    } else {
+      throw new Error(`❌ Unsupported file type: ${ext || "unknown"}.`);
+    }
+
+    // Execute post
+    logInfo(`Facebook ${type} Post`, { url, data });
     const res = await axios.post(url, data);
-    logInfo("Facebook Image Post Response", res.data);
+    logInfo(`Facebook ${type} Post Response`, res.data);
+
     return res.data;
   } catch (error) {
-    logError("Facebook Image Post", error);
-    throw error;
-  }
-}
-
-// 2. Facebook Video Post
-async function fbVideoPost(videoUrl, description) {
-  const url = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}/videos`;
-  const data = {
-    file_url: videoUrl,
-    description,
-    access_token: FB_PAGE_ACCESS_TOKEN,
-  };
-
-  try {
-    logInfo("Facebook Video Post", { url, description });
-    const res = await axios.post(url, data);
-    logInfo("Facebook Video Post Response", res.data);
-    return res.data;
-  } catch (error) {
-    logError("Facebook Video Post", error);
-    throw error;
-  }
-}
-
-// 3. Facebook Text + Link Post
-async function fbFeedPost(message, link) {
-  const url = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}/feed`;
-  const data = {
-    message,
-    ...(link ? { link } : {}), // Only include link if provided
-    access_token: FB_PAGE_ACCESS_TOKEN,
-  };
-
-  try {
-    logInfo("Facebook Feed Post", { message, link });
-    const res = await axios.post(url, data);
-    logInfo("Facebook Feed Post Response", res.data);
-    return res.data;
-  } catch (error) {
-    logError("Facebook Feed Post", error);
+    logError("Facebook Publish", error.response?.data || error);
     throw error;
   }
 }
@@ -107,59 +98,42 @@ async function fbFeedPost(message, link) {
 // Instagram Graph API Functions
 // =============================
 
-// 1. Instagram Create Image Media Container
-async function igImageContainer(imageUrl, caption) {
-  const url = `https://graph.facebook.com/v20.0/${IG_USER_ID}/media`;
+// Unified Instagram Media Upload + Publish Function
+// Upload + Publish to Instagram (Image or Video)
+async function igPublish({ media, caption, type = "IMAGE" }) {
+  const createUrl = `https://graph.facebook.com/v20.0/${IG_USER_ID}/media`;
+  const publishUrl = `https://graph.facebook.com/v20.0/${IG_USER_ID}/media_publish`;
+
   const data = {
-    image_url: imageUrl,
     caption,
     access_token: FB_PAGE_ACCESS_TOKEN,
+    ...(type === "VIDEO"
+      ? { media_type: "VIDEO", video_url: media }
+      : { image_url: media }),
   };
 
   try {
-    logInfo("Instagram Image Container", { imageUrl, caption });
-    const res = await axios.post(url, data);
-    logInfo("Instagram Image Container Response", res.data);
-    return res.data;
-  } catch (error) {
-    logError("Instagram Image Container", error);
-    throw error;
-  }
-}
+    // Step 1 — Create container
+    logInfo(`Instagram ${type} Container`, { media, caption });
+    const containerRes = await axios.post(createUrl, data);
+    logInfo("Instagram Container Response", containerRes.data);
 
-// 2. Instagram Create Video Media Container
-async function igVideoContainer(videoUrl, caption) {
-  const url = `https://graph.facebook.com/v20.0/${IG_USER_ID}/media`;
-  const data = {
-    media_type: "VIDEO",
-    video_url: videoUrl,
-    caption,
-    access_token: FB_PAGE_ACCESS_TOKEN,
-  };
+    const creationId = containerRes.data.id;
+    if (!creationId)
+      throw new Error("❌ No creation_id returned from Instagram.");
 
-  try {
-    logInfo("Instagram Video Container", { videoUrl, caption });
-    const res = await axios.post(url, data);
-    logInfo("Instagram Video Container Response", res.data);
-    return res.data;
-  } catch (error) {
-    logError("Instagram Video Container", error);
-    throw error;
-  }
-}
-
-// 3. Instagram Publish Container
-async function igPublishMedia(creationId) {
-  const url = `https://graph.facebook.com/v20.0/${IG_USER_ID}/media_publish`;
-  const data = { creation_id: creationId, access_token: FB_PAGE_ACCESS_TOKEN };
-
-  try {
+    // Step 2 — Publish media
+    const publishData = {
+      creation_id: creationId,
+      access_token: FB_PAGE_ACCESS_TOKEN,
+    };
     logInfo("Instagram Publish Media", { creationId });
-    const res = await axios.post(url, data);
-    logInfo("Instagram Publish Media Response", res.data);
-    return res.data;
+    const publishRes = await axios.post(publishUrl, publishData);
+    logInfo("Instagram Publish Media Response", publishRes.data);
+
+    return publishRes.data;
   } catch (error) {
-    logError("Instagram Publish Media", error);
+    logError("Instagram Publish Media", error.response?.data || error);
     throw error;
   }
 }
@@ -193,48 +167,39 @@ async function tgGetUpdates() {
     throw error;
   }
 }
-
-async function tgSendMessage(text) {
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-  const data = { chat_id: TELEGRAM_CHAT_ID, text };
-
-  try {
-    logInfo("Telegram SendMessage", { text });
-    const res = await axios.post(url, data);
-    logInfo("Telegram SendMessage Response", res.data);
-    return res.data;
-  } catch (error) {
-    logError("Telegram SendMessage", error);
-    throw error;
-  }
-}
-
-async function tgSendPhoto(photoUrl, caption = "") {
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`;
-  const data = { chat_id: TELEGRAM_CHAT_ID, photo: photoUrl, caption };
+// Unified Telegram Post (Text, Photo, or Video)
+async function tgPublish({ text, media, caption = "" }) {
+  let url, data, type;
+  const ext = media?.split(".").pop()?.toLowerCase();
 
   try {
-    logInfo("Telegram SendPhoto", { photoUrl, caption });
+    if (!media && text) {
+      // 📝 Text message
+      type = "Message";
+      url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+      data = { chat_id: TELEGRAM_CHAT_ID, text };
+    } else if (["jpg", "jpeg", "png"].includes(ext)) {
+      // 🖼️ Photo post
+      type = "Photo";
+      url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`;
+      data = { chat_id: TELEGRAM_CHAT_ID, photo: media, caption };
+    } else if (ext === "mp4") {
+      // 🎥 Video post
+      type = "Video";
+      url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendVideo`;
+      data = { chat_id: TELEGRAM_CHAT_ID, video: media, caption };
+    } else {
+      throw new Error(`❌ Unsupported media type: ${ext || "unknown"}.`);
+    }
+
+    // Execute post
+    logInfo(`Telegram Send${type}`, data);
     const res = await axios.post(url, data);
-    logInfo("Telegram SendPhoto Response", res.data);
+    logInfo(`Telegram Send${type} Response`, res.data);
+
     return res.data;
   } catch (error) {
-    logError("Telegram SendPhoto", error);
-    throw error;
-  }
-}
-
-async function tgSendVideo(videoUrl, caption = "") {
-  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendVideo`;
-  const data = { chat_id: TELEGRAM_CHAT_ID, video: videoUrl, caption };
-
-  try {
-    logInfo("Telegram SendVideo", { videoUrl, caption });
-    const res = await axios.post(url, data);
-    logInfo("Telegram SendVideo Response", res.data);
-    return res.data;
-  } catch (error) {
-    logError("Telegram SendVideo", error);
+    logError("Telegram Publish", error.response?.data || error);
     throw error;
   }
 }
@@ -256,10 +221,10 @@ exports.apiTest = functions.https.onRequest(async (req, res) => {
 
     // Instagram
     // const container = await igImageContainer("https://yourdomain.com/photo.jpg", "Hello IG!");
-    // const result = await igPublishMedia(container.id);
+    // const result = await igPublish(container.id);
 
     // const container = await igVideoContainer("https://yourdomain.com/video.jpg", "Hello IG!");
-    // const result = await igPublishMedia(container.id);
+    // const result = await igPublish(container.id);
 
     // Telegram
     // const result = await tgSendMessage("Hello from Firebase Functions!");
@@ -425,16 +390,10 @@ function getHashtags(context = {}) {
 module.exports = {
   getRandomCTA,
   getHashtags,
-  postTweet,
-  fbImagePost,
-  fbVideoPost,
-  fbFeedPost,
-  igImageContainer,
-  igVideoContainer,
-  igPublishMedia,
   tgGetMe,
   tgGetUpdates,
-  tgSendMessage,
-  tgSendPhoto,
-  tgSendVideo,
+  postTweet,
+  fbPublish,
+  igPublish,
+  tgPublish,
 };

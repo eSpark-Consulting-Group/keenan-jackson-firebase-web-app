@@ -11,16 +11,6 @@ const {
   handleRefund,
 } = require("./payment-system-modified");
 const { default: axios } = require("axios");
-const { TwitterApi } = require("twitter-api-v2");
-const {
-  fbImagePost,
-  igImageContainer,
-  igPublishMedia,
-  fbVideoPost,
-  igVideoContainer,
-  fbFeedPost,
-  postTweet,
-} = require("./social-posts");
 const {
   BigWinPost,
   StandardWinPost,
@@ -882,11 +872,6 @@ async function processWinner(winnerData) {
   // ✅ Determine caption template
   const isBigWin = prizeAmount >= 900;
   const isPhotoFinish = Math.abs(answerTime - opponentTime) < 1000;
-
-  const caption = isBigWin
-    ? `🚨 ${displayName} just took home $${prizeAmount} with a blazing ${answerTime}s answer! Think you're faster? 🏃‍♂️\n\n${team1} vs ${team2} - Square ${position}\nSpeed Wins. Always.\n#SquareTrivia #SpeedWins`
-    : `BOOM! 💥 $${prizeAmount} win for ${displayName} on the ${team1} vs ${team2} board!\nAnswer time: ${answerTime} seconds ⚡\n\nSpeed Wins. Always.`;
-
   // ✅ Create winner record
   const winnerRef = await db.collection("winners").add({
     userId,
@@ -977,33 +962,6 @@ async function processWinner(winnerData) {
         });
     }
   }
-  // try {
-  //   // Twitter
-  //   await postTweet(caption);
-  //   if (["jpg", "jpeg", "png"].includes(ext)) {
-  //     // Facebook Video
-  //     await fbImagePost(mediaToUpload, caption); // or you can handle specific image types if needed
-  //     // Instagram
-  //     const container = await igImageContainer(mediaToUpload, caption);
-  //     await igPublishMedia(container.id);
-  //   } else if (ext === "mp4") {
-  //     // Facebook
-  //     await fbVideoPost(mediaToUpload, caption);
-  //     // Instagram
-  //     const container = await igVideoContainer(mediaToUpload, caption);
-  //     await igPublishMedia(container.id);
-  //   } else if (captionLink && captionLink !== "") {
-  //     // Facebook Link
-  //     await fbFeedPost(caption, captionLink);
-  //   } else {
-  //     throw new Error(
-  //       `❌ Unsupported file type: .${ext}. Only JPG, PNG, or MP4 allowed.`
-  //     );
-  //   }
-  //   // await postTweet(caption);
-  // } catch (err) {
-  //   console.error("⚠️ Social post failed", err);
-  // }
 
   console.log(`🏆 Winner processed: ${displayName} - $${prizeAmount}`);
 

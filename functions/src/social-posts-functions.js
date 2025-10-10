@@ -1,55 +1,71 @@
+const { logger } = require("firebase-functions");
 const {
   getRandomCTA,
   postTweet,
-  fbImagePost,
-  fbVideoPost,
-  fbFeedPost,
-  igImageContainer,
-  igVideoContainer,
-  igPublishMedia,
+  fbPublish,
+  igPublish,
   getHashtags,
-  tgSendMessage,
-  tgSendPhoto,
-  tgSendVideo,
+  tgPublish,
 } = require("./social-posts");
 
 const hashTags = getHashtags();
+// Unified logging helper
+function logInfo(context, data) {
+  console.log(`🟢 [INFO] ${context}:`, data);
+  logger.info(`[${context}]`, data);
+}
+function logError(context, error) {
+  console.error(
+    `🔴 [ERROR] ${context}:`,
+    error.response?.data || error.message
+  );
+  logger.error(`[${context}]`, error.response?.data || error.message);
+}
 
-// Handles all platforms automatically based on media type
 async function postToAllPlatforms({ media, caption, link }) {
-  const ext = media?.split(".").pop().toLowerCase();
+  const ext = media?.split(".").pop()?.toLowerCase();
 
-  if (["jpg", "jpeg", "png"].includes(ext)) {
-    // 📸 Image post
-    await fbImagePost(media, caption); // 📘 Facebook image post
-    await tgSendPhoto(media, caption); // 📲 Telegram image post
-    await postTweet({ message: caption, imagePath: media }); // 🐦 Twitter image post
-    const container = await igImageContainer(media, caption); // 📸 Instagram image container
-    await igPublishMedia(container.id); // Publish to Instagram
-  } else if (ext === "mp4") {
-    // 🎥 Video post
-    await fbVideoPost(media, caption); // 📘 Facebook video post
-    await tgSendVideo(media, caption); // 📲 Telegram video post
-    await postTweet({ message: caption, videoPath: media }); // 🐦 Twitter video post
-    const container = await igVideoContainer(media, caption); // 📸 Instagram video container
-    await igPublishMedia(container.id); // Publish to Instagram
-  } else if (link) {
-    // 🔗 Link post
-    await fbFeedPost(caption, link); // 📘 Facebook link post
-    await tgSendMessage(`${caption}\n\n${link}`); // 📲 Telegram link post
-    await postTweet({ message: caption, link }); // 🐦 Twitter link post
-  } else if (!media && !link && caption) {
-    // 📝 Text-only post
-    await fbFeedPost(caption); // 📘 Facebook text post
-    await tgSendMessage(caption); // 📲 Telegram text post
-    await postTweet({ message: caption });
-  } else {
-    throw new Error(`❌ Unsupported file type: .${ext}. Use JPG, PNG, or MP4.`);
+  try {
+    if (["jpg", "jpeg", "png"].includes(ext)) {
+      // 📸 Image post
+      await fbPublish({ media, caption });
+      await tgPublish({ media: media, caption: caption });
+      await postTweet({ message: caption, imagePath: media });
+      await igPublish({ media, caption, type: "IMAGE" });
+    } else if (ext === "mp4") {
+      // 🎥 Video post
+      await fbPublish({ media, caption });
+      await tgPublish({ media: media, caption: caption });
+      await postTweet({ message: caption, videoPath: media });
+      await igPublish({ media, caption, type: "VIDEO" });
+    } else if (link) {
+      // 🔗 Link post
+      await fbPublish({ link, caption });
+      await tgPublish({ caption: `${caption}\n\n${link}` });
+      await postTweet({ message: caption, link });
+    } else if (!media && !link && caption) {
+      // 📝 Text-only post
+      await fbPublish({ caption });
+      await tgPublish({ caption: caption });
+      await postTweet({ message: caption });
+    } else {
+      throw new Error(
+        `❌ Unsupported file type: .${ext || "unknown"}. Use JPG, PNG, or MP4.`
+      );
+    }
+
+    logInfo("✅ All platform posts completed successfully", {
+      media,
+      caption,
+      link,
+    });
+  } catch (error) {
+    logError(
+      "❌ Error posting to all platforms",
+      error.response?.data || error
+    );
+    throw error;
   }
-
-  await postTweet(caption);
-  await tgSendMessage(caption);
-  return caption.trim();
 }
 
 // Builds post text with CTA + hashTags
