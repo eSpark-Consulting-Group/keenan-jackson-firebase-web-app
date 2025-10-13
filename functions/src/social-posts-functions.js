@@ -747,7 +747,6 @@ module.exports = {
   BoardGoingFastPost,
   NewBoardAlertPost,
   FinalCallPost,
-  PrimeSquaresAlertPost,
   BoardFullAnnouncementPost,
   MultiGameUpdatePost,
   TierStatusUpdatePost,
