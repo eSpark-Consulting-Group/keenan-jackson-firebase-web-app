@@ -15,7 +15,6 @@ const {
   FinalCallPost,
   TierStatusUpdatePost,
   UpcomingGamePost,
-  PrimeSquaresAlertPost,
 } = require("./social-posts-functions");
 
 const db = admin.firestore();
@@ -1075,7 +1074,6 @@ exports.checkBoardsFillingFast = functions.pubsub
           continue;
         }
 
-        const PRIME_SQUARES = ["0-7", "3-4", "7-0", "0-3", "4-7", "7-3"]; // customize as needed
         // ---------------------------
         // 🎯 FULL BOARD ANNOUNCEMENT
         // ---------------------------
@@ -1137,60 +1135,6 @@ exports.checkBoardsFillingFast = functions.pubsub
           });
         }
 
-        if (fillPercent >= 50 && fillPercent < 70) {
-          const openPrimeSquares = PRIME_SQUARES.filter(
-            (sq) => !board.squares?.includes(sq)
-          );
-
-          if (openPrimeSquares.length > 0) {
-            const postKeyPrime = `${gameId}_Q${boundedQuarter}_${tierId}_prime`;
-            const primePostRef = db
-              .collection("fastFillPosts")
-              .doc(postKeyPrime);
-            const existingPrimePost = await primePostRef.get();
-            const lastPrimePostedAt = existingPrimePost.exists
-              ? existingPrimePost.data().postedAt?.toDate()
-              : null;
-            const timeSincePrimePost = lastPrimePostedAt
-              ? (now - lastPrimePostedAt) / (1000 * 60)
-              : Infinity;
-
-            // ⏳ Debounce: Post once every 45 minutes max
-            if (timeSincePrimePost >= 45) {
-              console.log(
-                `💥 [${gameId}] ${quarterLabel} - ${tierId} board ${boardId} hit 50%, prime squares still open: ${openPrimeSquares.join(
-                  ", "
-                )}`
-              );
-
-              await PrimeSquaresAlertPost({
-                team1,
-                team2,
-                openSquares: openPrimeSquares,
-                mediaToUpload: "https://squaretrivia.com/logo.png",
-                captionLink: "https://squaretrivia.com",
-              });
-
-              await primePostRef.set({
-                gameId,
-                quarter: boundedQuarter,
-                quarterLabel,
-                tierId,
-                boardId,
-                fillPercent,
-                type: "primeSquares",
-                openSquares: openPrimeSquares,
-                postedAt: admin.firestore.FieldValue.serverTimestamp(),
-              });
-            } else {
-              console.log(
-                `⏳ Skipping PrimeSquares post for ${boardId} (${tierId}) — last posted ${timeSincePrimePost.toFixed(
-                  1
-                )}m ago`
-              );
-            }
-          }
-        }
         // ---------------------------
         // ⚠️ LAST CHANCE (<20%)
         // ---------------------------

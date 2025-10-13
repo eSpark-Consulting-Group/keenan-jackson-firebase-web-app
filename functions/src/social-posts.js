@@ -166,7 +166,7 @@ async function tgGetUpdates() {
   }
 }
 // Unified Telegram Post (Text, Photo, or Video)
-async function tgPublish({ text, media, caption = "" }) {
+async function tgPublish({ text, media, caption }) {
   let url, data, type;
   const ext = media?.split(".").pop()?.toLowerCase();
 
@@ -256,7 +256,7 @@ function getRandomCTA(context = {}) {
 // const content = `${template}\n\n\n${ctaText}`;
 
 // ✅ Export reusable function
-async function twPublish({ message, link, imagePath, videoPath }) {
+async function twPublish({ message, link, imagePath, videoPath, }) {
   try {
     let text = message || "";
     if (link) text += `\n\n${link}`;

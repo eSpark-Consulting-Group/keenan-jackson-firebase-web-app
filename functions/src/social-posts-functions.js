@@ -28,26 +28,26 @@ async function postToAllPlatforms({ media, caption, link }) {
   try {
     if (["jpg", "jpeg", "png"].includes(ext)) {
       // 📸 Image post
-      await fbPublish({ media, caption });
-      await tgPublish({ media: media, caption: caption });
-      await twPublish({ message: caption, imagePath: media });
+      await fbPublish({ media, caption, type: "IMAGE" });
+      await tgPublish({ media: media, caption: caption, type: "IMAGE" });
+      await twPublish({ message: caption, imagePath: media, type: "IMAGE" });
       await igPublish({ media, caption, type: "IMAGE" });
     } else if (ext === "mp4") {
       // 🎥 Video post
-      await fbPublish({ media, caption });
-      await tgPublish({ media: media, caption: caption });
-      await twPublish({ message: caption, videoPath: media });
+      await fbPublish({ media, caption, type: "VIDEO" });
+      await tgPublish({ media: media, caption: caption, type: "VIDEO" });
+      await twPublish({ message: caption, videoPath: media, type: "VIDEO" });
       await igPublish({ media, caption, type: "VIDEO" });
     } else if (link) {
       // 🔗 Link post
-      await fbPublish({ link, caption });
-      await tgPublish({ caption: `${caption}\n\n${link}` });
-      await twPublish({ message: caption, link });
+      await fbPublish({ link, caption, type: "LINK" });
+      await tgPublish({ caption: `${caption}\n\n${link}`, type: "LINK" });
+      await twPublish({ message: caption, link, type: "LINK" });
     } else if (!media && !link && caption) {
       // 📝 Text-only post
-      await fbPublish({ caption });
-      await tgPublish({ caption: caption });
-      await twPublish({ message: caption });
+      await fbPublish({ caption, type: "TEXT" });
+      await tgPublish({ caption: caption, type: "TEXT" });
+      await twPublish({ message: caption, type: "TEXT" });
     } else {
       throw new Error(
         `❌ Unsupported file type: .${ext || "unknown"}. Use JPG, PNG, or MP4.`
@@ -263,32 +263,6 @@ ${squaresLeft} squares remaining
 
 Don't watch from the sidelines.  
 Speed Wins. Always. 🎯
-  `;
-  return postToAllPlatforms({
-    media: mediaToUpload,
-    caption: buildTemplate(body, cta),
-    link: captionLink,
-  });
-}
-
-// Prime Squares Alert
-async function PrimeSquaresAlertPost({
-  team1,
-  team2,
-  openSquares,
-  mediaToUpload,
-  captionLink,
-}) {
-  // openSquares example: ["0-7", "3-4", "7-0"]
-  const cta = getRandomCTA({ link: captionLink });
-  const body = `
-👀 Prime squares still available!  
-
-${team1} vs ${team2}  
-${openSquares.map((sq) => `Square ${sq}: OPEN`).join("\n")}  
-
-These numbers hit often. Claim yours!  
-Speed Wins. Always.
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
