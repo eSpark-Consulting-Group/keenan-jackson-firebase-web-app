@@ -587,17 +587,17 @@ const DUMMY_GAMES = [
       week: "Week 1",
       date: {
         timezone: "UTC",
-        date: "2025-10-15",
+        date: "2025-10-18",
         time: "17:00",
-        timestamp: 1760547600,
+        timestamp: 1760806800,
       },
       venue: {
         name: null,
         city: null,
       },
       status: {
-        short: "Q2",
-        long: "2nd Quarter",
+        short: "Q1",
+        long: "1st Quarter",
         timer: null,
       },
     },
@@ -626,7 +626,7 @@ const DUMMY_GAMES = [
     },
     scores: {
       home: {
-        quarter_1: 12,
+        quarter_1: null,
         quarter_2: null,
         quarter_3: null,
         quarter_4: null,
@@ -634,7 +634,7 @@ const DUMMY_GAMES = [
         total: 0,
       },
       away: {
-        quarter_1: 17,
+        quarter_1: null,
         quarter_2: null,
         quarter_3: null,
         quarter_4: null,
