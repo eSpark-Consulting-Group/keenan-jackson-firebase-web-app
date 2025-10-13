@@ -1046,11 +1046,13 @@ exports.checkBoardsFillingFast = functions.pubsub
 
       for (const boardDoc of boardsSnap.docs) {
         const board = boardDoc.data();
+        logger.info("BOARD: ", { board });
         const boardId = boardDoc.id;
 
         const tierId = board.tierId || "unknown_tier";
-        const totalSquares = board.totalSquares || 50;
-        const claimedSquares = (board.squares || []).length;
+        const totalSquares = 50;
+        const claimedSquares = board.claimedSquares || 0;
+        logger.info("TOTAL CLAIMS: ", { claimedSquares });
         const fillPercent = (claimedSquares / totalSquares) * 100;
 
         const postKey = `${gameId}_Q${boundedQuarter}_${tierId}`;
