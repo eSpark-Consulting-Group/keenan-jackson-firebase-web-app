@@ -33,21 +33,21 @@ function getFileExt(url = "") {
   }
 }
 async function postToAllPlatforms({ media, caption, link }) {
-  const ext = getFileExt(media);
+  const ext = media ? getFileExt(media) : null;
 
   try {
-    if (["jpg", "jpeg", "png"].includes(ext)) {
+    if (ext && ["jpg", "jpeg", "png"].includes(ext)) {
       // 📸 Image post
       await fbPublish({ media, caption, type: "IMAGE" });
-      await tgPublish({ media: media, caption: caption, type: "IMAGE" });
-      await twPublish({ message: caption, imagePath: media, type: "IMAGE" });
+      await tgPublish({ media, caption, type: "IMAGE" });
       await igPublish({ media, caption, type: "IMAGE" });
+      await twPublish({ message: caption, imagePath: media, type: "IMAGE" });
     } else if (ext === "mp4") {
       // 🎥 Video post
       await fbPublish({ media, caption, type: "VIDEO" });
-      await tgPublish({ media: media, caption: caption, type: "VIDEO" });
-      await twPublish({ message: caption, videoPath: media, type: "VIDEO" });
+      await tgPublish({ media, caption, type: "VIDEO" });
       await igPublish({ media, caption, type: "VIDEO" });
+      await twPublish({ message: caption, videoPath: media, type: "VIDEO" });
     } else if (link) {
       // 🔗 Link post
       await fbPublish({ link, caption, type: "LINK" });
@@ -56,7 +56,7 @@ async function postToAllPlatforms({ media, caption, link }) {
     } else if (!media && !link && caption) {
       // 📝 Text-only post
       await fbPublish({ caption, type: "TEXT" });
-      await tgPublish({ caption: caption, type: "TEXT" });
+      await tgPublish({ caption, type: "TEXT" });
       await twPublish({ message: caption, type: "TEXT" });
     } else {
       throw new Error(

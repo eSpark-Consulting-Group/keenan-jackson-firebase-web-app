@@ -117,10 +117,15 @@ async function fbPublish({ media, caption, link, type }) {
 async function igPublish({ media, caption, type = "IMAGE" }) {
   const createUrl = `https://graph.facebook.com/v20.0/${IG_USER_ID}/media`;
   const publishUrl = `https://graph.facebook.com/v20.0/${IG_USER_ID}/media_publish`;
-
+  logInfo(`📦 Instagram POST trying`, { media, caption, type });
   try {
-    if (!media && type !== "TEXT") {
-      throw new Error("❌ Media URL is required for Instagram post.");
+    // 🧩 If no media provided — skip IG (they don't allow text/link-only posts)
+    if (!media) {
+      logInfo("ℹ️ Skipping Instagram post — no media provided.", {
+        type,
+        caption,
+      });
+      return { skipped: true, reason: "no_media" };
     }
 
     const payload =
@@ -165,7 +170,7 @@ async function igPublish({ media, caption, type = "IMAGE" }) {
   } catch (error) {
     const errData = error.response?.data || error.message || error;
     logError("❌ Instagram Publish Error", errData);
-    throw error;
+    return { error: true, details: errData };
   }
 }
 
