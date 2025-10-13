@@ -46,48 +46,64 @@ function logError(context, error) {
 // =============================
 
 // Unified Facebook Post (Image, Video, Text, or Link)
-async function fbPublish({ media, caption, link }) {
-  const ext = media?.split(".").pop().toLowerCase();
-  let url, data, type;
-
+async function fbPublish({ media, caption, link, type }) {
   try {
-    // Determine endpoint & payload
-    if (["jpg", "jpeg", "png"].includes(ext)) {
-      // 🖼️ Image Post
-      type = "Image";
-      url = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}/photos`;
-      data = { url: media, caption, access_token: FB_PAGE_ACCESS_TOKEN };
-    } else if (ext === "mp4") {
-      // 🎥 Video Post
-      type = "Video";
-      url = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}/videos`;
-      data = {
-        file_url: media,
-        description: caption,
-        access_token: FB_PAGE_ACCESS_TOKEN,
-      };
-    } else if (link) {
-      // 🔗 Link Post
-      type = "Link";
-      url = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}/feed`;
-      data = { message: caption, link, access_token: FB_PAGE_ACCESS_TOKEN };
-    } else if (!media && caption) {
-      // 📝 Text-only Post
-      type = "Text";
-      url = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}/feed`;
-      data = { message: caption, access_token: FB_PAGE_ACCESS_TOKEN };
-    } else {
-      throw new Error(`❌ Unsupported file type: ${ext || "unknown"}.`);
+    let url, data;
+    const baseURL = `https://graph.facebook.com/v20.0/${FB_PAGE_ID}`;
+    const token = FB_PAGE_ACCESS_TOKEN;
+
+    switch (type?.toUpperCase()) {
+      case "IMAGE":
+        // 🖼️ Image Post
+        url = `${baseURL}/photos`;
+        data = {
+          url: media,
+          caption,
+          access_token: token,
+        };
+        break;
+
+      case "VIDEO":
+        // 🎥 Video Post
+        url = `${baseURL}/videos`;
+        data = {
+          file_url: media,
+          description: caption,
+          access_token: token,
+        };
+        break;
+
+      case "LINK":
+        // 🔗 Link Post
+        url = `${baseURL}/feed`;
+        data = {
+          message: caption,
+          link,
+          access_token: token,
+        };
+        break;
+
+      case "TEXT":
+        // 📝 Text-only Post
+        url = `${baseURL}/feed`;
+        data = {
+          message: caption,
+          access_token: token,
+        };
+        break;
+
+      default:
+        throw new Error(`❌ Unsupported post type: ${type}`);
     }
 
-    // Execute post
+    // 🚀 Execute API Request
     logInfo(`Facebook ${type} Post`, { url, data });
     const res = await axios.post(url, data);
     logInfo(`Facebook ${type} Post Response`, res.data);
 
     return res.data;
   } catch (error) {
-    logError("Facebook Publish", error.response?.data || error);
+    logError("Facebook Publish Error", error.response?.data || error);
     throw error;
   }
 }
@@ -102,36 +118,53 @@ async function igPublish({ media, caption, type = "IMAGE" }) {
   const createUrl = `https://graph.facebook.com/v20.0/${IG_USER_ID}/media`;
   const publishUrl = `https://graph.facebook.com/v20.0/${IG_USER_ID}/media_publish`;
 
-  const data = {
-    caption,
-    access_token: FB_PAGE_ACCESS_TOKEN,
-    ...(type === "VIDEO"
-      ? { media_type: "VIDEO", video_url: media }
-      : { image_url: media }),
-  };
-
   try {
-    // Step 1 — Create container
-    logInfo(`Instagram ${type} Container`, { media, caption });
-    const containerRes = await axios.post(createUrl, data);
-    logInfo("Instagram Container Response", containerRes.data);
+    if (!media && type !== "TEXT") {
+      throw new Error("❌ Media URL is required for Instagram post.");
+    }
 
-    const creationId = containerRes.data.id;
-    if (!creationId)
-      throw new Error("❌ No creation_id returned from Instagram.");
+    const payload =
+      type === "VIDEO"
+        ? {
+            caption,
+            access_token: FB_PAGE_ACCESS_TOKEN,
+            media_type: "VIDEO",
+            video_url: media,
+          }
+        : {
+            caption,
+            access_token: FB_PAGE_ACCESS_TOKEN,
+            image_url: media,
+          };
 
-    // Step 2 — Publish media
+    // 🧱 Step 1 — Create media container
+    logInfo(`📦 Instagram ${type} Container`, { media, caption });
+    const containerRes = await axios.post(createUrl, payload);
+    const { id: creationId } = containerRes.data;
+
+    if (!creationId) {
+      throw new Error(
+        "❌ No creation_id returned from Instagram media container."
+      );
+    }
+
+    logInfo("✅ Instagram Container Created", { creationId });
+
+    // 🚀 Step 2 — Publish media container
     const publishData = {
       creation_id: creationId,
       access_token: FB_PAGE_ACCESS_TOKEN,
     };
-    logInfo("Instagram Publish Media", { creationId });
+
+    logInfo("🚀 Publishing Instagram Media", { creationId });
     const publishRes = await axios.post(publishUrl, publishData);
-    logInfo("Instagram Publish Media Response", publishRes.data);
+
+    logInfo("🎉 Instagram Publish Success", publishRes.data);
 
     return publishRes.data;
   } catch (error) {
-    logError("Instagram Publish Media", error.response?.data || error);
+    const errData = error.response?.data || error.message || error;
+    logError("❌ Instagram Publish Error", errData);
     throw error;
   }
 }
@@ -166,38 +199,70 @@ async function tgGetUpdates() {
   }
 }
 // Unified Telegram Post (Text, Photo, or Video)
-async function tgPublish({ text, media, caption }) {
-  let url, data, type;
-  const ext = media?.split(".").pop()?.toLowerCase();
-
+async function tgPublish({ media, caption, link, text, type }) {
   try {
-    if (!media && text) {
-      // 📝 Text message
-      type = "Message";
-      url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-      data = { chat_id: TELEGRAM_CHAT_ID, text };
-    } else if (["jpg", "jpeg", "png"].includes(ext)) {
-      // 🖼️ Photo post
-      type = "Photo";
-      url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`;
-      data = { chat_id: TELEGRAM_CHAT_ID, photo: media, caption };
-    } else if (ext === "mp4") {
-      // 🎥 Video post
-      type = "Video";
-      url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendVideo`;
-      data = { chat_id: TELEGRAM_CHAT_ID, video: media, caption };
-    } else {
-      throw new Error(`❌ Unsupported media type: ${ext || "unknown"}.`);
+    const baseURL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
+    const chat_id = TELEGRAM_CHAT_ID;
+    const ext = media?.split(".").pop()?.toLowerCase();
+    let url, data;
+
+    // Normalize type if passed
+    const postType = type?.toUpperCase();
+
+    switch (postType) {
+      case "IMAGE":
+        // 🖼️ Photo Post
+        url = `${baseURL}/sendPhoto`;
+        data = { chat_id, photo: media, caption };
+        break;
+
+      case "VIDEO":
+        // 🎥 Video Post
+        url = `${baseURL}/sendVideo`;
+        data = { chat_id, video: media, caption };
+        break;
+
+      case "LINK":
+        // 🔗 Link Post
+        url = `${baseURL}/sendMessage`;
+        data = { chat_id, text: `${caption || ""}\n${link}`.trim() };
+        break;
+
+      case "TEXT":
+        // 📝 Text Post
+        url = `${baseURL}/sendMessage`;
+        data = { chat_id, text: caption || text };
+        break;
+
+      default:
+        // 🧠 Auto-detect if type is not provided
+        if (!media && (text || caption)) {
+          url = `${baseURL}/sendMessage`;
+          data = { chat_id, text: text || caption };
+          type = "TEXT";
+        } else if (["jpg", "jpeg", "png"].includes(ext)) {
+          url = `${baseURL}/sendPhoto`;
+          data = { chat_id, photo: media, caption };
+          type = "IMAGE";
+        } else if (ext === "mp4") {
+          url = `${baseURL}/sendVideo`;
+          data = { chat_id, video: media, caption };
+          type = "VIDEO";
+        } else {
+          throw new Error(
+            `❌ Unsupported or missing Telegram post type: ${ext || "unknown"}`
+          );
+        }
     }
 
-    // Execute post
-    logInfo(`Telegram Send${type}`, data);
+    // 🚀 Execute API call
+    logInfo(`Telegram ${type || postType} Post`, { url, data });
     const res = await axios.post(url, data);
-    logInfo(`Telegram Send${type} Response`, res.data);
+    logInfo(`Telegram ${type || postType} Post Response`, res.data);
 
     return res.data;
   } catch (error) {
-    logError("Telegram Publish", error.response?.data || error);
+    logError("Telegram Publish Error", error.response?.data || error);
     throw error;
   }
 }
@@ -255,57 +320,50 @@ function getRandomCTA(context = {}) {
 // const template = "🔥 The next trivia challenge is LIVE!";
 // const content = `${template}\n\n\n${ctaText}`;
 
-// ✅ Export reusable function
-async function twPublish({ message, link, imagePath, videoPath, }) {
+// ✅ Unified Twitter Publish Function
+async function twPublish({ message, link, media, type }) {
   try {
-    let text = message || "";
-    if (link) text += `\n\n${link}`;
-
+    const textBase = message || "";
+    const text = link ? `${textBase}\n\n${link}` : textBase;
     const mediaIds = [];
+    const ext = media?.split(".").pop()?.toLowerCase();
 
-    if (imagePath) {
-      const mediaId = await client.v2.uploadMedia(imagePath);
+    // 🧠 Auto-detect or normalize type
+    const postType =
+      type?.toUpperCase() ||
+      (ext
+        ? ["jpg", "jpeg", "png"].includes(ext)
+          ? "IMAGE"
+          : ext === "mp4"
+            ? "VIDEO"
+            : "TEXT"
+        : "TEXT");
+
+    // 🎞️ Upload media if applicable
+    if (postType === "IMAGE" && media) {
+      const mediaId = await client.v2.uploadMedia(media);
       mediaIds.push(mediaId);
-    } else if (videoPath) {
-      const mediaId = await client.v2.uploadMedia(videoPath, { type: "video" });
+    } else if (postType === "VIDEO" && media) {
+      const mediaId = await client.v2.uploadMedia(media, { type: "video" });
       mediaIds.push(mediaId);
     }
 
-    const payload = mediaIds.length
-      ? { text, media: { media_ids: mediaIds } }
-      : { text };
+    // 🧾 Prepare payload
+    const payload =
+      mediaIds.length > 0 ? { text, media: { media_ids: mediaIds } } : { text };
 
+    logInfo(`Twitter ${postType} Post`, payload);
+
+    // 🚀 Post to Twitter
     const res = await client.v2.tweet(payload);
-    console.log("✅ Tweet posted successfully:", res.data.id);
-    return res;
+    logInfo(`Twitter ${postType} Post Response`, res.data);
+
+    return res.data;
   } catch (error) {
-    console.error("❌ Failed to post tweet:", error);
+    logError("Twitter Publish Error", error);
     throw error;
   }
 }
-
-// Tweets can be posted in several formats:
-
-//Text only
-// await postTweet({ message: "Speed Wins. Always. ⚡" });
-
-// Text + Link
-// await postTweet({
-//   message: "Think you’re fast? Prove it →",
-//   link: "https://squaretrivia.com",
-// });
-
-//  Text + Image
-// await postTweet({
-//   message: "Big win today 🏆 #SquareTrivia",
-//   imagePath: "./media/winner.jpg",
-// });
-
-// Text + Video
-// await postTweet({
-//   message: "Watch how speed wins ⚡",
-//   videoPath: "./media/highlight.mp4",
-// });
 
 function getHashtags(context = {}) {
   const { category } = context; // e.g. "standard", "nfl", "bigwin"

@@ -21,9 +21,19 @@ function logError(context, error) {
   );
   logger.error(`[${context}]`, error.response?.data || error.message);
 }
-
+// ✅ Clean helper to extract file extensions safely from URLs
+function getFileExt(url = "") {
+  if (!url) return "";
+  try {
+    const cleanUrl = url.split("?")[0].split("#")[0];
+    const ext = cleanUrl.split(".").pop().toLowerCase();
+    return ext;
+  } catch {
+    return "";
+  }
+}
 async function postToAllPlatforms({ media, caption, link }) {
-  const ext = media?.split(".").pop()?.toLowerCase();
+  const ext = getFileExt(media);
 
   try {
     if (["jpg", "jpeg", "png"].includes(ext)) {
