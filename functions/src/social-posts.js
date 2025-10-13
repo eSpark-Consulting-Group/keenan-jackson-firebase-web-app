@@ -265,10 +265,10 @@ async function twPublish({ message, link, imagePath, videoPath }) {
 
     // ✅ Upload media if provided
     if (imagePath) {
-      const mediaId = await client.v1.uploadMedia(imagePath);
+      const mediaId = await client.v2.uploadMedia(imagePath);
       mediaIds.push(mediaId);
     } else if (videoPath) {
-      const mediaId = await client.v1.uploadMedia(videoPath, { type: "video" });
+      const mediaId = await client.v2.uploadMedia(videoPath, { type: "video" });
       mediaIds.push(mediaId);
     }
 
