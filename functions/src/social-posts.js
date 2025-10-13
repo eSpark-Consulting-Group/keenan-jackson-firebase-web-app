@@ -117,9 +117,11 @@ async function fbPublish({ media, caption, link, type }) {
 async function igPublish({ media, caption, type = "IMAGE" }) {
   const createUrl = `https://graph.facebook.com/v20.0/${IG_USER_ID}/media`;
   const publishUrl = `https://graph.facebook.com/v20.0/${IG_USER_ID}/media_publish`;
+
   logInfo(`📦 Instagram POST trying`, { media, caption, type });
+
   try {
-    // 🧩 If no media provided — skip IG (they don't allow text/link-only posts)
+    // 🧩 Skip if no media
     if (!media) {
       logInfo("ℹ️ Skipping Instagram post — no media provided.", {
         type,
@@ -128,6 +130,7 @@ async function igPublish({ media, caption, type = "IMAGE" }) {
       return { skipped: true, reason: "no_media" };
     }
 
+    // 📝 Build container payload
     const payload =
       type === "VIDEO"
         ? {
@@ -144,12 +147,23 @@ async function igPublish({ media, caption, type = "IMAGE" }) {
 
     // 🧱 Step 1 — Create media container
     logInfo(`📦 Instagram ${type} Container`, { media, caption });
-    const containerRes = await axios.post(createUrl, payload);
-    const { id: creationId } = containerRes.data;
+    let creationId;
+    const maxRetries = 5;
+    const intervalMs = 1500;
+
+    for (let i = 0; i < maxRetries; i++) {
+      const containerRes = await axios.post(createUrl, payload);
+      creationId = containerRes.data?.id;
+
+      if (creationId) break;
+
+      logInfo(`⏳ Waiting for creationId [${i + 1}/${maxRetries}]...`);
+      await new Promise((r) => setTimeout(r, intervalMs));
+    }
 
     if (!creationId) {
       throw new Error(
-        "❌ No creation_id returned from Instagram media container."
+        "❌ Failed to receive creation_id from Instagram after retries."
       );
     }
 
