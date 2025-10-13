@@ -9,6 +9,7 @@ const {
   PlatformMilestonePost,
   ReferralLeaderboard,
   TeamRivalryPost,
+  MultiGameUpdatePost,
 } = require("./social-posts-functions");
 
 admin.initializeApp();
@@ -433,4 +434,76 @@ exports.teamRivalryTrigger = functions.pubsub
       `✅ Rivalry post published: ${matchup.teamA} vs ${matchup.teamB}`
     );
     return null;
+  });
+
+exports.multiGameUpdateTrigger = functions.pubsub
+  .schedule("50 23 * * *") // Runs daily at 11:50 PM
+  .timeZone("America/Denver")
+  .onRun(async () => {
+    console.log("🎯 Running MultiGameUpdateTrigger (11:50 PM)...");
+
+    try {
+      // Get "tomorrow" date range
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(now.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+
+      const dayAfter = new Date(tomorrow);
+      dayAfter.setDate(tomorrow.getDate() + 1);
+
+      // Convert to Firestore Timestamps (in seconds)
+      const startTimestamp = Math.floor(tomorrow.getTime() / 1000);
+      const endTimestamp = Math.floor(dayAfter.getTime() / 1000);
+
+      console.log(
+        `🕒 Checking for games between ${tomorrow.toISOString()} and ${dayAfter.toISOString()}`
+      );
+
+      // Fetch games scheduled for tomorrow
+      const snapshot = await db
+        .collection("games")
+        .where("gameDate.seconds", ">=", startTimestamp)
+        .where("gameDate.seconds", "<", endTimestamp)
+        .get();
+
+      if (snapshot.empty) {
+        console.log("❌ No games found for tomorrow.");
+        return null;
+      }
+
+      const games = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      if (games.length < 2) {
+        console.log(
+          `🟡 Only ${games.length} game found for tomorrow. Skipping trigger.`
+        );
+        return null;
+      }
+
+      // Determine the day name (e.g., "Sunday")
+      const dayName = tomorrow.toLocaleDateString("en-US", { weekday: "long" });
+
+      console.log(
+        `✅ Found ${games.length} games scheduled for ${dayName}. Triggering post...`
+      );
+
+      await MultiGameUpdatePost({
+        games,
+        mediaToUpload: null,
+        captionLink: "https://squaretrivia.com",
+        day: dayName,
+      });
+
+      console.log(
+        `🎉 Multi-game update post triggered successfully for ${dayName}.`
+      );
+      return null;
+    } catch (error) {
+      console.error("❌ Error in MultiGameUpdateTrigger:", error);
+      return null;
+    }
   });

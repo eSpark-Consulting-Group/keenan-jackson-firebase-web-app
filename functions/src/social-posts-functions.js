@@ -323,13 +323,13 @@ Speed Wins. Always. 💪
 }
 
 // Multi-Game Update
-async function MultiGameUpdatePost({ games, mediaToUpload, captionLink }) {
+async function MultiGameUpdatePost({ games, mediaToUpload, captionLink, day }) {
   // games example: [{match: "Cowboys vs Eagles", fill: "85%"}, ...]
   const cta = getRandomCTA({ link: captionLink });
 
   const gameLines = games.map((g) => `${g.match}: ${g.fill} FULL`).join("\n");
   const body = `
-📊 Sunday Board Status:  
+📊 ${day} Board Status:  
 
 ${gameLines}
 
