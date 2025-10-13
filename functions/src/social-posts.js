@@ -2,6 +2,10 @@ require("dotenv").config();
 const axios = require("axios");
 const admin = require("firebase-admin");
 const { logger } = require("firebase-functions");
+// const fs = require("fs");
+// const path = require("path");
+// const os = require("os");
+// const https = require("https");
 const { TwitterApi } = require("twitter-api-v2");
 
 // Initialize Firebase Admin (safe re-init)
@@ -22,10 +26,16 @@ const TELEGRAM_BOT_TOKEN =
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || 1310589021;
 
 const client = new TwitterApi({
-  appKey: process.env.X_CONSUMER_KEY,
-  appSecret: process.env.X_CONSUMER_SECRET,
-  accessToken: process.env.X_ACCESS_TOKEN,
-  accessSecret: process.env.X_ACCESS_TOKEN_SECRET,
+  appKey: process.env.X_CONSUMER_KEY || "G8PYc0v49tOyTylK9o9HvewW5",
+  appSecret:
+    process.env.X_CONSUMER_SECRET ||
+    "Ky92xjWzh4dJZ7w6LIj7UPcUrjf1zJbCm6GI4WlUEjdIm2KfXb",
+  accessToken:
+    process.env.X_ACCESS_TOKEN ||
+    "1223164264195731457-ML6K89bGrmUoYinNpThVIjbUBTojsn",
+  accessSecret:
+    process.env.X_ACCESS_TOKEN_SECRET ||
+    "u4CNwSto2FfBvBioYJJ0axxtw50GsEvZiTYeDLBDEsFRv",
 });
 
 // Unified logging helper
@@ -410,6 +420,127 @@ function getHashtags(context = {}) {
   return shuffled.join(" ");
 }
 
+/**
+ * 📢 Post a tweet with optional caption and media (image/video URL)
+ * Works inside Firebase Cloud Functions
+ *
+ * @param {Object} options
+ * @param {string} options.caption - Tweet text
+ * @param {string} [options.media] - Direct image/video URL
+ */
+// async function postTweet({
+//   message = "",
+//   imagePath = null,
+//   videoPath = null,
+//   link = null,
+//   type = "TEXT",
+// }) {
+//   try {
+//     if (!message && !imagePath && !videoPath && !link) {
+//       throw new Error("Tweet must include text, media, or a link.");
+//     }
+
+//     let mediaIds = [];
+
+//     // 🖼️ Handle image uploads
+//     if (type == "IMAGE" && imagePath) {
+//       console.log("🌐 Downloading image from URL:", imagePath);
+//       const imgTempPath = await downloadToTemp(imagePath);
+//       console.log("📸 Uploading image to Twitter...");
+
+//       const uploadedImgId = await client.v1.uploadMedia(imgTempPath, {
+//         type: "image",
+//       });
+//       mediaIds.push(uploadedImgId);
+
+//       try {
+//         fs.unlinkSync(imgTempPath);
+//       } catch (err) {
+//         console.warn("⚠️ Could not remove temp image file:", err.message);
+//       }
+//     }
+
+//     // 🎥 Handle video uploads
+//     if (type == "VIDEO" && videoPath) {
+//       console.log("🌐 Downloading video from URL:", videoPath);
+//       const vidTempPath = await downloadToTemp(videoPath);
+//       console.log("🎞️ Uploading video to Twitter... (this may take a moment)");
+
+//       const uploadedVidId = await client.v1.uploadMedia(vidTempPath, {
+//         type: "video",
+//       });
+//       mediaIds.push(uploadedVidId);
+
+//       try {
+//         fs.unlinkSync(vidTempPath);
+//       } catch (err) {
+//         console.warn("⚠️ Could not remove temp video file:", err.message);
+//       }
+//     }
+
+//     // 🐦 Construct tweet text
+//     let textContent = message || "";
+
+//     if (type == "LINK" && link) {
+//       textContent += `${textContent ? "\n\n" : ""}${link}`;
+//     }
+
+//     // 📝 Final tweet payload
+//     const tweetPayload = {
+//       text: textContent,
+//       ...(mediaIds.length ? { media: { media_ids: mediaIds } } : {}),
+//     };
+
+//     // 🚀 Post tweet
+//     const tweet = await client.v2.tweet(tweetPayload);
+//     console.log("✅ Tweet posted successfully:", tweet.data.id);
+
+//     return tweet.data;
+//   } catch (error) {
+//     console.error("❌ Failed to post tweet:", error.data || error.message);
+//     throw error;
+//   }
+// }
+
+async function postTweet(message) {
+  try {
+    const tweet = await client.v2.tweet(message);
+    console.log("✅ Tweet posted successfully:", tweet.data.id);
+    return tweet;
+  } catch (error) {
+    console.error("❌ Failed to post tweet:", error);
+    throw error;
+  }
+}
+
+/**
+ * 📥 Downloads a media file from a URL to Firebase's temporary directory
+ * Returns the local file path.
+ */
+// function downloadToTemp(url) {
+//   return new Promise((resolve, reject) => {
+//     const tempPath = path.join(
+//       os.tmpdir(),
+//       `${Date.now()}-${path.basename(url)}`
+//     );
+//     const file = fs.createWriteStream(tempPath);
+
+//     https
+//       .get(url, (response) => {
+//         if (response.statusCode !== 200) {
+//           reject(new Error(`Failed to download media: ${response.statusCode}`));
+//           return;
+//         }
+
+//         response.pipe(file);
+//         file.on("finish", () => file.close(() => resolve(tempPath)));
+//       })
+//       .on("error", (err) => {
+//         fs.unlink(tempPath, () => reject(err));
+//       });
+//   });
+// }
+
 // =============================
 // Exports for local use
 // =============================
@@ -420,6 +551,7 @@ module.exports = {
   tgGetMe,
   tgGetUpdates,
   twPublish,
+  postTweet,
   fbPublish,
   igPublish,
   tgPublish,
