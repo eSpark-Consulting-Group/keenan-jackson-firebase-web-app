@@ -1054,32 +1054,44 @@ exports.checkBoardsFillingFast = functions.pubsub
         logger.info("TOTAL CLAIMS: ", { claimedSquares });
         const fillPercent = (claimedSquares / totalSquares) * 100;
 
-        const postKey = `${gameId}_Q${boundedQuarter}_${tierId}`;
+        const postKey = `${gameId}_Q${boundedQuarter}_${tierId}_${boardId}`;
         const postRef = db.collection("fastFillPosts").doc(postKey);
         const existingPost = await postRef.get();
-        const lastPostedAt = existingPost.exists
-          ? existingPost.data().postedAt?.toDate()
-          : null;
+
+        const nowTs = admin.firestore.Timestamp.now();
+        const postData = existingPost.exists ? existingPost.data() : {};
+        const lastPostedAt = postData.lastTriggeredAt?.toDate?.() || null;
+        const triggerCount = postData.triggerCount || 0;
         const timeSinceLastPost = lastPostedAt
           ? (now - lastPostedAt) / (1000 * 60)
           : Infinity;
 
-        // 🧠 DEBOUNCE RULE: Only allow a new post every 30 min per board/tier
-        if (timeSinceLastPost < 30) {
-          console.log(
-            `⏳ Skipping ${boardId} (${tierId}) — posted ${timeSinceLastPost.toFixed(
-              1
-            )}m ago`
+        // Helper function to record a new post event
+        async function recordPost(type, extraData = {}) {
+          await postRef.set(
+            {
+              gameId,
+              quarter: boundedQuarter,
+              quarterLabel,
+              tierId,
+              boardId,
+              fillPercent,
+              type,
+              triggerCount: admin.firestore.FieldValue.increment(1),
+              lastTriggeredAt: admin.firestore.FieldValue.serverTimestamp(),
+              postedAt: admin.firestore.FieldValue.serverTimestamp(),
+              ...extraData,
+            },
+            { merge: true }
           );
-          continue;
         }
 
         // ---------------------------
-        // 🎯 FULL BOARD ANNOUNCEMENT
+        // 🎯 FULL BOARD ANNOUNCEMENT (once only)
         // ---------------------------
-        if (fillPercent === 100) {
+        if (fillPercent === 100 && postData.type !== "boardFull") {
           console.log(
-            `🎯 [${gameId}] ${quarterLabel} - ${tierId} board ${boardId} is FULL!`
+            `🎯 [${gameId}] ${quarterLabel} - ${tierId} board FULL (${boardId})`
           );
 
           await BoardFullAnnouncementPost({
@@ -1090,28 +1102,18 @@ exports.checkBoardsFillingFast = functions.pubsub
             captionLink: "https://squaretrivia.com",
           });
 
-          await postRef.set({
-            gameId,
-            quarter: boundedQuarter,
-            quarterLabel,
-            tierId,
-            boardId,
-            fillPercent,
-            type: "boardFull",
-            postedAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-
-          continue; // No need to check other conditions once full
+          await recordPost("boardFull");
+          continue; // Skip rest once full
         }
 
         // ---------------------------
-        // ⚡ FAST FILL (70%+ but <100%)
+        // ⚡ FAST FILL (70%–99%) — trigger once only
         // ---------------------------
-        if (fillPercent >= 70 && fillPercent < 100) {
+        if (fillPercent >= 70 && fillPercent < 100 && postData.type !== "fastFill") {
           console.log(
-            `📣 [${gameId}] ${quarterLabel} - ${tierId} board ${boardId} is ${fillPercent.toFixed(
+            `📣 [${gameId}] ${quarterLabel} - ${tierId} board ${fillPercent.toFixed(
               1
-            )}% filled — posting fast-fill announcement...`
+            )}% filled (fast fill alert)`
           );
 
           await BoardGoingFastPost({
@@ -1123,26 +1125,23 @@ exports.checkBoardsFillingFast = functions.pubsub
             captionLink: "https://squaretrivia.com",
           });
 
-          await postRef.set({
-            gameId,
-            quarter: boundedQuarter,
-            quarterLabel,
-            tierId,
-            boardId,
-            fillPercent,
-            type: "fastFill",
-            postedAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
+          await recordPost("fastFill");
         }
 
         // ---------------------------
-        // ⚠️ LAST CHANCE (<20%)
+        // ⚠️ LAST CHANCE (<20%) — up to twice (2–3h before)
         // ---------------------------
-        if (fillPercent < 20 && timeDiffHrs > 2 && timeDiffHrs <= 3) {
+        if (
+          fillPercent < 20 &&
+          timeDiffHrs > 2 &&
+          timeDiffHrs <= 3 &&
+          triggerCount < 2 &&
+          timeSinceLastPost >= 30
+        ) {
           console.log(
-            `⚠️ [${gameId}] ${quarterLabel} - ${tierId} board ${boardId} is only ${fillPercent.toFixed(
+            `⚠️ [${gameId}] ${quarterLabel} - ${tierId} (${fillPercent.toFixed(
               1
-            )}% filled — posting last-chance reminder...`
+            )}% filled) — Last Chance alert`
           );
 
           const spotsLeft = totalSquares - claimedSquares;
@@ -1156,26 +1155,22 @@ exports.checkBoardsFillingFast = functions.pubsub
             captionLink: "https://squaretrivia.com",
           });
 
-          await postRef.set({
-            gameId,
-            quarter: boundedQuarter,
-            quarterLabel,
-            tierId,
-            boardId,
-            fillPercent,
-            type: "lastChance",
-            postedAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
+          await recordPost("lastChance");
         }
 
         // ---------------------------
-        // 📅 UPCOMING GAME ANNOUNCEMENT (2–3 days before kickoff)
+        // 📅 UPCOMING GAME (2–3 days before) — up to twice
         // ---------------------------
-        if (timeDiffHrs >= 48 && timeDiffHrs <= 72) {
+        if (
+          timeDiffHrs >= 48 &&
+          timeDiffHrs <= 72 &&
+          triggerCount < 2 &&
+          timeSinceLastPost >= 360 // 6 hours
+        ) {
           console.log(
-            `📅 [${gameId}] Upcoming Game — ${team1} vs ${team2} starts in ~${Math.round(
+            `📅 [${gameId}] Upcoming Game — ${team1} vs ${team2} (${Math.round(
               timeDiffHrs / 24
-            )} days. Posting upcoming game alert!`
+            )} days)`
           );
 
           try {
@@ -1185,39 +1180,25 @@ exports.checkBoardsFillingFast = functions.pubsub
               mediaToUpload: "https://squaretrivia.com/logo.png",
               captionLink: "https://squaretrivia.com",
             });
-
-            await postRef.set({
-              gameId,
-              quarter: boundedQuarter,
-              quarterLabel,
-              tierId,
-              boardId,
-              fillPercent,
-              type: "upcomingGame",
-              postedAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
-
-            console.log(
-              `✅ Upcoming game announcement posted for ${team1} vs ${team2} (${Math.round(
-                timeDiffHrs / 24
-              )} days before start)`
-            );
+            await recordPost("upcomingGame");
           } catch (err) {
-            console.error(
-              `❌ Error posting upcoming game alert for ${gameId} ${quarterLabel} ${tierId} [${boardId}]`,
-              err
-            );
+            console.error("❌ Error posting upcoming game alert:", err);
           }
         }
 
         // ---------------------------
-        // ⏰ FINAL CALL (1–2 hours before game)
+        // ⏰ FINAL CALL (1–2h before) — up to twice
         // ---------------------------
-        if (timeDiffHrs > 1 && timeDiffHrs <= 2) {
+        if (
+          timeDiffHrs > 1 &&
+          timeDiffHrs <= 2 &&
+          triggerCount < 2 &&
+          timeSinceLastPost >= 30
+        ) {
           console.log(
             `⏰ [${gameId}] Final Call — ${team1} vs ${team2} starts in ${timeDiffHrs.toFixed(
               1
-            )}h. Posting final call!`
+            )}h`
           );
 
           const squaresLeft = totalSquares - claimedSquares;
@@ -1231,81 +1212,45 @@ exports.checkBoardsFillingFast = functions.pubsub
             captionLink: "https://squaretrivia.com",
           });
 
-          await postRef.set({
-            gameId,
-            quarter: boundedQuarter,
-            quarterLabel,
-            tierId,
-            boardId,
-            fillPercent,
-            type: "finalCall",
-            postedAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
+          await recordPost("finalCall");
         }
 
         // ---------------------------
-        // 💎 PREMIUM TIER STATUS UPDATES
+        // 💎 PREMIUM TIER STATUS UPDATES — once per quarter
         // ---------------------------
         const premiumTiers = ["tier_100", "tier_250", "tier_500", "tier_1000"];
 
         if (
           premiumTiers.includes(tierId) &&
           fillPercent >= 70 &&
-          fillPercent < 100
+          fillPercent < 100 &&
+          postData.type !== "tierStatusUpdate"
         ) {
-          const existingTierPost = await db
-            .collection("fastFillPosts")
+          const tierDocs = await db
+            .collection("boards")
             .where("gameId", "==", gameId)
-            .where("quarter", "==", boundedQuarter)
-            .where("type", "==", "tierStatusUpdate")
-            .limit(1)
+            .where("tierId", "in", premiumTiers)
             .get();
 
-          if (existingTierPost.empty) {
-            const tierDocs = await db
-              .collection("boards")
-              .where("gameId", "==", gameId)
-              .where("tierId", "in", premiumTiers)
-              .get();
+          const tiers = tierDocs.docs.map((doc) => {
+            const d = doc.data();
+            const total = d.totalSquares || 100;
+            const claimed = d.claimedSquares || 0;
+            const left = total - claimed;
+            return { tier: Number(d.tierId.replace("tier_", "")), left };
+          });
 
-            const tiers = tierDocs.docs.map((doc) => {
-              const d = doc.data();
-              const total = d.totalSquares || 100;
-              const claimed = (d.squares || []).length;
-              const left = total - claimed;
-              return { tier: Number(d.tierId.replace("tier_", "")), left };
-            });
+          tiers.sort((a, b) => b.tier - a.tier);
 
-            tiers.sort((a, b) => b.tier - a.tier);
+          await TierStatusUpdatePost({
+            team1,
+            team2,
+            tiers,
+            mediaToUpload: "https://squaretrivia.com/logo.png",
+            captionLink: "https://squaretrivia.com",
+          });
 
-            await TierStatusUpdatePost({
-              team1,
-              team2,
-              tiers,
-              mediaToUpload: "https://squaretrivia.com/logo.png",
-              captionLink: "https://squaretrivia.com",
-            });
-
-            await postRef.set({
-              gameId,
-              quarter: boundedQuarter,
-              quarterLabel,
-              tierId,
-              boardId,
-              fillPercent,
-              type: "tierStatusUpdate",
-              tiersSnapshot: tiers,
-              postedAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
-
-            console.log(
-              `✅ Tier status update posted for ${gameId} ${quarterLabel}`
-            );
-          } else {
-            console.log(
-              `🟡 Skipping tier status — one already posted for ${gameId} ${quarterLabel}`
-            );
-          }
+          await recordPost("tierStatusUpdate", { tiersSnapshot: tiers });
         }
       }
     }
