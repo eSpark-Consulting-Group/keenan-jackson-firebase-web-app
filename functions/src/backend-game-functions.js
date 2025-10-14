@@ -946,6 +946,7 @@ async function processWinner(winnerData) {
           team1,
           team2,
           time: answerTime,
+          square: position,
           mediaToUpload: mediaToUpload,
           captionLink: captionLink,
         });

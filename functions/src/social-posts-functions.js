@@ -127,23 +127,81 @@ Speed Wins. Always.
   });
 }
 
-// Standard Win Post Generator
+// Standard Win Post Generator// Standard Win Post Generator with Random Templates
 async function StandardWinPost({
   winner,
   prize,
   team1,
   team2,
   time,
+  square,
   mediaToUpload,
   captionLink,
 }) {
   const cta = getRandomCTA({ link: captionLink });
-  const body = `
+
+  // Define multiple templates
+  const templates = [
+    // Win-1: Quick & Clean
+    `🏆 WINNER: @${winner}
+
+Square "${square}" = ${prize}
+Time: ${time} seconds
+Game: ${team1} vs ${team2}
+
+Speed Wins Always.`,
+
+    // Win-2: Speed Focus
+    `⚡ ${time} SECONDS TO VICTORY
+
+@${winner} takes Square "${square}"
+Prize: ${prize}
+
+Speed Wins Always.`,
+
+    // Win-3: Prize Focus
+    `💰 ${prize} WINNER
+
+@${winner} dominated Square "${square}"
+Winning time: ${time}s
+
+Speed Wins Always.`,
+
+    // Win-4: Competition Angle
+    `🔥 @${winner} WINS
+
+Beat ${winner} others to Square "${square}"
+Time: ${time}s = ${prize}
+
+Think you're faster?
+Speed Wins Always.`,
+
+    // Win-5: Celebration
+    `🎊 VICTORY on Square "${square}"
+
+@${winner}
+Speed: ${time} seconds
+Payout: ${prize}
+
+Your turn next.
+Speed Wins Always.`,
+    // orignal message
+    `
 BOOM! 💥 $${prize} win for ${winner} on the ${team1} vs ${team2} board!  
 Answer time: ${time} seconds ⚡  
 
 Speed Wins. Always.
-  `;
+  `,
+  ];
+
+  // Pick a random template
+  const selectedTemplate =
+    templates[Math.floor(Math.random() * templates.length)];
+
+  // Replace placeholders
+  const body = selectedTemplate;
+
+  // Post to all platforms
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
