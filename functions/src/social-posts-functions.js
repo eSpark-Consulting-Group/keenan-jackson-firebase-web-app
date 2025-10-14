@@ -6,7 +6,6 @@ const {
   igPublish,
   getHashtags,
   tgPublish,
-  postTweet,
 } = require("./social-posts");
 
 const hashTags = getHashtags();
@@ -43,26 +42,22 @@ async function postToAllPlatforms({ media, caption, link }) {
       await tgPublish({ media, caption, type: "IMAGE" });
       await igPublish({ media, caption, type: "IMAGE" });
       await twPublish({ message: caption, imagePath: media, type: "IMAGE" });
-      // await postTweet({ message: caption });
     } else if (ext === "mp4") {
       // 🎥 Video post
       await fbPublish({ media, caption, type: "VIDEO" });
       await tgPublish({ media, caption, type: "VIDEO" });
       await igPublish({ media, caption, type: "VIDEO" });
       await twPublish({ message: caption, imagePath: media, type: "VIDEO" });
-      // await postTweet({ message: caption });
     } else if (link) {
       // 🔗 Link post
       await fbPublish({ link, caption, type: "LINK" });
       await tgPublish({ caption: `${caption}\n\n${link}`, type: "LINK" });
       await twPublish({ message: caption, link, type: "LINK" });
-      // await postTweet({ message: caption });
     } else if (!media && !link && caption) {
       // 📝 Text-only post
       await fbPublish({ caption, type: "TEXT" });
       await tgPublish({ caption, type: "TEXT" });
       await twPublish({ message: caption, type: "TEXT" });
-      // await postTweet({ message: caption });
     } else {
       throw new Error(
         `❌ Unsupported file type: .${ext || "unknown"}. Use JPG, PNG, or MP4.`
