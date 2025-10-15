@@ -5,7 +5,6 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const { sendMail } = require("./payment-system-modified");
-const { DUMMY_GAMES } = require("./constants-configuration-fixed");
 // const { DUMMY_GAMES } = require("./constants-configuration-fixed");
 const { logger } = require("firebase-functions");
 const { NewBoardAlertPost } = require("./social-posts-functions");
@@ -188,9 +187,9 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
         headers: { "x-apisports-key": process.env.REACT_APP_APISPORTS_KEY },
       });
       logger.info("GOT NFL GAMES: ", { data: response?.data?.response });
-      // games = response.data?.response || [];
+      games = response.data?.response || [];
 
-      games = DUMMY_GAMES || [];
+      // games = DUMMY_GAMES || [];
 
       // ✅ handle gameType filtering
       if (gameType === "regular") {
