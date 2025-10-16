@@ -1,13 +1,17 @@
 const { logger } = require("firebase-functions");
 const {
   getRandomCTA,
-  twPublish,
+  // twPublish,
   fbPublish,
   igPublish,
   getHashtags,
   tgPublish,
+  // twPublish,
 } = require("./social-posts");
 
+const { TwitterApi } = require("twitter-api-v2");
+
+require("dotenv").config();
 const hashTags = getHashtags();
 // Unified logging helper
 function logInfo(context, data) {
@@ -32,32 +36,60 @@ function getFileExt(url = "") {
     return "";
   }
 }
+
+const client = new TwitterApi({
+  appKey:
+    // process.env.X_CONSUMER_KEY ||
+    "8u3xjg84tAgJ14XaiiGwlM25A",
+  appSecret:
+    // process.env.X_CONSUMER_SECRET ||
+    "j3eGxuh8UfqWjzpHXa9DFhuV4Nvvat9EcU36E8WP4pDrJigOtq",
+  accessToken:
+    // process.env.X_ACCESS_TOKEN ||
+    "1978854431979339776-MNoZVnCwIG2HQhHN2SOXRoZJgFv6ed",
+  accessSecret:
+    // process.env.X_ACCESS_TOKEN_SECRET ||
+    "Rdbkm9moIhQhu6xreXZcEkHJDm1GGreKIrjRuJ5NaZ4TM",
+});
+
+// ✅ Export reusable function
+async function postTweet(message) {
+  try {
+    const tweet = await client.v2.tweet(message);
+    logger.info("✅ Tweet posted successfully:", tweet.data.id);
+    return tweet;
+  } catch (error) {
+    logger.info("❌ Failed to post tweet:", error);
+    throw error;
+  }
+}
+
 async function postToAllPlatforms({ media, caption, link }) {
   const ext = media ? getFileExt(media) : null;
 
   try {
     if (ext && ["jpg", "jpeg", "png"].includes(ext)) {
       // 📸 Image post
-      await fbPublish({ media, caption, type: "IMAGE" });
+      // await fbPublish({ media, caption, type: "IMAGE" });
       await tgPublish({ media, caption, type: "IMAGE" });
-      await igPublish({ media, caption, type: "IMAGE" });
-      await twPublish({ message: caption, imagePath: media, type: "IMAGE" });
+      // await igPublish({ media, caption, type: "IMAGE" });
+      await postTweet(caption);
     } else if (ext === "mp4") {
       // 🎥 Video post
-      await fbPublish({ media, caption, type: "VIDEO" });
+      // await fbPublish({ media, caption, type: "VIDEO" });
       await tgPublish({ media, caption, type: "VIDEO" });
-      await igPublish({ media, caption, type: "VIDEO" });
-      await twPublish({ message: caption, imagePath: media, type: "VIDEO" });
+      // await igPublish({ media, caption, type: "VIDEO" });
+      await postTweet(caption);
     } else if (link) {
       // 🔗 Link post
-      await fbPublish({ link, caption, type: "LINK" });
+      // await fbPublish({ link, caption, type: "LINK" });
       await tgPublish({ caption: `${caption}\n\n${link}`, type: "LINK" });
-      await twPublish({ message: caption, link, type: "LINK" });
+      await postTweet(caption);
     } else if (!media && !link && caption) {
       // 📝 Text-only post
-      await fbPublish({ caption, type: "TEXT" });
+      // await fbPublish({ caption, type: "TEXT" });
       await tgPublish({ caption, type: "TEXT" });
-      await twPublish({ message: caption, type: "TEXT" });
+      await postTweet(caption);
     } else {
       throw new Error(
         `❌ Unsupported file type: .${ext || "unknown"}. Use JPG, PNG, or MP4.`
@@ -117,7 +149,7 @@ Speed Wins. Always.
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
   });
 }
@@ -199,7 +231,7 @@ Speed Wins. Always.
   // Post to all platforms
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
   });
 }
@@ -226,7 +258,7 @@ Speed Wins. Always. 📸
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
   });
 }
@@ -319,7 +351,7 @@ Speed Wins. Always.
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
   });
 }
@@ -345,7 +377,7 @@ Speed Wins. Always. 🎯
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
   });
 }
@@ -370,8 +402,9 @@ Speed Wins. Always. 💪
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
+    
   });
 }
 
@@ -391,7 +424,7 @@ Speed Wins. Always.
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
   });
 }
@@ -425,7 +458,7 @@ Speed Wins. Always. 💰
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
   });
 }
@@ -458,7 +491,7 @@ Your sports knowledge = real money!
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
   });
 }
@@ -489,7 +522,7 @@ Think you can make next week's list? 🎯
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
   });
 }
@@ -515,7 +548,7 @@ NO FEES - Answer fast, win big!
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
   });
 }
@@ -540,7 +573,7 @@ Don't miss out! 🎯
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
   });
 }
@@ -570,7 +603,7 @@ Thank you for making Square Trivia the fastest growing skill-based platform! �
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
   });
 }
@@ -594,7 +627,7 @@ Think you can beat it? Speed pays! ⚡
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
   });
 }
@@ -623,7 +656,7 @@ Your choice, your money!
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
   });
 }
@@ -653,7 +686,7 @@ Speed Wins. Always. 🧠💰
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
   });
 }
@@ -684,7 +717,7 @@ Who knows their team better? Prove it on Sunday!
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
   });
 }
@@ -712,7 +745,7 @@ Speed Wins. Always. 💰
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
     link: captionLink,
   });
 }
@@ -742,7 +775,7 @@ ${gameName}: Where speed pays 🏁
   `;
 
   const post = buildTemplate(body, cta);
-  await twPublish(post);
+  await postTweet(post);
   return post;
 }
 
@@ -768,7 +801,7 @@ NO FEES. Just skill. Just speed. Just win. ⚡
   `;
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body, cta),
+    caption: buildTemplate(body),
   });
 }
 
