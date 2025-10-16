@@ -579,71 +579,71 @@ const TIER_CONFIG = {
 //   },
 // ];
 
-// const DUMMY_GAMES = [
-//   {
-//     game: {
-//       id: 3622,
-//       stage: "Regular Season",
-//       week: "Week 1",
-//       date: {
-//         timezone: "UTC",
-//         date: "2025-10-13",
-//         time: "12:00",
-//         timestamp: 1760356800,
-//       },
-//       venue: {
-//         name: null,
-//         city: null,
-//       },
-//       status: {
-//         short: "Q2",
-//         long: "2nd Quarter",
-//         timer: null,
-//       },
-//     },
-//     league: {
-//       id: 1,
-//       name: "NFL",
-//       season: "2025",
-//       logo: "https://media.api-sports.io/american-football/leagues/1.png",
-//       country: {
-//         name: "USA",
-//         code: "US",
-//         flag: "https://media.api-sports.io/flags/us.svg",
-//       },
-//     },
-//     teams: {
-//       home: {
-//         id: 10,
-//         name: "Las Vegas Raiders",
-//         logo: "https://media.api-sports.io/american-football/teams/10.png",
-//       },
-//       away: {
-//         id: 32,
-//         name: "Minnesota Vikings",
-//         logo: "https://media.api-sports.io/american-football/teams/32.png",
-//       },
-//     },
-//     scores: {
-//       home: {
-//         quarter_1: 10,
-//         quarter_2: 19,
-//         quarter_3: 16,
-//         quarter_4: null,
-//         overtime: null,
-//         total: 0,
-//       },
-//       away: {
-//         quarter_1: 10,
-//         quarter_2: 19,
-//         quarter_3: 16,
-//         quarter_4: null,
-//         overtime: null,
-//         total: 0,
-//       },
-//     },
-//   },
-// ];
+const DUMMY_GAMES = [
+  {
+    game: {
+      id: 3622,
+      stage: "Regular Season",
+      week: "Week 1",
+      date: {
+        timezone: "UTC",
+        date: "2025-10-13",
+        time: "12:00",
+        timestamp: 1760356800,
+      },
+      venue: {
+        name: null,
+        city: null,
+      },
+      status: {
+        short: "Q2",
+        long: "2nd Quarter",
+        timer: null,
+      },
+    },
+    league: {
+      id: 1,
+      name: "NFL",
+      season: "2025",
+      logo: "https://media.api-sports.io/american-football/leagues/1.png",
+      country: {
+        name: "USA",
+        code: "US",
+        flag: "https://media.api-sports.io/flags/us.svg",
+      },
+    },
+    teams: {
+      home: {
+        id: 10,
+        name: "Las Vegas Raiders",
+        logo: "https://media.api-sports.io/american-football/teams/10.png",
+      },
+      away: {
+        id: 32,
+        name: "Minnesota Vikings",
+        logo: "https://media.api-sports.io/american-football/teams/32.png",
+      },
+    },
+    scores: {
+      home: {
+        quarter_1: 10,
+        quarter_2: 19,
+        quarter_3: 16,
+        quarter_4: null,
+        overtime: null,
+        total: 0,
+      },
+      away: {
+        quarter_1: 10,
+        quarter_2: 19,
+        quarter_3: 16,
+        quarter_4: null,
+        overtime: null,
+        total: 0,
+      },
+    },
+  },
+];
 
 //  everything as default for easy importing
 module.exports = {
@@ -665,5 +665,5 @@ module.exports = {
   getAllTierIds,
   calculatePrizes,
   calculateInstantPayout,
-  // DUMMY_GAMES,
+  DUMMY_GAMES,
 };
