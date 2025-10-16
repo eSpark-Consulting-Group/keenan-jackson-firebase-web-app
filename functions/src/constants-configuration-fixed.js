@@ -587,9 +587,9 @@ const DUMMY_GAMES = [
       week: "Week 1",
       date: {
         timezone: "UTC",
-        date: "2025-10-13",
+        date: "2025-10-19",
         time: "12:00",
-        timestamp: 1760356800,
+        timestamp: 1760875200,
       },
       venue: {
         name: null,
