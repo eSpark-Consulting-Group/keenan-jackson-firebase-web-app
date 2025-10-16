@@ -485,36 +485,6 @@ exports.createGameWithApiMapping = functions.https.onCall(
         boardsCreated: availableTiers.length,
       });
 
-      (async () => {
-        try {
-          const startDate = new Date(startTime);
-          const day = startDate.toLocaleDateString("en-US", {
-            weekday: "short",
-            month: "short",
-            day: "numeric",
-          });
-          const time = startDate.toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-          });
-
-          await NewBoardAlertPost({
-            team1: homeTeam,
-            team2: awayTeam,
-            day,
-            time,
-            mediaToUpload: "https://squaretrivia.com/logo.png",
-            captionLink: "https://squaretrivia.com",
-          });
-
-          console.log(
-            `📢 New Board Alert posted for ${awayTeam} vs ${homeTeam} (${day} ${time})`
-          );
-        } catch (err) {
-          console.error("❌ Error posting New Board Alert:", err);
-        }
-      })();
-
       return {
         success: true,
         gameId: gameRef.id,

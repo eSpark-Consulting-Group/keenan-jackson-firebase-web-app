@@ -15,6 +15,7 @@ const {
   BigWinPost,
   StandardWinPost,
   PhotoFinishPost,
+  NewBoardAlertPost,
 } = require("./social-posts-functions");
 // const { query, collection, where } = require("firebase/firestore");
 
@@ -149,6 +150,47 @@ async function createBoardForTier(gameId, tierId) {
     gameInfo,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
+  functions.logger.info("gameData", { gameData });
+
+  (async () => {
+    try {
+      // Convert Firestore timestamp to JS Date
+      const startDate = new Date(gameData.gameDate._seconds * 1000);
+
+      // Format date
+      const day = startDate.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      });
+
+      // Format time
+      const time = startDate.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+
+      // Post New Board Alert
+      await NewBoardAlertPost({
+        team1: gameData.teams.home,
+        team2: gameData.teams.away,
+        day,
+        time,
+        tierId,
+        mediaToUpload: "https://squaretrivia.com/logo.png",
+        captionLink: "https://squaretrivia.com",
+      });
+
+      console.log(
+        `📢 New Board Alert posted for ${gameData.teams.away} vs ${gameData.teams.home} (${day} ${time})`
+      );
+
+      // ✅ Update last updated date/time if needed
+      gameData.updatedAt = new Date().toISOString();
+    } catch (err) {
+      console.error("❌ Error posting New Board Alert:", err);
+    }
+  })();
 
   return boardRef.id;
 }

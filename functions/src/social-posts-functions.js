@@ -289,19 +289,30 @@ async function NewBoardAlertPost({
   team2,
   day,
   time,
+  tierId,
   mediaToUpload,
   captionLink,
 }) {
   const cta = getRandomCTA({ link: captionLink });
+  const tierAmounts = {
+    tier_25: 200,
+    tier_50: 450,
+    tier_100: 900,
+    tier_250: 2250,
+    tier_500: 4500,
+    tier_1000: 9000,
+  };
+  const amount = tierAmounts[tierId];
+  const tierNumber = tierId.split("_")[1];
+  const tierMessage = `💰 $${tierNumber} → Win $${amount} per quarter`;
+  console.log(tierMessage);
   const body = `
 🚨 NEW BOARD LIVE 🚨  
 
 ${team1} vs ${team2} - ${day} ${time}  
 
-All tiers available NOW:  
-💰 $25 → Win $200/quarter  
-💰 $50 → Win $450/quarter  
-💰 $100 → Win $900/quarter  
+Available Tire:  
+${tierMessage}
 
 First come, first served!  
 Speed Wins. Always.
