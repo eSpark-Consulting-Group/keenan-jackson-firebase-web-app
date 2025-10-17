@@ -1799,7 +1799,7 @@ exports.recordBreakerTrigger = functions.pubsub
   .onRun(async () => {
     console.log("⚡ Checking for record-breaking answers...");
 
-    // Get the fastest answer from winners collection
+    // Get fastest winner
     const snapshot = await db
       .collection("winners")
       .orderBy("answerTime", "asc")
@@ -1813,28 +1813,43 @@ exports.recordBreakerTrigger = functions.pubsub
 
     const fastestDoc = snapshot.docs[0];
     const fastest = fastestDoc.data();
-    const fastestId = fastestDoc.id;
-    const currentFastestTime = fastest.answerTime;
+    const fastestId = String(fastestDoc.id);
+    const currentFastestTime = Number(fastest.answerTime);
     const winner = fastest.user?.displayName || fastest.userId || "Anonymous";
 
-    // Reference for record tracker
+    // Record tracker
     const recordRef = db.collection("system").doc("recordTracker");
     const recordDoc = await recordRef.get();
     const recordData = recordDoc.exists ? recordDoc.data() : {};
 
-    const lastFastestTime = recordData.fastestTime || null;
-    const lastRecordId = recordData.lastRecordId || null;
+    const lastFastestTime = Number(recordData.fastestTime) || null;
+    const lastRecordId = String(recordData.lastRecordId || "");
+    const lastUpdated = recordData.lastUpdated?.toDate?.() || null;
 
-    // ✅ Stop if we already posted this winner or no new record
+    console.log("📘 Current fastestId:", fastestId);
+    console.log("📗 Last recordId:", lastRecordId);
+    console.log("⏱ Current:", currentFastestTime, "Last:", lastFastestTime);
+
+    // ⏸ Cooldown check (2 hours)
+    if (
+      lastUpdated &&
+      Date.now() - lastUpdated.getTime() < 2 * 60 * 60 * 1000
+    ) {
+      console.log("🕒 Skipping — last post <2 hours ago.");
+      return null;
+    }
+
+    // ✅ Skip if same record or slower time
     if (
       lastRecordId === fastestId ||
       (lastFastestTime && currentFastestTime >= lastFastestTime)
     ) {
-      console.log("⏸ No new record set or already processed.");
+      console.log("⏸ No new record or already processed.");
       return null;
     }
 
-    // 🏆 Post about new record
+    console.log("🏁 New record detected — posting...");
+
     await RecordBreakerPost({
       winner,
       time: currentFastestTime.toFixed(3),
@@ -1843,21 +1858,18 @@ exports.recordBreakerTrigger = functions.pubsub
       captionLink: "https://squaretrivia.com",
     });
 
-    // 📝 Update tracker with ID + timestamp
+    // Update tracker
     await recordRef.set(
       {
         fastestTime: currentFastestTime,
         winner,
         lastRecordId: fastestId,
-        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+        lastUpdated: admin.firestore.Timestamp.now(),
       },
       { merge: true }
     );
 
-    console.log(
-      `✅ New RecordBreaker post published (${currentFastestTime}s by ${winner}, doc ${fastestId})`
-    );
-
+    console.log(`✅ Record updated (${currentFastestTime}s by ${winner})`);
     return null;
   });
 
