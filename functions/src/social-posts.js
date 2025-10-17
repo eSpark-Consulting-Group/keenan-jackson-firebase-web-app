@@ -107,77 +107,125 @@ async function fbPublish({ media, caption, link, type }) {
 
 // Unified Instagram Media Upload + Publish Function
 // Upload + Publish to Instagram (Image or Video)
+
+// Configurable settings
+const IG_PUBLISH_CONFIG = {
+  maxCreateRetries: 5, // Retries for container creation
+  createRetryDelayMs: 2000,
+  maxStatusChecks: 10, // Polling attempts for video readiness
+  statusCheckDelayMs: 3000,
+};
+
 async function igPublish({ media, caption, type = "IMAGE" }) {
   const createUrl = `https://graph.facebook.com/v20.0/${IG_USER_ID}/media`;
   const publishUrl = `https://graph.facebook.com/v20.0/${IG_USER_ID}/media_publish`;
 
-  logInfo(`📦 Instagram POST trying`, { media, caption, type });
+  logInfo("📦 Instagram POST initiated", { type, media, caption });
 
   try {
-    // 🧩 Skip if no media
+    // 🧩 Validate input
     if (!media) {
-      logInfo("ℹ️ Skipping Instagram post — no media provided.", {
-        type,
-        caption,
-      });
+      logInfo("ℹ️ Skipping Instagram post — no media provided.", { caption });
       return { skipped: true, reason: "no_media" };
     }
 
-    // 📝 Build container payload
-    const payload =
-      type === "VIDEO"
-        ? {
-            caption,
-            access_token: FB_PAGE_ACCESS_TOKEN,
-            media_type: "VIDEO",
-            video_url: media,
-          }
-        : {
-            caption,
-            access_token: FB_PAGE_ACCESS_TOKEN,
-            image_url: media,
-          };
+    // 🧱 Step 1 — Build payload (auto-select fields based on type)
+    const payload = {
+      caption,
+      access_token: FB_PAGE_ACCESS_TOKEN,
+      ...(type === "VIDEO"
+        ? { media_type: "VIDEO", video_url: media }
+        : { image_url: media }),
+    };
 
-    // 🧱 Step 1 — Create media container
-    logInfo(`📦 Instagram ${type} Container`, { media, caption });
-    let creationId;
-    const maxRetries = 5;
-    const intervalMs = 1500;
+    // 🧱 Step 2 — Create media container with retries
+    let creationId = null;
 
-    for (let i = 0; i < maxRetries; i++) {
-      const containerRes = await axios.post(createUrl, payload);
-      creationId = containerRes.data?.id;
+    for (let i = 0; i < IG_PUBLISH_CONFIG.maxCreateRetries; i++) {
+      try {
+        const res = await axios.post(createUrl, payload);
+        creationId = res.data?.id;
 
-      if (creationId) break;
+        if (creationId) {
+          logInfo(`✅ Instagram container created [Attempt ${i + 1}]`, {
+            creationId,
+          });
+          break;
+        }
+      } catch (err) {
+        const errData = err.response?.data || err.message;
+        logError(`⚠️ Error creating container [Attempt ${i + 1}]`, errData);
+      }
 
-      logInfo(`⏳ Waiting for creationId [${i + 1}/${maxRetries}]...`);
-      await new Promise((r) => setTimeout(r, intervalMs));
-    }
-
-    if (!creationId) {
-      throw new Error(
-        "❌ Failed to receive creation_id from Instagram after retries."
+      await new Promise((r) =>
+        setTimeout(r, IG_PUBLISH_CONFIG.createRetryDelayMs)
       );
     }
 
-    logInfo("✅ Instagram Container Created", { creationId });
+    if (!creationId) {
+      throw new Error("❌ Failed to receive creation_id after all retries.");
+    }
 
-    // 🚀 Step 2 — Publish media container
+    // ⏳ Step 3 — For video, poll until it's ready (status_code = FINISHED)
+    if (type === "VIDEO") {
+      const statusUrl = `https://graph.facebook.com/v20.0/${creationId}?fields=status_code&access_token=${FB_PAGE_ACCESS_TOKEN}`;
+      let ready = false;
+
+      for (let i = 0; i < IG_PUBLISH_CONFIG.maxStatusChecks; i++) {
+        try {
+          const statusRes = await axios.get(statusUrl);
+          const status = statusRes.data?.status_code;
+          logInfo(
+            `🎞️ Video processing status [${i + 1}/${IG_PUBLISH_CONFIG.maxStatusChecks}]`,
+            { status }
+          );
+
+          if (status === "FINISHED") {
+            ready = true;
+            break;
+          } else if (status === "ERROR") {
+            throw new Error("Video processing failed on Instagram side.");
+          }
+        } catch (err) {
+          const errData = err.response?.data || err.message;
+          logError("⚠️ Error checking video status", errData);
+        }
+
+        await new Promise((r) =>
+          setTimeout(r, IG_PUBLISH_CONFIG.statusCheckDelayMs)
+        );
+      }
+
+      if (!ready) {
+        throw new Error("❌ Video not ready after polling attempts.");
+      }
+
+      logInfo("✅ Video processing finished, ready to publish.", {
+        creationId,
+      });
+    }
+
+    // 🚀 Step 4 — Publish media container
     const publishData = {
       creation_id: creationId,
       access_token: FB_PAGE_ACCESS_TOKEN,
     };
 
-    logInfo("🚀 Publishing Instagram Media", { creationId });
-    const publishRes = await axios.post(publishUrl, publishData);
+    logInfo("🚀 Attempting to publish Instagram media", { creationId, type });
 
-    logInfo("🎉 Instagram Publish Success", publishRes.data);
-
-    return publishRes.data;
+    try {
+      const publishRes = await axios.post(publishUrl, publishData);
+      logInfo("🎉 Instagram Publish Success", publishRes.data);
+      return { success: true, type, ...publishRes.data };
+    } catch (publishErr) {
+      const errData = publishErr.response?.data || publishErr.message;
+      logError("❌ Instagram Publish Failed", { creationId, errData });
+      return { error: true, stage: "publish", details: errData };
+    }
   } catch (error) {
     const errData = error.response?.data || error.message || error;
-    logError("❌ Instagram Publish Error", errData);
-    return { error: true, details: errData };
+    logError("💥 Unhandled Instagram Publish Error", errData);
+    return { error: true, stage: "container_creation", details: errData };
   }
 }
 

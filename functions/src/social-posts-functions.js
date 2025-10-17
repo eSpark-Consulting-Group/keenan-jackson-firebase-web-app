@@ -68,13 +68,21 @@ async function postToAllPlatforms({ media, caption, link, tweet }) {
       // 📸 Image post
       // await fbPublish({ media, caption, type: "IMAGE" });
       await tgPublish({ media, caption, type: "IMAGE" });
-      await igPublish({ media, caption, type: "IMAGE" });
+      await igPublish({
+        media,
+        caption,
+        type: "IMAGE",
+      });
       await postTweet(tweet ? tweet : caption);
     } else if (ext === "mp4") {
       // 🎥 Video post
       // await fbPublish({ media, caption, type: "VIDEO" });
       await tgPublish({ media, caption, type: "VIDEO" });
-      await igPublish({ media, caption, type: "VIDEO" });
+      await igPublish({
+        media,
+        caption,
+        type: "VIDEO",
+      });
       await postTweet(tweet ? tweet : caption);
     } else if (link) {
       // 🔗 Link post
