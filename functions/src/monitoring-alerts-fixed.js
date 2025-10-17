@@ -1799,6 +1799,7 @@ exports.recordBreakerTrigger = functions.pubsub
   .onRun(async () => {
     console.log("⚡ Checking for record-breaking answers...");
 
+    // Get the fastest answer from winners collection
     const snapshot = await db
       .collection("winners")
       .orderBy("answerTime", "asc")
@@ -1810,37 +1811,53 @@ exports.recordBreakerTrigger = functions.pubsub
       return null;
     }
 
-    const fastest = snapshot.docs[0].data();
+    const fastestDoc = snapshot.docs[0];
+    const fastest = fastestDoc.data();
+    const fastestId = fastestDoc.id;
     const currentFastestTime = fastest.answerTime;
-    const winner = fastest.user?.displayName || "Anonymous";
+    const winner = fastest.user?.displayName || fastest.userId || "Anonymous";
 
-    // Get previous record from Firestore tracker
+    // Reference for record tracker
     const recordRef = db.collection("system").doc("recordTracker");
     const recordDoc = await recordRef.get();
-    const lastRecord = recordDoc.exists ? recordDoc.data().fastestTime : null;
+    const recordData = recordDoc.exists ? recordDoc.data() : {};
 
-    if (lastRecord && currentFastestTime >= lastRecord) {
-      console.log("⏸ No new record set yet.");
+    const lastFastestTime = recordData.fastestTime || null;
+    const lastRecordId = recordData.lastRecordId || null;
+
+    // ✅ Stop if we already posted this winner or no new record
+    if (
+      lastRecordId === fastestId ||
+      (lastFastestTime && currentFastestTime >= lastFastestTime)
+    ) {
+      console.log("⏸ No new record set or already processed.");
       return null;
     }
 
+    // 🏆 Post about new record
     await RecordBreakerPost({
       winner,
       time: currentFastestTime.toFixed(3),
-      oldTime: lastRecord ? lastRecord.toFixed(3) : "—",
+      oldTime: lastFastestTime ? lastFastestTime.toFixed(3) : "—",
       mediaToUpload: null,
       captionLink: "https://squaretrivia.com",
     });
 
-    // Update tracker
+    // 📝 Update tracker with ID + timestamp
     await recordRef.set(
-      { fastestTime: currentFastestTime, winner },
+      {
+        fastestTime: currentFastestTime,
+        winner,
+        lastRecordId: fastestId,
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+      },
       { merge: true }
     );
 
     console.log(
-      `✅ New RecordBreaker post published (${currentFastestTime}s by ${winner})`
+      `✅ New RecordBreaker post published (${currentFastestTime}s by ${winner}, doc ${fastestId})`
     );
+
     return null;
   });
 
