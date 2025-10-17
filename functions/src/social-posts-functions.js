@@ -1,12 +1,10 @@
 const { logger } = require("firebase-functions");
 const {
   getRandomCTA,
-  // twPublish,
   fbPublish,
   igPublish,
   getHashtags,
   tgPublish,
-  // twPublish,
 } = require("./social-posts");
 
 const { TwitterApi } = require("twitter-api-v2");
@@ -39,16 +37,16 @@ function getFileExt(url = "") {
 
 const client = new TwitterApi({
   appKey:
-    // process.env.X_CONSUMER_KEY ||
+    process.env.X_CONSUMER_KEY ||
     "8u3xjg84tAgJ14XaiiGwlM25A",
   appSecret:
-    // process.env.X_CONSUMER_SECRET ||
+    process.env.X_CONSUMER_SECRET ||
     "j3eGxuh8UfqWjzpHXa9DFhuV4Nvvat9EcU36E8WP4pDrJigOtq",
   accessToken:
-    // process.env.X_ACCESS_TOKEN ||
+    process.env.X_ACCESS_TOKEN ||
     "1978854431979339776-MNoZVnCwIG2HQhHN2SOXRoZJgFv6ed",
   accessSecret:
-    // process.env.X_ACCESS_TOKEN_SECRET ||
+    process.env.X_ACCESS_TOKEN_SECRET ||
     "Rdbkm9moIhQhu6xreXZcEkHJDm1GGreKIrjRuJ5NaZ4TM",
 });
 
@@ -72,13 +70,13 @@ async function postToAllPlatforms({ media, caption, link, tweet }) {
       // 📸 Image post
       // await fbPublish({ media, caption, type: "IMAGE" });
       await tgPublish({ media, caption, type: "IMAGE" });
-      // await igPublish({ media, caption, type: "IMAGE" });
+      await igPublish({ media, caption, type: "IMAGE" });
       await postTweet(tweet ? tweet : caption);
     } else if (ext === "mp4") {
       // 🎥 Video post
       // await fbPublish({ media, caption, type: "VIDEO" });
       await tgPublish({ media, caption, type: "VIDEO" });
-      // await igPublish({ media, caption, type: "VIDEO" });
+      await igPublish({ media, caption, type: "VIDEO" });
       await postTweet(tweet ? tweet : caption);
     } else if (link) {
       // 🔗 Link post
