@@ -147,10 +147,18 @@ ${team1} vs ${team2} - Square ${square}
 Speed Wins. Always.  
 #SquareTrivia #SpeedWins
   `;
+
+  const tweetBody = `
+🚨 ${winner} won $${prize} in ${time}s!  
+Faster than that? 🏃‍♂️  
+${team1} vs ${team2} — Square ${square}  
+#SquareTrivia #SpeedWins
+`;
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body),
     link: captionLink,
+    tweet: buildTemplate(tweetBody),
   });
 }
 
@@ -221,6 +229,26 @@ Speed Wins. Always.
   `,
   ];
 
+  const tweetTemplates = [
+    // Win-1: Quick & Clean
+    `🏆 WINNER: @${winner} — Square "${square}" | ${prize} 💰 | ${time}s ⚡ | ${team1} vs ${team2} | Speed Wins Always.`,
+
+    // Win-2: Speed Focus
+    `⚡ ${time}s TO VICTORY! @${winner} grabs Square "${square}" and wins ${prize}! Speed Wins Always.`,
+
+    // Win-3: Prize Focus
+    `💰 ${prize} WINNER! @${winner} crushed Square "${square}" in ${time}s. Speed Wins Always.`,
+
+    // Win-4: Competition Angle
+    `🔥 @${winner} WINS Square "${square}" in ${time}s — earning ${prize}! Think you’re faster? Speed Wins Always.`,
+
+    // Win-5: Celebration
+    `🎉 Victory on Square "${square}"! @${winner} blitzed it in ${time}s for ${prize}. You’re up next — Speed Wins Always.`,
+
+    // Original message — tightened for X
+    `💥 ${winner} just won $${prize} on ${team1} vs ${team2}! Answered in ${time}s ⚡ Speed Wins. Always.`,
+  ];
+
   // Pick a random template
   const selectedTemplate =
     templates[Math.floor(Math.random() * templates.length)];
@@ -228,11 +256,19 @@ Speed Wins. Always.
   // Replace placeholders
   const body = selectedTemplate;
 
+  // Pick a random template
+  const selectedTemplateTweet =
+    tweetTemplates[Math.floor(Math.random() * tweetTemplates.length)];
+
+  // Replace placeholders
+  const tweet = selectedTemplateTweet;
+
   // Post to all platforms
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 
@@ -256,10 +292,17 @@ Runner-up: ${loseTime}s
 Every millisecond counts!  
 Speed Wins. Always. 📸
   `;
+
+  const tweet = `
+🏁 INSANE FINISH! ${winner} beats ${loser} by ${diff}s! 
+Winner: ${winTime}s | Runner-up: ${loseTime}s 
+Speed Wins Always. 📸
+`;
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 
@@ -308,10 +351,17 @@ Get your square before kickoff!
 Speed Wins. Always. ⚡
   `;
 
+  const tweet = `
+🔥 ${team1} vs ${team2} filling up fast! 
+${tierLine} 
+Grab your square — Speed Wins Always. ⚡
+`;
+
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body.trim(), cta),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 
@@ -399,10 +449,17 @@ ${squaresLeft} squares remaining
 Don't watch from the sidelines.  
 Speed Wins. Always. 🎯
   `;
+
+  const tweet = `
+⏰ LAST CHANCE! ${team1} vs ${team2} — starts in ${timeLeft}! 
+Only ${squaresLeft} squares left. 
+Don’t wait — Speed Wins Always. 🎯
+`;
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 
@@ -424,10 +481,19 @@ Fastest fingers will win.
 Check other games or join the waitlist.  
 Speed Wins. Always. 💪
   `;
+
+  const tweet = `
+🔒 SOLD OUT! ${team1} vs ${team2} is locked in!  
+${totalPrize} up for grabs — 100 players ready to race.  
+Check other games.  
+Speed Wins Always. 💪
+`;
+
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 
@@ -445,10 +511,16 @@ ${gameLines}
 Get in NOW before they're gone!  
 Speed Wins. Always.
   `;
+  const tweet = `
+📊 ${day} Board Update:  
+${gameLines}  
+Join now — Speed Wins Always. ⚡
+`;
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 
@@ -512,10 +584,20 @@ async function DailyRecapPost({
 
 Your sports knowledge = real money!
   `;
+
+  const tweet = `
+📊 Square Trivia Stats:  
+💰 $${totalPrizes} won | 🏆 ${winnerCount} winners  
+⚡ Fastest: ${fastestTime}s by ${fastestUser}  
+🔥 Biggest Win: $${biggestWin}  
+Your sports knowledge = real money!
+`;
+
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 
@@ -569,10 +651,20 @@ Tiers available:
 
 NO FEES - Answer fast, win big!
   `;
+
+  const tweet = `
+🏈 ${team1} vs ${team2} boards are LIVE!  
+💰 Tiers:  
+✅ $25 → Win $200/Q  
+✅ $50 → Win $450/Q  
+✅ $100 → Win $900/Q  
+No fees. Answer fast, win big! ⚡
+`;
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 
@@ -594,10 +686,17 @@ Biggest tier still open: $${highestTier}
 
 Don't miss out! 🎯
   `;
+  const tweet = `
+⏰ FINAL CALL! ${team1} vs ${team2} kicks off in 2 hrs!  
+${spotsLeft} squares left — biggest tier: $${highestTier}.  
+Don’t miss out! 🎯
+`;
+
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 
@@ -624,10 +723,18 @@ All skill, no luck!
 
 Thank you for making Square Trivia the fastest growing skill-based platform! 💪
   `;
+
+  const tweet = `
+🎉 MILESTONE ALERT!  
+Over $${amount} paid out to ${totalWinners}+ winners! 💰  
+All skill. No luck.  
+Square Trivia the fastest-growing skill platform! 💪
+`;
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 
@@ -648,10 +755,19 @@ Previous record: ${oldTime}s
 
 Think you can beat it? Speed pays! ⚡
   `;
+
+  const tweet = `
+🚨 NEW RECORD! 🚨  
+${winner} just answered in ${time}s — fastest this week!  
+Previous best: ${oldTime}s.  
+Think you can beat it? Speed pays! ⚡
+`;
+
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 
@@ -677,10 +793,18 @@ ${options}
 
 Your choice, your money!
   `;
+
+  const tweet = `
+💸 Win $200? Get $200 — NO FEES on Square Trivia!  
+⚡ Express: Get 96% today  
+⏰ Standard: Get 100% in 2–3 days  
+Your choice. Your money!
+`;
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 
@@ -707,10 +831,20 @@ ${comparisons}
 ${recentWinner} just proved it with a ${time}s answer for $${prize}!
 Speed Wins. Always. 🧠💰 
   `;
+
+  const tweet = `
+What separates Square Trivia winners?  
+🎲 Traditional squares: Hope for luck  
+⚡ Square Trivia: Trust your speed  
+${recentWinner} just nailed a ${time}s answer for $${prize}!  
+Speed Wins Always. 🧠💰
+`;
+
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 
@@ -738,10 +872,19 @@ ${teamB} fans: ${teamBWins} wins this week
 
 Who knows their team better? Prove it on Sunday!
   `;
+
+  const tweet = `
+🏈 Battle of the Fanbases!  
+${teamA} fans: ${teamAWins} wins  
+${teamB} fans: ${teamBWins} wins  
+Who knows their team better? Prove it Sunday! 💥
+`;
+
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 
@@ -766,10 +909,19 @@ ${leaderboard}
 These players win on the board AND off the board.
 Speed Wins. Always. 💰
   `;
+
+  const tweet = `
+🏆 This Week’s Referral Leaders:  
+${leaderboard}  
+Winning on and off the board.  
+Speed Wins Always. 💰
+`;
+
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 
@@ -822,9 +974,18 @@ ${winnerName} turned their ${team} knowledge into $${prize} with a lightning-fas
 
 NO FEES. Just skill. Just speed. Just win. ⚡
   `;
+
+  const tweet = `
+🏆 When your ESPN addiction finally pays off 💰  
+${winnerName} turned ${team} knowledge into $${prize} with a ${time}s answer!  
+NO FEES. Just skill. Just speed. Just win. ⚡  
+[IMAGE: ${imageUrl || "Winner card 🏆"}]
+`;
+
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body),
+    tweet: buildTemplate(tweet),
   });
 }
 
