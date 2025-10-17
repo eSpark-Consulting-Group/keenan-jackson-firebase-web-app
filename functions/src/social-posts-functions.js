@@ -64,7 +64,7 @@ async function postTweet(message) {
   }
 }
 
-async function postToAllPlatforms({ media, caption, link }) {
+async function postToAllPlatforms({ media, caption, link, tweet }) {
   const ext = media ? getFileExt(media) : null;
 
   try {
@@ -73,23 +73,23 @@ async function postToAllPlatforms({ media, caption, link }) {
       // await fbPublish({ media, caption, type: "IMAGE" });
       await tgPublish({ media, caption, type: "IMAGE" });
       // await igPublish({ media, caption, type: "IMAGE" });
-      await postTweet(caption);
+      await postTweet(tweet ? tweet : caption);
     } else if (ext === "mp4") {
       // 🎥 Video post
       // await fbPublish({ media, caption, type: "VIDEO" });
       await tgPublish({ media, caption, type: "VIDEO" });
       // await igPublish({ media, caption, type: "VIDEO" });
-      await postTweet(caption);
+      await postTweet(tweet ? tweet : caption);
     } else if (link) {
       // 🔗 Link post
       // await fbPublish({ link, caption, type: "LINK" });
       await tgPublish({ caption: `${caption}\n\n${link}`, type: "LINK" });
-      await postTweet(caption);
+      await postTweet(tweet ? tweet : caption);
     } else if (!media && !link && caption) {
       // 📝 Text-only post
       // await fbPublish({ caption, type: "TEXT" });
       await tgPublish({ caption, type: "TEXT" });
-      await postTweet(caption);
+      await postTweet(tweet ? tweet : caption);
     } else {
       throw new Error(
         `❌ Unsupported file type: .${ext || "unknown"}. Use JPG, PNG, or MP4.`
@@ -345,6 +345,14 @@ async function NewBoardAlertPost({
     })
     .join("\n");
 
+  const tierTweet = enabledTiers
+    .map((tier) => {
+      const tierNumber = tier.split("_")[1];
+      const amount = tierAmounts[tier];
+      return `💰 $${tierNumber} → Win $${amount}/quarter`;
+    })
+    .join("\n");
+
   const body = `
 🚨 NEW BOARD LIVE 🚨  
 
@@ -356,11 +364,19 @@ ${tierMessages}
 First come, first served!  
 Speed Wins. Always.
 `;
+  const tweet = ` 
+
+${team1} vs ${team2} - ${day} ${time}  
+
+All tiers available NOW:
+${tierTweet}
+`;
 
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body,tweetBody),
+    caption: buildTemplate(body),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 
