@@ -321,11 +321,12 @@ async function NewBoardAlertPost({
   team2,
   day,
   time,
-  tierId,
   mediaToUpload,
   captionLink,
+  enabledTiers,
 }) {
   const cta = getRandomCTA({ link: captionLink });
+
   const tierAmounts = {
     tier_25: 200,
     tier_50: 450,
@@ -334,24 +335,31 @@ async function NewBoardAlertPost({
     tier_500: 4500,
     tier_1000: 9000,
   };
-  const amount = tierAmounts[tierId];
-  const tierNumber = tierId.split("_")[1];
-  const tierMessage = `💰 $${tierNumber} → Win $${amount} per quarter`;
-  console.log(tierMessage);
+
+  // 🧠 Generate all tier messages from enabledTiers
+  const tierMessages = enabledTiers
+    .map((tier) => {
+      const tierNumber = tier.split("_")[1];
+      const amount = tierAmounts[tier];
+      return `💰 $${tierNumber} → Win $${amount} per quarter`;
+    })
+    .join("\n");
+
   const body = `
 🚨 NEW BOARD LIVE 🚨  
 
 ${team1} vs ${team2} - ${day} ${time}  
 
-Available Tire:  
-${tierMessage}
+All tiers available NOW:
+${tierMessages}
 
 First come, first served!  
 Speed Wins. Always.
-  `;
+`;
+
   return postToAllPlatforms({
     media: mediaToUpload,
-    caption: buildTemplate(body),
+    caption: buildTemplate(body,tweetBody),
     link: captionLink,
   });
 }
@@ -404,7 +412,6 @@ Speed Wins. Always. 💪
     media: mediaToUpload,
     caption: buildTemplate(body),
     link: captionLink,
-    
   });
 }
 
