@@ -66,7 +66,7 @@ async function postToAllPlatforms({ media, caption, link, tweet }) {
   try {
     if (ext && ["jpg", "jpeg", "png"].includes(ext)) {
       // 📸 Image post
-      // await fbPublish({ media, caption, type: "IMAGE" });
+      await fbPublish({ media, caption, type: "IMAGE" });
       await tgPublish({ media, caption, type: "IMAGE" });
       await igPublish({
         media,
@@ -76,7 +76,7 @@ async function postToAllPlatforms({ media, caption, link, tweet }) {
       await postTweet(tweet ? tweet : caption);
     } else if (ext === "mp4") {
       // 🎥 Video post
-      // await fbPublish({ media, caption, type: "VIDEO" });
+      await fbPublish({ media, caption, type: "VIDEO" });
       await tgPublish({ media, caption, type: "VIDEO" });
       await igPublish({
         media,
@@ -86,12 +86,12 @@ async function postToAllPlatforms({ media, caption, link, tweet }) {
       await postTweet(tweet ? tweet : caption);
     } else if (link) {
       // 🔗 Link post
-      // await fbPublish({ link, caption, type: "LINK" });
+      await fbPublish({ link, caption, type: "LINK" });
       await tgPublish({ caption: `${caption}\n\n${link}`, type: "LINK" });
       await postTweet(tweet ? tweet : caption);
     } else if (!media && !link && caption) {
       // 📝 Text-only post
-      // await fbPublish({ caption, type: "TEXT" });
+      await fbPublish({ caption, type: "TEXT" });
       await tgPublish({ caption, type: "TEXT" });
       await postTweet(tweet ? tweet : caption);
     } else {

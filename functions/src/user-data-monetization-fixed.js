@@ -1098,7 +1098,7 @@ exports.checkBoardsFillingFast = functions.pubsub
             team1,
             team2,
             totalPrize: board.prizeAmount,
-            mediaToUpload: "https://squaretrivia.com/logo.png",
+            mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
             captionLink: "https://squaretrivia.com",
           });
 
@@ -1109,7 +1109,11 @@ exports.checkBoardsFillingFast = functions.pubsub
         // ---------------------------
         // ⚡ FAST FILL (70%–99%) — trigger once only
         // ---------------------------
-        if (fillPercent >= 70 && fillPercent < 100 && postData.type !== "fastFill") {
+        if (
+          fillPercent >= 70 &&
+          fillPercent < 100 &&
+          postData.type !== "fastFill"
+        ) {
           console.log(
             `📣 [${gameId}] ${quarterLabel} - ${tierId} board ${fillPercent.toFixed(
               1
@@ -1121,7 +1125,7 @@ exports.checkBoardsFillingFast = functions.pubsub
             team2,
             tier: tierId,
             totalClaims: { total: totalSquares, claimed: claimedSquares },
-            mediaToUpload: "https://squaretrivia.com/logo.png",
+            mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
             captionLink: "https://squaretrivia.com",
           });
 
@@ -1131,13 +1135,7 @@ exports.checkBoardsFillingFast = functions.pubsub
         // ---------------------------
         // ⚠️ LAST CHANCE (<20%) — up to twice (2–3h before)
         // ---------------------------
-        if (
-          fillPercent < 20 &&
-          timeDiffHrs > 2 &&
-          timeDiffHrs <= 3 &&
-          triggerCount < 2 &&
-          timeSinceLastPost >= 30
-        ) {
+        if (timeDiffHrs > 2 && timeDiffHrs <= 3 && triggerCount < 2) {
           console.log(
             `⚠️ [${gameId}] ${quarterLabel} - ${tierId} (${fillPercent.toFixed(
               1
@@ -1151,7 +1149,7 @@ exports.checkBoardsFillingFast = functions.pubsub
             team2,
             spotsLeft,
             highestTier: tierId,
-            mediaToUpload: "https://squaretrivia.com/logo.png",
+            mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
             captionLink: "https://squaretrivia.com",
           });
 
@@ -1177,7 +1175,7 @@ exports.checkBoardsFillingFast = functions.pubsub
             await UpcomingGamePost({
               team1,
               team2,
-              mediaToUpload: "https://squaretrivia.com/logo.png",
+              mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
               captionLink: "https://squaretrivia.com",
             });
             await recordPost("upcomingGame");
@@ -1208,7 +1206,7 @@ exports.checkBoardsFillingFast = functions.pubsub
             team2,
             timeLeft: `${Math.round(timeDiffHrs * 60)} minutes`,
             squaresLeft,
-            mediaToUpload: "https://squaretrivia.com/logo.png",
+            mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
             captionLink: "https://squaretrivia.com",
           });
 
@@ -1246,7 +1244,7 @@ exports.checkBoardsFillingFast = functions.pubsub
             team1,
             team2,
             tiers,
-            mediaToUpload: "https://squaretrivia.com/logo.png",
+            mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
             captionLink: "https://squaretrivia.com",
           });
 

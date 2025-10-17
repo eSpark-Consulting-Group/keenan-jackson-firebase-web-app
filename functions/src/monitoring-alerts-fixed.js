@@ -1533,27 +1533,20 @@ exports.dailyRecapTrigger = functions.pubsub
   .timeZone("America/Denver")
   .onRun(async () => {
     const now = new Date();
-    const startOfDay = new Date(
-      Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate(),
-        0,
-        0,
-        0
-      )
-    );
-    const endOfDay = new Date(
-      Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate(),
-        23,
-        59,
-        59
-      )
+
+    // Convert current time to America/Denver timezone
+    const denverNow = new Date(
+      now.toLocaleString("en-US", { timeZone: "America/Denver" })
     );
 
+    // Get start (00:00:00) and end (23:59:59) of current Denver day
+    const startOfDay = new Date(denverNow);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(denverNow);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Convert to Firestore Timestamp.seconds range (UTC-based)
     const startSeconds = Math.floor(startOfDay.getTime() / 1000);
     const endSeconds = Math.floor(endOfDay.getTime() / 1000);
 
@@ -1592,29 +1585,62 @@ exports.dailyRecapTrigger = functions.pubsub
       fastestTime,
       fastestUser,
       biggestWin,
-      mediaToUpload: "https://squaretrivia.com/logo.png",
+      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
       captionLink: "https://squaretrivia.com",
     });
 
     console.log("✅ Daily Recap Post published successfully.");
     return null;
   });
-
-/**
- * WEEKLY CHAMPIONS FUNCTION
- * Runs every Sunday at 11:59 PM (America/Denver time)
- */
 exports.weeklyChampionTrigger = functions.pubsub
-  .schedule("every sunday 23:59")
+  .schedule("59 23 * * 0") // Sunday 11:59 PM
   .timeZone("America/Denver")
   .onRun(async () => {
     const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setUTCDate(now.getUTCDate() - 7);
 
+    // 🕒 Convert current time to Denver timezone components
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Denver",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+
+    const parts = formatter.formatToParts(now).reduce((acc, part) => {
+      acc[part.type] = part.value;
+      return acc;
+    }, {});
+
+    // Reconstruct current Denver time as a Date object
+    const denverNow = new Date(
+      `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}-07:00`
+    );
+
+    // 🗓️ Determine start of the week (Monday 00:01 Denver time)
+    const day = denverNow.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+    const diffToMonday = (day + 6) % 7; // days since Monday
+    const startOfWeek = new Date(denverNow);
+    startOfWeek.setDate(denverNow.getDate() - diffToMonday);
+    startOfWeek.setHours(0, 1, 0, 0);
+
+    // 🗓️ Determine end of the week (Sunday 23:59:59 Denver time)
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    // Convert both to UTC seconds for Firestore queries
     const startSeconds = Math.floor(startOfWeek.getTime() / 1000);
-    const endSeconds = Math.floor(now.getTime() / 1000);
+    const endSeconds = Math.floor(endOfWeek.getTime() / 1000);
 
+    console.log("📅 Week Start (Denver):", startOfWeek.toISOString());
+    console.log("📅 Week End (Denver):", endOfWeek.toISOString());
+    console.log("🕐 Current (Denver):", denverNow.toISOString());
+
+    // 🎯 Query documents created within this week's boundaries
     const snapshot = await db
       .collection("winners")
       .where("createdAt.seconds", ">=", startSeconds)
@@ -1627,24 +1653,55 @@ exports.weeklyChampionTrigger = functions.pubsub
     }
 
     const winners = snapshot.docs.map((doc) => doc.data());
+    console.log(`✅ Found ${winners.length} weekly winners.`);
 
-    // Group by user
+    // 🧠 Aggregate stats per userId
     const userStats = {};
     winners.forEach((w) => {
-      const name = w.user?.displayName || "Anonymous";
-      if (!userStats[name]) userStats[name] = { total: 0, wins: 0 };
-      userStats[name].total += w.prizeAmount || 0;
-      userStats[name].wins += 1;
+      if (!w.userId) return; // Skip invalid
+      if (!userStats[w.userId]) userStats[w.userId] = { total: 0, wins: 0 };
+      userStats[w.userId].total += w.prizeAmount || 0;
+      userStats[w.userId].wins += 1;
     });
 
-    // Sort by total prize
-    const sorted = Object.entries(userStats)
-      .map(([name, data]) => ({ name, ...data }))
-      .sort((a, b) => b.total - a.total)
+    const userIds = Object.keys(userStats);
+    if (userIds.length === 0) {
+      console.log("⚠️ No valid userIds found in winners data.");
+      return null;
+    }
+
+    // 👥 Fetch corresponding user documents
+    const userDocs = await Promise.all(
+      userIds.map(async (id) => {
+        const userSnap = await db.collection("users").doc(id).get();
+        return { id, data: userSnap.exists ? userSnap.data() : null };
+      })
+    );
+
+    // 🧾 Merge user display names into stats
+    const userList = userDocs.map((u) => {
+      const name = u.data?.displayName || u.data?.email || "Anonymous";
+      const stats = userStats[u.id];
+      return {
+        userId: u.id,
+        name,
+        total: stats.total,
+        wins: stats.wins,
+      };
+    });
+
+    // 🥇 Sort by total prize (and wins as tiebreaker)
+    const sorted = userList
+      .sort((a, b) => b.total - a.total || b.wins - a.wins)
       .slice(0, 3);
 
     const [w1, w2, w3] = sorted;
 
+    if (!w1) {
+      console.log("⚠️ No valid weekly champions found.");
+      return null;
+    }
+    // 📣 Publish the post
     await WeeklyChampionPost({
       winner1: w1?.name || "—",
       amount1: w1?.total || 0,
@@ -1655,7 +1712,7 @@ exports.weeklyChampionTrigger = functions.pubsub
       winner3: w3?.name || "—",
       amount3: w3?.total || 0,
       wins3: w3?.wins || 0,
-      mediaToUpload: "https://squaretrivia.com/logo.png",
+      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
       captionLink: "https://squaretrivia.com",
     });
 
@@ -1674,7 +1731,7 @@ exports.noFeesTrigger = functions.pubsub
     console.log("🚀 Running NoFeesPost trigger...");
 
     await NoFeesPost({
-      mediaToUpload: "https://squaretrivia.com/logo.png",
+      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
       captionLink: "https://squaretrivia.com",
     });
 
@@ -1720,7 +1777,7 @@ exports.skillCelebrationTrigger = functions.pubsub
       recentWinner,
       time,
       prize,
-      mediaToUpload: "https://squaretrivia.com/logo.png",
+      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
       captionLink: "https://squaretrivia.com",
     });
 
@@ -1778,7 +1835,7 @@ exports.platformMilestoneTrigger = functions.pubsub
     await PlatformMilestonePost({
       amount: crossed.toLocaleString(),
       totalWinners,
-      mediaToUpload: "https://squaretrivia.com/logo.png",
+      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
       captionLink: "https://squaretrivia.com",
     });
 
@@ -1854,7 +1911,7 @@ exports.recordBreakerTrigger = functions.pubsub
       winner,
       time: currentFastestTime.toFixed(3),
       oldTime: lastFastestTime ? lastFastestTime.toFixed(3) : "—",
-      mediaToUpload: "https://squaretrivia.com/logo.png",
+      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
       captionLink: "https://squaretrivia.com",
     });
 
@@ -1913,7 +1970,7 @@ exports.referralLeaderboardTrigger = functions.pubsub
 
     await ReferralLeaderboard({
       winners: leaderboard,
-      mediaToUpload: "https://squaretrivia.com/logo.png",
+      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
       captionLink: "https://squaretrivia.com/referrals",
     });
 
@@ -1964,7 +2021,7 @@ exports.teamRivalryTrigger = functions.pubsub
       teamB: matchup.teamB,
       teamAWins,
       teamBWins,
-      mediaToUpload: "https://squaretrivia.com/logo.png",
+      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
       captionLink: "https://squaretrivia.com",
     });
 
@@ -2031,7 +2088,7 @@ exports.multiGameUpdateTrigger = functions.pubsub
 
       await MultiGameUpdatePost({
         games,
-        mediaToUpload: "https://squaretrivia.com/logo.png",
+        mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
         captionLink: "https://squaretrivia.com",
         day: dayName,
       });

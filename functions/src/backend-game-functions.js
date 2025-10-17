@@ -138,7 +138,7 @@ exports.createGame = functions.https.onCall(async (data, context) => {
           day,
           time,
           enabledTiers,
-          mediaToUpload: "https://squaretrivia.com/logo.png",
+          mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
           captionLink: "https://squaretrivia.com",
         });
 
@@ -966,7 +966,7 @@ async function processWinner(winnerData) {
       [`quarterScores.${quarter}.winnerUserId`]: userId,
     });
 
-  const mediaToUpload = "https://squaretrivia.com/logo.png";
+  const mediaToUpload = "https://squaretrivia.com/apple-touch-icon.png";
   // const ext = mediaToUpload.split(".").pop().toLowerCase(); // Extract file extension
   const captionLink = "https://squaretrivia.com";
 
