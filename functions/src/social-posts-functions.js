@@ -395,7 +395,7 @@ async function NewBoardAlertPost({
     .map((tier) => {
       const tierNumber = tier.split("_")[1];
       const amount = tierAmounts[tier];
-      return `💰 $${tierNumber} → Win $${amount}/quarter`;
+      return `💰 $${tierNumber} → Win $${amount}/QT`;
     })
     .join("\n");
 
@@ -499,6 +499,10 @@ async function MultiGameUpdatePost({ games, mediaToUpload, captionLink, day }) {
   const cta = getRandomCTA({ link: captionLink });
 
   const gameLines = games.map((g) => `${g.match}: ${g.fill} FULL`).join("\n");
+  const gameLinestweet = games
+    .slice(0, 3)
+    .map((g) => `${g.match}: ${g.fill} FULL`)
+    .join("\n");
   const body = `
 📊 ${day} Board Status:  
 
@@ -509,7 +513,8 @@ Speed Wins. Always.
   `;
   const tweet = `
 📊 ${day} Board Update:  
-${gameLines}  
+${gameLinestweet} 
+and others
 Join now — Speed Wins Always. ⚡
 `;
   return postToAllPlatforms({
@@ -530,8 +535,16 @@ async function TierStatusUpdatePost({
 }) {
   // tiers example: [{tier: 1000, left: 2}, {tier: 500, left: 0}, ...]
   const cta = getRandomCTA({ link: captionLink });
-
   const tierLines = tiers
+    .map(
+      (t) =>
+        `$${t.tier} Tier: ${
+          t.left > 0 ? `${t.left} squares left!` : "SOLD OUT"
+        }`
+    )
+    .join("\n");
+  const tierLinestweet = tiers
+    .slice(0, 3)
     .map(
       (t) =>
         `$${t.tier} Tier: ${
@@ -547,10 +560,20 @@ ${tierLines}
 Big money squares going fast!  
 Speed Wins. Always. 💰
   `;
+
+  const tweet = `
+🎯 ${team1} vs ${team2} Availability:  
+
+${tierLinestweet}
+
+Big money squares going fast!  
+Speed Wins. Always. 💰
+  `;
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 
