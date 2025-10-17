@@ -1592,7 +1592,7 @@ exports.dailyRecapTrigger = functions.pubsub
       fastestTime,
       fastestUser,
       biggestWin,
-      mediaToUpload: null,
+      mediaToUpload: "https://squaretrivia.com/logo.png",
       captionLink: "https://squaretrivia.com",
     });
 
@@ -1655,7 +1655,7 @@ exports.weeklyChampionTrigger = functions.pubsub
       winner3: w3?.name || "—",
       amount3: w3?.total || 0,
       wins3: w3?.wins || 0,
-      mediaToUpload: null,
+      mediaToUpload: "https://squaretrivia.com/logo.png",
       captionLink: "https://squaretrivia.com",
     });
 
@@ -1674,7 +1674,7 @@ exports.noFeesTrigger = functions.pubsub
     console.log("🚀 Running NoFeesPost trigger...");
 
     await NoFeesPost({
-      mediaToUpload: null,
+      mediaToUpload: "https://squaretrivia.com/logo.png",
       captionLink: "https://squaretrivia.com",
     });
 
@@ -1720,7 +1720,7 @@ exports.skillCelebrationTrigger = functions.pubsub
       recentWinner,
       time,
       prize,
-      mediaToUpload: null,
+      mediaToUpload: "https://squaretrivia.com/logo.png",
       captionLink: "https://squaretrivia.com",
     });
 
@@ -1778,7 +1778,7 @@ exports.platformMilestoneTrigger = functions.pubsub
     await PlatformMilestonePost({
       amount: crossed.toLocaleString(),
       totalWinners,
-      mediaToUpload: null,
+      mediaToUpload: "https://squaretrivia.com/logo.png",
       captionLink: "https://squaretrivia.com",
     });
 
@@ -1839,7 +1839,7 @@ exports.recordBreakerTrigger = functions.pubsub
       winner,
       time: currentFastestTime.toFixed(3),
       oldTime: lastFastestTime ? lastFastestTime.toFixed(3) : "—",
-      mediaToUpload: null,
+      mediaToUpload: "https://squaretrivia.com/logo.png",
       captionLink: "https://squaretrivia.com",
     });
 
@@ -1901,7 +1901,7 @@ exports.referralLeaderboardTrigger = functions.pubsub
 
     await ReferralLeaderboard({
       winners: leaderboard,
-      mediaToUpload: null,
+      mediaToUpload: "https://squaretrivia.com/logo.png",
       captionLink: "https://squaretrivia.com/referrals",
     });
 
@@ -1952,7 +1952,7 @@ exports.teamRivalryTrigger = functions.pubsub
       teamB: matchup.teamB,
       teamAWins,
       teamBWins,
-      mediaToUpload: null,
+      mediaToUpload: "https://squaretrivia.com/logo.png",
       captionLink: "https://squaretrivia.com",
     });
 
@@ -2019,7 +2019,7 @@ exports.multiGameUpdateTrigger = functions.pubsub
 
       await MultiGameUpdatePost({
         games,
-        mediaToUpload: null,
+        mediaToUpload: "https://squaretrivia.com/logo.png",
         captionLink: "https://squaretrivia.com",
         day: dayName,
       });
