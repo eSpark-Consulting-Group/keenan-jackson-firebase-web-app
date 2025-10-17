@@ -113,21 +113,22 @@ exports.createGame = functions.https.onCall(async (data, context) => {
     (async () => {
       try {
         // Convert Firestore timestamp to JS Date
-        const startDate = new Date(
-          admin.firestore.Timestamp.fromDate(parsedDate)
-        );
+        const startDate = new Date(parsedDate);
 
-        // Format date
+        // Format date (e.g., "Sun, Oct 19")
         const day = startDate.toLocaleDateString("en-US", {
           weekday: "short",
           month: "short",
           day: "numeric",
+          timeZone: "UTC",
         });
 
-        // Format time
+        // Format time (e.g., "12:00 PM")
         const time = startDate.toLocaleTimeString("en-US", {
           hour: "numeric",
           minute: "2-digit",
+          hour12: true,
+          timeZone: "UTC",
         });
 
         // Post New Board Alert
@@ -910,8 +911,6 @@ async function processWinner(winnerData) {
   const team1 = game.teams?.home || "Home Team";
   const team2 = game.teams?.away || "Away Team";
 
-  // ✅ Determine caption template
-  const isBigWin = prizeAmount >= 900;
   const isPhotoFinish = Math.abs(answerTime - opponentTime) < 1000;
   // ✅ Create winner record
   const winnerRef = await db.collection("winners").add({
@@ -947,6 +946,9 @@ async function processWinner(winnerData) {
     isTelegramSend: false,
   });
 
+  const tierValue = Number(tierId.split("_")[1]);
+  const isBigWin = tierValue >= 100;
+
   // ✅ Update user's win stats
   await db
     .collection("users")
@@ -968,41 +970,40 @@ async function processWinner(winnerData) {
   // const ext = mediaToUpload.split(".").pop().toLowerCase(); // Extract file extension
   const captionLink = "https://squaretrivia.com";
 
-  // ✅ Send notifications / social posts
-  {
-    isBigWin
-      ? BigWinPost({
-          winner: displayName,
-          prize: prizeAmount,
-          time: answerTime,
-          team1,
-          team2,
-          square: position,
-          mediaToUpload: mediaToUpload,
-          captionLink: captionLink,
-        })
-      : StandardWinPost({
-          winner: displayName,
-          prize: prizeAmount,
-          team1,
-          team2,
-          time: answerTime,
-          square: position,
-          mediaToUpload: mediaToUpload,
-          captionLink: captionLink,
-        });
-    {
-      isPhotoFinish &&
-        PhotoFinishPost({
-          winner: displayName, // todo: need to get winner info/name
-          loser: displayLooserName, // todo: need to get loser info/name
-          diff: Math.round((opponentTime - answerTime) * 1000) / 1000,
-          winTime: answerTime,
-          loseTime: opponentTime,
-          mediaToUpload: mediaToUpload,
-          captionLink: captionLink,
-        });
-    }
+  if (isBigWin) {
+    BigWinPost({
+      winner: displayName,
+      prize: prizeAmount,
+      time: answerTime,
+      team1,
+      team2,
+      square: position,
+      mediaToUpload,
+      captionLink,
+    });
+  } else {
+    StandardWinPost({
+      winner: displayName,
+      prize: prizeAmount,
+      time: answerTime,
+      team1,
+      team2,
+      square: position,
+      mediaToUpload,
+      captionLink,
+    });
+  }
+
+  if (isPhotoFinish) {
+    PhotoFinishPost({
+      winner: displayName,
+      loser: displayLooserName,
+      diff: Math.round((opponentTime - answerTime) * 1000) / 1000,
+      winTime: answerTime,
+      loseTime: opponentTime,
+      mediaToUpload,
+      captionLink,
+    });
   }
 
   console.log(`🏆 Winner processed: ${displayName} - $${prizeAmount}`);

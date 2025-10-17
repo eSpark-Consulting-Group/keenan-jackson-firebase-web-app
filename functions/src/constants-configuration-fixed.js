@@ -596,8 +596,8 @@ const DUMMY_GAMES = [
         city: null,
       },
       status: {
-        short: "Q1",
-        long: "1st Quarter",
+        short: "Q3",
+        long: "3rd Quarter",
         timer: null,
       },
     },
@@ -626,16 +626,16 @@ const DUMMY_GAMES = [
     },
     scores: {
       home: {
-        quarter_1: null,
-        quarter_2: null,
+        quarter_1: 10,
+        quarter_2: 10,
         quarter_3: null,
         quarter_4: null,
         overtime: null,
         total: 0,
       },
       away: {
-        quarter_1: null,
-        quarter_2: null,
+        quarter_1: 10,
+        quarter_2: 19,
         quarter_3: null,
         quarter_4: null,
         overtime: null,
