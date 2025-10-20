@@ -642,20 +642,38 @@ async function WeeklyChampionPost({
   mediaToUpload,
   captionLink,
 }) {
+  // CTA for the caption
   const cta = getRandomCTA({ link: captionLink });
-  const body = `
-👑 This Week's Square Trivia Champions:  
 
-🥇 ${winner1} - $${amount1} (${wins1} wins)  
-🥈 ${winner2} - $${amount2} (${wins2} wins)  
-🥉 ${winner3} - $${amount3} (${wins3} wins)  
+  // Helper to format leaderboard lines
+  const formatLine = (place, name, amount, wins) =>
+    name ? `${place} ${name} - $${amount} (${wins} wins)` : "";
+
+  // Main post body for caption
+  const body = `
+👑 This Week's Square Trivia Champions:
+
+${winner1 && formatLine("🥇", winner1, amount1, wins1)}
+${winner2 && formatLine("🥈", winner2, amount2, wins2)}
+${winner3 && formatLine("🥉", winner3, amount3, wins3)}
 
 Think you can make next week's list? 🎯
-  `;
+  `.trim();
+
+  // Shorter version for tweet
+  const tweet = `
+👑 This Week Summary:
+${winner1 && formatLine("🥇", winner1, amount1, wins1)}
+${winner2 && formatLine("🥈", winner2, amount2, wins2)}
+${winner3 && formatLine("🥉", winner3, amount3, wins3)}
+  `.trim();
+
+  // Post to all platforms
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
     link: captionLink,
+    tweet: buildTemplate(tweet),
   });
 }
 

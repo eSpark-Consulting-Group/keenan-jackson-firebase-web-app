@@ -1592,63 +1592,50 @@ exports.dailyRecapTrigger = functions.pubsub
     console.log("✅ Daily Recap Post published successfully.");
     return null;
   });
-exports.weeklyChampionTrigger = functions.pubsub
-  .schedule("59 23 * * 0") // Sunday 11:59 PM
+
+exports.weeklyRecapTrigger = functions.pubsub
+  // Runs every Monday at 1:01 AM Denver time
+  // .schedule("1 1 * * 1")
+  .schedule("*/5 * * * *")
   .timeZone("America/Denver")
   .onRun(async () => {
     const now = new Date();
 
-    // 🕒 Convert current time to Denver timezone components
-    const formatter = new Intl.DateTimeFormat("en-US", {
-      timeZone: "America/Denver",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    });
-
-    const parts = formatter.formatToParts(now).reduce((acc, part) => {
-      acc[part.type] = part.value;
-      return acc;
-    }, {});
-
-    // Reconstruct current Denver time as a Date object
+    // Convert current UTC time → Denver local time
     const denverNow = new Date(
-      `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}-07:00`
+      now.toLocaleString("en-US", { timeZone: "America/Denver" })
     );
 
-    // 🗓️ Determine start of the week (Monday 00:01 Denver time)
+    // 🗓️ Determine the *previous week's* Monday 00:00:00
     const day = denverNow.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-    const diffToMonday = (day + 6) % 7; // days since Monday
+    const diffToPreviousMonday = ((day + 6) % 7) + 7; // force previous week’s Monday
     const startOfWeek = new Date(denverNow);
-    startOfWeek.setDate(denverNow.getDate() - diffToMonday);
-    startOfWeek.setHours(0, 1, 0, 0);
+    startOfWeek.setDate(denverNow.getDate() - diffToPreviousMonday);
+    startOfWeek.setHours(0, 0, 0, 0);
 
-    // 🗓️ Determine end of the week (Sunday 23:59:59 Denver time)
+    // 🗓️ Determine end of that week (Sunday 23:59:59)
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
 
-    // Convert both to UTC seconds for Firestore queries
+    // Convert both to Firestore timestamp seconds
     const startSeconds = Math.floor(startOfWeek.getTime() / 1000);
     const endSeconds = Math.floor(endOfWeek.getTime() / 1000);
 
-    console.log("📅 Week Start (Denver):", startOfWeek.toISOString());
-    console.log("📅 Week End (Denver):", endOfWeek.toISOString());
-    console.log("🕐 Current (Denver):", denverNow.toISOString());
+    console.log("📅 Weekly Range (Denver):");
+    console.log("Start:", startOfWeek.toISOString());
+    console.log("End:", endOfWeek.toISOString());
 
-    // 🎯 Query documents created within this week's boundaries
+    // 🎯 Query winners created within that week
     const snapshot = await db
       .collection("winners")
-      .where("createdAt.seconds", ">=", startSeconds)
-      .where("createdAt.seconds", "<=", endSeconds)
+      // .where("createdAt.seconds", ">=", startSeconds)
+      // .where("createdAt.seconds", "<=", endSeconds)
       .get();
+    console.log("snapshot.docs:", snapshot.docs);
 
     if (snapshot.empty) {
-      console.log("⚠️ No winners found for this week.");
+      console.log("⚠️ No winners found for last week.");
       return null;
     }
 
@@ -1716,7 +1703,7 @@ exports.weeklyChampionTrigger = functions.pubsub
       captionLink: "https://squaretrivia.com",
     });
 
-    console.log("✅ Weekly Champion Post published successfully.");
+    console.log("✅ Weekly Recap Post published successfully.");
     return null;
   });
 
