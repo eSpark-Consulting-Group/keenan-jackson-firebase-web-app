@@ -115,9 +115,9 @@ async function postToAllPlatforms({ media, caption, link, tweet }) {
 }
 
 // Builds post text with CTA + hashTags
-function buildTemplate(body, cta, hashTags) {
+function buildTemplate(body, cta) {
   return `${body.trim()}
-  
+
 ${cta ? cta + "\n" : ""}${hashTags ? "\n" + hashTags : ""}`;
 }
 
