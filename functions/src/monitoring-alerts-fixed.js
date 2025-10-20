@@ -1594,9 +1594,8 @@ exports.dailyRecapTrigger = functions.pubsub
   });
 
 exports.weeklyRecapTrigger = functions.pubsub
-  // Runs every Monday at 1:01 AM Denver time
-  // .schedule("1 1 * * 1")
-  .schedule("*/5 * * * *")
+  .schedule("1 1 * * 1") // Runs every Monday at 1:01 AM Denver time
+  // .schedule("*/5 * * * *")
   .timeZone("America/Denver")
   .onRun(async () => {
     const now = new Date();
@@ -1618,10 +1617,6 @@ exports.weeklyRecapTrigger = functions.pubsub
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
 
-    // Convert both to Firestore timestamp seconds
-    const startSeconds = Math.floor(startOfWeek.getTime() / 1000);
-    const endSeconds = Math.floor(endOfWeek.getTime() / 1000);
-
     console.log("📅 Weekly Range (Denver):");
     console.log("Start:", startOfWeek.toISOString());
     console.log("End:", endOfWeek.toISOString());
@@ -1629,9 +1624,10 @@ exports.weeklyRecapTrigger = functions.pubsub
     // 🎯 Query winners created within that week
     const snapshot = await db
       .collection("winners")
-      // .where("createdAt.seconds", ">=", startSeconds)
-      // .where("createdAt.seconds", "<=", endSeconds)
+      .where("createdAt", ">=", admin.firestore.Timestamp.fromDate(startOfWeek))
+      .where("createdAt", "<=", admin.firestore.Timestamp.fromDate(endOfWeek))
       .get();
+
     console.log("snapshot.docs:", snapshot.docs);
 
     if (snapshot.empty) {
