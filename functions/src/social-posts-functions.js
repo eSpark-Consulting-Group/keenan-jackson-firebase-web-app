@@ -504,7 +504,15 @@ async function MultiGameUpdatePost({ games, mediaToUpload, captionLink, day }) {
   // games example: [{match: "Cowboys vs Eagles", fill: "85%"}, ...]
   const cta = getRandomCTA({ link: captionLink });
 
-  const gameLines = games.map((g) => `${g.match}: ${g.fill} FULL`).join("\n");
+  const gameLines = games
+    .map((g) => {
+      const timePart = new Date(g.gameDate).toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      return `${g.teams.home} vs ${g.teams.away} -> ${timePart}`;
+    })
+    .join("\n");
   const gameLinestweet = games
     .slice(0, 3)
     .map((g) => `${g.match}: ${g.fill} FULL`)

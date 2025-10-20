@@ -2036,13 +2036,16 @@ exports.teamRivalryTrigger = functions.pubsub
 
 exports.multiGameUpdateTrigger = functions.pubsub
   .schedule("50 23 * * *") // Runs daily at 11:50 PM
+  // .schedule("*/5 * * * *") // Runs every 5 minutes for testing
   .timeZone("America/Denver")
   .onRun(async () => {
-    console.log("🎯 Running MultiGameUpdateTrigger (11:50 PM)...");
+    console.log("🚀 [multiGameUpdateTrigger] Function started...");
 
     try {
-      // Get "tomorrow" date range
+      // Step 1: Calculate tomorrow's date range
       const now = new Date();
+      console.log("🕓 [Step 1] Current Date (Server):", now.toISOString());
+
       const tomorrow = new Date(now);
       tomorrow.setDate(now.getDate() + 1);
       tomorrow.setHours(0, 0, 0, 0);
@@ -2050,44 +2053,74 @@ exports.multiGameUpdateTrigger = functions.pubsub
       const dayAfter = new Date(tomorrow);
       dayAfter.setDate(tomorrow.getDate() + 1);
 
-      // Convert to Firestore Timestamps (in seconds)
-      const startTimestamp = Math.floor(tomorrow.getTime() / 1000);
-      const endTimestamp = Math.floor(dayAfter.getTime() / 1000);
+      console.log("📅 [Step 1] Tomorrow:", tomorrow.toISOString());
+      console.log("📅 [Step 1] Day After Tomorrow:", dayAfter.toISOString());
 
-      console.log(
-        `🕒 Checking for games between ${tomorrow.toISOString()} and ${dayAfter.toISOString()}`
+      // Step 2: Convert to Timestamps
+      const startTimestampSeconds = Math.floor(tomorrow.getTime() / 1000);
+      const endTimestampSeconds = Math.floor(dayAfter.getTime() / 1000);
+
+      console.log("🧭 [Step 2] startTimestampSeconds:", startTimestampSeconds);
+      console.log("🧭 [Step 2] endTimestampSeconds:", endTimestampSeconds);
+
+      const startTimestamp = admin.firestore.Timestamp.fromMillis(
+        startTimestampSeconds * 1000
+      );
+      const endTimestamp = admin.firestore.Timestamp.fromMillis(
+        endTimestampSeconds * 1000
       );
 
-      // Fetch games scheduled for tomorrow
+      console.log(
+        "📌 [Step 2] Firestore Start Timestamp:",
+        startTimestamp.toDate().toISOString()
+      );
+      console.log(
+        "📌 [Step 2] Firestore End Timestamp:",
+        endTimestamp.toDate().toISOString()
+      );
+
+      // Step 3: Query Games
+      console.log(
+        `🔍 [Step 3] Querying games scheduled between ${startTimestamp.toDate().toISOString()} and ${endTimestamp.toDate().toISOString()}`
+      );
+
       const snapshot = await db
         .collection("games")
-        .where("gameDate.seconds", ">=", startTimestamp)
-        .where("gameDate.seconds", "<", endTimestamp)
+        .where("gameDate", ">=", startTimestamp)
+        .where("gameDate", "<", endTimestamp)
         .get();
 
+      console.log("📝 [Step 3] Query executed. Docs found:", snapshot.size);
+
       if (snapshot.empty) {
-        console.log("❌ No games found for tomorrow.");
+        console.log("❌ [Step 3] No games found for tomorrow.");
         return null;
       }
 
-      const games = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      if (games.length < 2) {
+      // Step 4: Format Game Data
+      const games = snapshot.docs.map((doc) => {
+        const data = doc.data();
         console.log(
-          `🟡 Only ${games.length} game found for tomorrow. Skipping trigger.`
+          `🎮 [Step 4] Game ID: ${doc.id} | gameDate:`,
+          data.gameDate?.toDate?.().toISOString?.() || data.gameDate
         );
-        return null;
-      }
+        return {
+          id: doc.id,
+          ...data,
+        };
+      });
 
-      // Determine the day name (e.g., "Sunday")
+      // Step 5: Determine Day Name
       const dayName = tomorrow.toLocaleDateString("en-US", { weekday: "long" });
+      console.log(`📆 [Step 5] Day Name for tomorrow: ${dayName}`);
 
-      console.log(
-        `✅ Found ${games.length} games scheduled for ${dayName}. Triggering post...`
-      );
+      // Step 6: Trigger Post
+      console.log("📣 [Step 6] Triggering MultiGameUpdatePost with payload:", {
+        gameCount: games.length,
+        mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+        captionLink: "https://squaretrivia.com",
+        day: dayName,
+      });
 
       await MultiGameUpdatePost({
         games,
@@ -2097,11 +2130,12 @@ exports.multiGameUpdateTrigger = functions.pubsub
       });
 
       console.log(
-        `🎉 Multi-game update post triggered successfully for ${dayName}.`
+        `✅ [Step 6] Multi-game update post triggered successfully for ${dayName}.`
       );
       return null;
     } catch (error) {
-      console.error("❌ Error in MultiGameUpdateTrigger:", error);
+      console.error("❌ [ERROR] multiGameUpdateTrigger failed:", error);
+      console.error("🧠 [ERROR STACK]", error?.stack);
       return null;
     }
   });
