@@ -628,7 +628,7 @@ Your sports knowledge = real money!
   });
 }
 
-// Weekly Champion
+// 🏆 Weekly Champion Post
 async function WeeklyChampionPost({
   winner1,
   amount1,
@@ -647,25 +647,33 @@ async function WeeklyChampionPost({
 
   // Helper to format leaderboard lines
   const formatLine = (place, name, amount, wins) =>
-    name ? `${place} ${name} - $${amount} (${wins} wins)` : "";
+    `${place} ${name} - $${amount} (${wins} wins)`;
 
-  // Main post body for caption
+  // ✅ Build winner list dynamically
+  const winnerLines = [];
+  if (winner1) winnerLines.push(formatLine("🥇", winner1, amount1, wins1));
+  if (winner2) winnerLines.push(formatLine("🥈", winner2, amount2, wins2));
+  if (winner3) winnerLines.push(formatLine("🥉", winner3, amount3, wins3));
+
+  // ❌ If no winners at all, don't post
+  if (winnerLines.length === 0) {
+    console.log("⚠️ No winners this week — skipping WeeklyChampionPost.");
+    return null;
+  }
+
+  // Main caption body
   const body = `
 👑 This Week's Square Trivia Champions:
 
-${winner1 && formatLine("🥇", winner1, amount1, wins1)}
-${winner2 && formatLine("🥈", winner2, amount2, wins2)}
-${winner3 && formatLine("🥉", winner3, amount3, wins3)}
+${winnerLines.join("\n")}
 
 Think you can make next week's list? 🎯
   `.trim();
 
-  // Shorter version for tweet
+  // Shorter tweet version
   const tweet = `
 👑 This Week Summary:
-${winner1 && formatLine("🥇", winner1, amount1, wins1)}
-${winner2 && formatLine("🥈", winner2, amount2, wins2)}
-${winner3 && formatLine("🥉", winner3, amount3, wins3)}
+${winnerLines.join("\n")}
   `.trim();
 
   // Post to all platforms
