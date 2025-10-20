@@ -1839,12 +1839,12 @@ exports.recordBreakerTrigger = functions.pubsub
   .onRun(async () => {
     console.log("⚡ Checking for record-breaking answers...");
 
-    // Get fastest winner
+    // 🔹 Fetch fastest winner
     const snapshot = await db
       .collection("winners")
       .orderBy("answerTime", "asc")
       .limit(1)
-      .get();
+      .get({ source: "server" }); // Force fresh read
 
     if (snapshot.empty) {
       console.log("⚠️ No winners found.");
@@ -1858,6 +1858,9 @@ exports.recordBreakerTrigger = functions.pubsub
     const userId = fastest.userId;
     const gameId = fastest.gameId || "unknown";
 
+    console.log(fastest, "FASTEST");
+    console.log(fastestId, "FASTEST ID");
+
     if (!userId) {
       console.log("⚠️ Missing userId in winner doc:", fastestId);
       return null;
@@ -1865,41 +1868,43 @@ exports.recordBreakerTrigger = functions.pubsub
 
     // 🔹 Fetch user info
     const userRef = db.collection("users").doc(userId);
-    const userSnap = await userRef.get();
+    const userSnap = await userRef.get({ source: "server" });
     const userData = userSnap.exists ? userSnap.data() : {};
-
     const winner = userData.displayName || userData.email || `User ${userId}`;
 
     console.log(
       `🏃 Fastest: ${winner} (${userId}), time: ${currentFastestTime}s`
     );
 
-    // 🔹 Record tracker doc
+    // 🔹 Fetch record tracker from new collection "fastestRecord"
     const recordRef = db.collection("system").doc("recordTracker");
-    const recordDoc = await recordRef.get();
+    const recordDoc = await recordRef.get({ source: "server" });
     const recordData = recordDoc.exists ? recordDoc.data() : {};
+
+    console.log(recordData, "RECORD DATA");
 
     const lastFastestTime = Number(recordData.fastestTime) || null;
     const lastRecordId = String(recordData.lastRecordId || "");
-    const lastRecordUser = String(recordData.lastRecordUser || "");
-    const lastRecordGame = String(recordData.lastRecordGame || "");
 
-    console.log("📘 fastestId:", fastestId);
-    console.log("📗 lastRecordId:", lastRecordId);
-    console.log("👤 userId:", userId);
-    console.log("🎮 gameId:", gameId);
+    console.log("📘 Current fastestId:", fastestId);
+    console.log("📗 Last recordId:", lastRecordId);
     console.log("⏱ Current:", currentFastestTime, "Last:", lastFastestTime);
 
-    // ✅ Stop if:
-    // 1. Same winner doc
-    // 2. Same user in same game
-    // 3. Not faster than existing record
-    if (
-      lastRecordId === fastestId ||
-      (lastRecordUser === userId && lastRecordGame === gameId) ||
-      (lastFastestTime && currentFastestTime >= lastFastestTime)
-    ) {
-      console.log("⏸ No new record or already processed for this user/game.");
+    // ✅ Skip if same record or not faster
+    if (lastRecordId === fastestId) {
+      console.log("⏸ Same record detected. Skipping post.");
+      return null;
+    }
+
+    if (lastFastestTime && currentFastestTime >= lastFastestTime) {
+      console.log(
+        `⏸ Not a new record. Current (${currentFastestTime}s) is slower than or equal to last (${lastFastestTime}s).`
+      );
+      return null;
+    }
+
+    if (!currentFastestTime || isNaN(currentFastestTime)) {
+      console.log("⚠️ Invalid current fastest time, skipping...");
       return null;
     }
 
@@ -1913,15 +1918,14 @@ exports.recordBreakerTrigger = functions.pubsub
       captionLink: "https://squaretrivia.com",
     });
 
-    // 📝 Update tracker
     await recordRef.set(
       {
         fastestTime: currentFastestTime,
         winner,
         lastRecordId: fastestId,
-        lastRecordUser: userId,
-        lastRecordGame: gameId,
         lastUpdated: admin.firestore.Timestamp.now(),
+        userId,
+        gameId,
       },
       { merge: true }
     );
