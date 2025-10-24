@@ -15,7 +15,6 @@ import {
   Grid3X3,
 } from "lucide-react";
 import { useAuth } from "../contexts/authcontext";
-// import { testImages } from "../constant";
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -538,14 +537,6 @@ export default function LandingPage() {
           <h2 className="text-4xl font-bold mb-4">
             Ready to Turn Your Sports Knowledge into Cash?
           </h2>
-          {/* {testImages.map((img, idx) => (
-            <img
-              key={idx}
-              src={img}
-              alt={`Testimonial ${idx + 1}`}
-              className="inline-block w-100 h-100 border-4 border-white shadow-lg mx-2"
-            />
-          ))} */}
           <p className="text-xl mb-8 opacity-90">
             Join thousands of sports fans winning with their trivia skills - NO
             FEES, just pure competition!
