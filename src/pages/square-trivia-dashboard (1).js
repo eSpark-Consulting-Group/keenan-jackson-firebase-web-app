@@ -279,7 +279,7 @@ export default function Dashboard() {
             )}
           </motion.div>
 
-          {/* Active Tiers */}
+          {/* Active Boards */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -288,7 +288,7 @@ export default function Dashboard() {
           >
             <div className="flex items-center mb-4">
               <DollarSign className="h-8 w-8 text-green-600 mr-3" />
-              <h3 className="text-lg font-semibold">Your Tiers</h3>
+              <h3 className="text-lg font-semibold">Your Boards</h3>
             </div>
 
             {stats.activeTiers.length > 0 ? (
@@ -310,12 +310,12 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="text-center py-4">
-                <p className="text-gray-500 mb-3">No active tiers</p>
+                <p className="text-gray-500 mb-3">No active boards</p>
                 <Link
                   to="/games"
                   className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                 >
-                  Choose a tier to start playing
+                  Choose a board to start playing
                 </Link>
               </div>
             )}
@@ -443,8 +443,8 @@ export default function Dashboard() {
               </h3>
               <p className="text-gray-600 mb-4">
                 {stats.activeTiers.length > 0
-                  ? "No games available for your tiers right now"
-                  : "Choose a tier to see available games"}
+                  ? "No games available for your boards right now"
+                  : "Choose a board to see available games"}
               </p>
               <Link
                 to="/games"

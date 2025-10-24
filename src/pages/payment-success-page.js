@@ -74,7 +74,7 @@ export default function PaymentSuccess() {
             amount: tier?.amount || 0,
             accessGranted: true,
           });
-          toast.success(`Payment successful! Tier: ${res.tier}`);
+          toast.success(`Payment successful! Board: ${res.tier}`);
           runConfetti();
           refreshUserData();
         } else {
@@ -154,7 +154,7 @@ export default function PaymentSuccess() {
           </p>
         </motion.div>
 
-        {/* Tier Details */}
+        {/* Board Details */}
         {paymentDetails?.tier && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}

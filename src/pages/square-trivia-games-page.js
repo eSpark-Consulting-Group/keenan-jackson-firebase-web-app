@@ -50,7 +50,7 @@ export default function Games() {
         // 1. Get all boards
         const boardsSnap = await getDocs(collection(db, "boards"));
 
-        // 2. Extract tiers where this user has played
+        // 2. Extract boards where this user has played
         const playedTiers = new Set();
 
         boardsSnap.forEach((boardDoc) => {
@@ -74,7 +74,7 @@ export default function Games() {
 
         setUserTierAccess(Array.from(playedTiers));
       } catch (err) {
-        console.error("Error loading played tiers:", err);
+        console.error("Error loading played boards:", err);
       }
     };
 
@@ -183,7 +183,7 @@ export default function Games() {
       filtered = filtered.filter((game) => game.sport === selectedSport);
     }
 
-    // Filter by tier
+    // Filter by boards
     if (selectedTier !== "all") {
       filtered = filtered.filter((game) =>
         game.boards.some((board) => board.tierId === selectedTier)
@@ -262,7 +262,7 @@ export default function Games() {
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors hover:text-white"
               >
                 <Plus className="h-5 w-5 mr-2" />
-                Choose a Tier
+                Choose a Board
               </button>
             )}
           </div>
@@ -272,7 +272,7 @@ export default function Games() {
           </p>
         </motion.div>
 
-        {/* User's Active Tiers */}
+        {/* User's Active Boards */}
         {userData?.currentTiers && userData.currentTiers.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -281,7 +281,7 @@ export default function Games() {
           >
             <h3 className="text-lg font-semibold mb-3 flex items-center">
               <Shield className="h-5 w-5 mr-2 text-blue-600" />
-              Your Active Tiers
+              Your Active Boards
             </h3>
             <div className="flex flex-wrap gap-3">
               {userData.currentTiers.map((tierId) => {
@@ -334,17 +334,17 @@ export default function Games() {
               </select>
             </div>
 
-            {/* Tier filter */}
+            {/* Board filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tier
+                Board
               </label>
               <select
                 value={selectedTier}
                 onChange={(e) => setSelectedTier(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="all">All Tiers</option>
+                <option value="all">All Boards</option>
                 {Object.values(TIERS).map((tier) => (
                   <option key={tier.id} value={tier.id}>
                     {tier.name}
@@ -452,7 +452,7 @@ export default function Games() {
                                     {isUserTier && (
                                       <div className="absolute -top-2 -right-2">
                                         <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                                          Your Tier
+                                          Your Board
                                         </span>
                                       </div>
                                     )}
@@ -532,7 +532,7 @@ export default function Games() {
                 onClick={() => navigate("/tiers")}
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors hover:text-white"
               >
-                Choose a Tier to Get Started
+                Choose a Board to Get Started
                 <ChevronRight className="ml-2 h-4 w-4" />
               </button>
             )}

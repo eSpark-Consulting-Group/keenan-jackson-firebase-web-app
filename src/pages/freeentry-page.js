@@ -34,7 +34,7 @@ Dallas, TX 75201`;
     {
       icon: FileText,
       title: "Handwritten Letter",
-      description: "Write your name, email, phone number, and desired tier on a 3x5 index card"
+      description: "Write your name, email, phone number, and desired board on a 3x5 index card"
     },
     {
       icon: Mail,
@@ -51,7 +51,7 @@ Dallas, TX 75201`;
   const steps = [
     "Get a 3x5 index card and a #10 envelope",
     "Write your full name, email address, and phone number on the card",
-    "Write your desired tier (e.g., \"$25 Tier\") on the card",
+    "Write your desired board (e.g., \"$25 Board\") on the card",
     "Put the index card in an envelope",
     "Include a self-addressed stamped envelope (SASE)",
     "Mail to the address below"
@@ -67,8 +67,8 @@ Dallas, TX 75201`;
       answer: "One free entry per envelope. You may send multiple envelopes, but each must be mailed separately and contain all required materials."
     },
     {
-      question: "What tier access do I get?",
-      answer: "You'll receive access to the tier you specify on your index card, with the same features and prize opportunities as paid players."
+      question: "What board access do I get?",
+      answer: "You'll receive access to the board you specify on your index card, with the same features and prize opportunities as paid players."
     },
     {
       question: "How long is my free entry valid?",

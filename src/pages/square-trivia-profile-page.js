@@ -928,7 +928,7 @@ export default function Profile() {
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-600">Win Rate</p>
+                    <p className="text-sm text-gray-600">Championships</p>
                     <p className="text-2xl font-bold text-blue-600">
                       {getWinRate()}%
                     </p>

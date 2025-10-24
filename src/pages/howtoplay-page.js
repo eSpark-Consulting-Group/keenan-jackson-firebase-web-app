@@ -19,21 +19,21 @@ export default function HowToPlay() {
   const steps = [
     {
       icon: DollarSign,
-      title: "1. Choose Your Tier",
+      title: "1. Choose Your Board",
       description:
-        "Select from 6 tiers with guaranteed prizes ranging from $200 to $9,000 per quarter. NO FEES on playing or winning!",
+        "Select from 6 boards with guaranteed prizes ranging from $200 to $9,000 per quarter. NO FEES on playing or winning!",
       details: [
-        "$25 Tier: Win $200/quarter",
-        "$50 Tier: Win $450/quarter",
-        "$100 Tier: Win $900/quarter",
-        "Higher tiers available for playoffs & championships",
+        "$25 Board: Win $200/quarter",
+        "$50 Board: Win $450/quarter",
+        "$100 Board: Win $900/quarter",
+        "Higher boards available for playoffs & championships",
       ],
     },
     {
       icon: Brain,
       title: "2. Answer Trivia Questions",
       description:
-        "Test your sports knowledge with quick trivia questions. Questions get harder with higher tiers.",
+        "Test your sports knowledge with quick trivia questions. Questions get harder with higher boards.",
       details: [
         "Questions cover rules, history, stats, players, and records",
         "Timer starts when question appears",
@@ -103,7 +103,7 @@ export default function HowToPlay() {
     {
       question: "How much can I win?",
       answer:
-        "Depends on your tier! From $200/quarter in the $25 tier up to $9,000/quarter in the $1000 tier.",
+        "Depends on your board! From $200/quarter in the $25 board up to $9,000/quarter in the $1000 board.",
     },
     {
       question: "How fast do I need to answer?",
@@ -113,7 +113,7 @@ export default function HowToPlay() {
     {
       question: "What if I lose on a winning square?",
       answer:
-        "You get consolation prizes! Free $25 tier trivia questions based on your original tier (1-4 questions).",
+        "You get consolation prizes! Free $25 board trivia questions based on your original board (1-4 questions).",
     },
   ];
 
@@ -271,7 +271,7 @@ export default function HowToPlay() {
 
               <p className="text-gray-700 mt-4">
                 <strong>Result:</strong> Player B wins the $900 prize (in $100
-                tier) with the faster answer time!
+                board) with the faster answer time!
               </p>
             </div>
           </div>

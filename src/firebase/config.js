@@ -83,12 +83,12 @@ export const collections = {
   triviaAttempts: "triviaAttempts",
 };
 
-// Tier configuration (matches backend)
+// Board configuration (matches backend)
 export const TIERS = {
   TIER_25: {
     id: "tier_25",
     amount: 25,
-    name: "$25 Tier",
+    name: "$25 Board",
     color: "bg-green-600",
     prizePerQuarter: 200,
     totalPrize: 800,
@@ -97,7 +97,7 @@ export const TIERS = {
   TIER_50: {
     id: "tier_50",
     amount: 50,
-    name: "$50 Tier",
+    name: "$50 Board",
     color: "bg-blue-600",
     prizePerQuarter: 450,
     totalPrize: 1800,
@@ -106,7 +106,7 @@ export const TIERS = {
   TIER_100: {
     id: "tier_100",
     amount: 100,
-    name: "$100 Tier",
+    name: "$100 Board",
     color: "bg-purple-600",
     prizePerQuarter: 900,
     totalPrize: 3600,
@@ -115,7 +115,7 @@ export const TIERS = {
   TIER_250: {
     id: "tier_250",
     amount: 250,
-    name: "$250 Tier",
+    name: "$250 Board",
     color: "bg-yellow-600",
     prizePerQuarter: 2250,
     totalPrize: 9000,
@@ -124,7 +124,7 @@ export const TIERS = {
   TIER_500: {
     id: "tier_500",
     amount: 500,
-    name: "$500 Tier",
+    name: "$500 Board",
     color: "bg-red-600",
     prizePerQuarter: 4500,
     totalPrize: 18000,
@@ -133,7 +133,7 @@ export const TIERS = {
   TIER_1000: {
     id: "tier_1000",
     amount: 1000,
-    name: "$1000 Tier",
+    name: "$1000 Board",
     color: "bg-gray-800",
     prizePerQuarter: 9000,
     totalPrize: 36000,
@@ -154,7 +154,7 @@ export const GAME_CONFIG = {
 // Instant payout configuration
 export const INSTANT_PAYOUT_FEE = 0.04; // 4%
 
-// Helper to get tier by ID
+// Helper to get board by ID
 export const getTierById = (tierId) => {
   return Object.values(TIERS).find((tier) => tier.id === tierId) || null;
 };
