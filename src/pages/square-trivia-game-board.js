@@ -423,23 +423,49 @@ export default function GameBoard() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {game?.teams.away || "TBA"} @ {game?.teams?.home || "TBA"}
+                {`${game?.teams.away || "TBA"} @ ${game?.teams?.home || "TBA"} - ${tier.name}`}
               </h1>
+              <div className="flex items-center space-x-4 text-md text-gray-600">
+                {"5 Contests: Q1, Q2, Q3, Q4 + Board Champion"}
+              </div>
               <div className="flex items-center space-x-4 text-sm text-gray-600">
-                <span
-                  className={`px-3 py-1 rounded-full font-medium text-white ${tier.color}`}
-                >
-                  {tier.name}
+                <span className="flex items-center gap-1">
+                  Contest Prizes: <b>{formatCurrency(tier.prizePerQuarter)}</b>{" "}
+                  each | Champion: <b>{formatCurrency(tier.championPrize)}</b>
+                </span>
+              </div>
+              <div className="flex items-center space-x-4 text-sm text-gray-600">
+                <span className="flex items-center">
+                  Price Poll: <b>$ {tier.totalPrize}</b>
                 </span>
                 <span className="flex items-center">
-                  <Trophy className="h-4 w-4 mr-1 text-yellow-500" />
-                  {formatCurrency(tier.prizePerQuarter)} per quarter
+                  Contests Complete: <b>{game.currentQuarter - 1}/5</b>
                 </span>
+              </div>
+              <div className="flex items-center space-x-4 text-sm text-gray-600">
                 <span className="flex items-center">
-                  <Clock className="h-4 w-4 mr-1" />
-                  {new Date(
-                    game.gameDate?.toDate?.() || game.gameDate
-                  ).toLocaleString()}
+                  {(() => {
+                    const rawDate = game.gameDate?.toDate?.() || game.gameDate;
+                    const dateObj = new Date(rawDate);
+
+                    const date = dateObj.toLocaleDateString(undefined, {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    });
+
+                    const time = dateObj.toLocaleTimeString(undefined, {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    });
+
+                    return (
+                      <>
+                        Date: <b>{date}</b> | Time: <b>{time}</b>
+                      </>
+                    );
+                  })()}
                 </span>
               </div>
             </div>

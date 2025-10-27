@@ -18,6 +18,7 @@ import {
   BarChart3,
   Users,
   CircleDollarSign,
+  Trophy,
 } from "lucide-react";
 import { useAuth } from "../../contexts/authcontext";
 import toast from "react-hot-toast";
@@ -58,13 +59,13 @@ export default function Layout({ children }) {
 
   const userNavigation = [
     { name: "Profile", href: "/profile", icon: User },
-    { name: "Settings", href: "/settings", icon: Settings },
     {
       name: "Payouts",
       href: "/payouts",
       icon: DollarSign,
       public: true,
     },
+    { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
   ];
 
   const adminNavigation = [

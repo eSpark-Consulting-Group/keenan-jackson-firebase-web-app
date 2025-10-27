@@ -33,6 +33,7 @@ export default function Dashboard() {
     totalWins: 0,
     totalPrizeAmount: 0,
     averageAnswerTime: 0,
+    fastestAnswerTime: 0,
     activeTiers: [],
     recentGames: [],
     upcomingGames: [],
@@ -122,6 +123,7 @@ export default function Dashboard() {
         totalWins: wins.size,
         totalPrizeAmount,
         averageAnswerTime: userData?.averageAnswerTime || 0,
+        fastestAnswerTime: userData?.fastestAnswerTime || 0,
         activeTiers: userData?.currentTiers || [],
       });
 
@@ -330,7 +332,7 @@ export default function Dashboard() {
           >
             <div className="flex items-center mb-4">
               <Trophy className="h-8 w-8 text-yellow-500 mr-3" />
-              <h3 className="text-lg font-semibold">Your Stats</h3>
+              <h3 className="text-lg font-semibold">Your Performance</h3>
             </div>
 
             <div className="space-y-3">
@@ -339,7 +341,7 @@ export default function Dashboard() {
                 <span className="font-semibold">{stats.totalSquares}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Wins</span>
+                <span className="text-gray-600">Contest Wins:</span>
                 <span className="font-semibold text-green-600">
                   {stats.totalWins}
                 </span>
@@ -347,13 +349,19 @@ export default function Dashboard() {
               <div className="flex justify-between">
                 <span className="text-gray-600">Total Won</span>
                 <span className="font-semibold text-green-600">
-                  {formatCurrency(stats.totalPrizeAmount)}
+                  {formatCurrency(stats.totalPrizeAmount)  || "0.0"}
+                </span>
+              </div> 
+              <div className="flex justify-between">
+                <span className="text-gray-600">Average Speed:</span>
+                <span className="font-semibold">
+                  {stats.averageAnswerTime?.toFixed(1) || "0.0"}s
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Avg Speed</span>
+                <span className="text-gray-600">Fastest Time:</span>
                 <span className="font-semibold">
-                  {stats.averageAnswerTime.toFixed(1)}s
+                  {stats.fastestAnswerTime?.toFixed(1) || "0.0"}s
                 </span>
               </div>
             </div>

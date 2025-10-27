@@ -707,16 +707,18 @@ async function getUserStats(userId) {
     );
     const winsSnapshot = await getDocs(winsQuery);
 
-    // Calculate stats
+    // Initialize stats
     const stats = {
       totalSquares: squaresSnapshot.size,
       totalWins: winsSnapshot.size,
       totalPrizeAmount: 0,
       winsByTier: {},
       recentWins: [],
+      averageAnswerTime: 0,
+      fastestAnswerTime: 0,
     };
 
-    // Process wins
+    // --- Process wins ---
     winsSnapshot.forEach((doc) => {
       const win = doc.data();
       stats.totalPrizeAmount += win.prizeAmount || 0;
@@ -732,13 +734,30 @@ async function getUserStats(userId) {
       });
     });
 
-    // Sort recent wins by date
+    // Sort and limit recent wins
     stats.recentWins.sort(
       (a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)
     );
-
-    // Keep only 10 most recent
     stats.recentWins = stats.recentWins.slice(0, 10);
+
+    // --- Process answer times ---
+    let totalTime = 0;
+    let validCount = 0;
+    let fastest = Infinity;
+
+    squaresSnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (typeof data.answerTime === "number" && data.answerTime > 0) {
+        totalTime += data.answerTime;
+        validCount++;
+        if (data.answerTime < fastest) fastest = data.answerTime;
+      }
+    });
+
+    if (validCount > 0) {
+      stats.averageAnswerTime = totalTime / validCount;
+      stats.fastestAnswerTime = fastest === Infinity ? 0 : fastest;
+    }
 
     return stats;
   } catch (error) {

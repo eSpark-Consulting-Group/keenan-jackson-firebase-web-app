@@ -29,11 +29,12 @@ const TIERS = {
     borderColor: "border-green-500",
     icon: Check,
     prizePerQuarter: 200,
-    totalPrize: 800,
+    totalPrize: 1000,
     payoutPercentage: 64,
     features: [
       "Entry for all 4 quarters",
       "$200 prize per quarter",
+      "$200 prize for board champion",  
       "50 squares available",
       "Skill-based competition",
     ],
@@ -47,12 +48,13 @@ const TIERS = {
     bgColor: "bg-blue-50",
     borderColor: "border-blue-500",
     icon: TrendingUp,
-    prizePerQuarter: 400,
-    totalPrize: 1600,
+    prizePerQuarter: 450,
+    totalPrize: 2250,
     payoutPercentage: 64,
     features: [
       "Entry for all 4 quarters",
-      "$400 prize per quarter",
+      "$450 prize per quarter",
+      "$450 prize for board champion",
       "50 squares available",
       "Higher stakes competition",
     ],
@@ -66,12 +68,13 @@ const TIERS = {
     bgColor: "bg-purple-50",
     borderColor: "border-purple-500",
     icon: Trophy,
-    prizePerQuarter: 800,
-    totalPrize: 3200,
+    prizePerQuarter: 900,
+    totalPrize: 4500,
     payoutPercentage: 64,
     features: [
       "Entry for all 4 quarters",
-      "$800 prize per quarter",
+      "$900 prize per quarter",
+      "$900 prize for board champion",
       "50 squares available",
       "Premium competition",
     ],
@@ -85,12 +88,13 @@ const TIERS = {
     bgColor: "bg-orange-50",
     borderColor: "border-orange-500",
     icon: Zap,
-    prizePerQuarter: 2000,
-    totalPrize: 8000,
+    prizePerQuarter: 2250,
+    totalPrize: 11250,
     payoutPercentage: 72,
     features: [
       "Entry for all 4 quarters",
-      "$2,000 prize per quarter",
+      "$2,250 prize per quarter",
+      "$2,250 prize for board champion",
       "50 squares available",
       "Elite competition",
       "Playoff games only",
@@ -105,12 +109,13 @@ const TIERS = {
     bgColor: "bg-indigo-50",
     borderColor: "border-indigo-500",
     icon: Star,
-    prizePerQuarter: 4000,
-    totalPrize: 16000,
+    prizePerQuarter: 4500,
+    totalPrize: 22500,
     payoutPercentage: 72,
     features: [
       "Entry for all 4 quarters",
-      "$4,000 prize per quarter",
+      "$4,500 prize per quarter",
+      "$4,500 prize for board champion",
       "50 squares available",
       "High roller competition",
       "Playoff games only",
@@ -125,12 +130,13 @@ const TIERS = {
     bgColor: "bg-yellow-50",
     borderColor: "border-yellow-500",
     icon: Crown,
-    prizePerQuarter: 8000,
-    totalPrize: 32000,
+    prizePerQuarter: 9000,
+    totalPrize: 45000,
     payoutPercentage: 72,
     features: [
       "Entry for all 4 quarters",
-      "$8,000 prize per quarter",
+      "$9,000 prize per quarter",
+      "$9,000 prize for board champion",
       "50 squares available",
       "Championship exclusive",
       "Ultimate competition",
@@ -257,7 +263,7 @@ export default function TierSelection({
     <div className="max-w-7xl mx-auto px-4 py-8 ">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">
-          Select Your Entry Board
+          Choose Your Board
         </h2>
         <p className="text-lg text-gray-600">
           Choose your competition level - prizes are guaranteed!
@@ -426,7 +432,7 @@ export default function TierSelection({
         <ul className="space-y-2 text-sm text-gray-600">
           <li className="flex items-start">
             <span className="font-semibold mr-2">1.</span>
-            Select your entry board based on your budget and desired prize level
+            Choose Your entry Board based on your budget and desired prize level
           </li>
           <li className="flex items-start">
             <span className="font-semibold mr-2">2.</span>

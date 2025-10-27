@@ -165,7 +165,7 @@ export const TERMS_OF_SERVICE = [
       },
 
       {
-        text: "Maximum of <b>5 prize winners</b> per game board",
+        text: "Maximum of <b>5 contests per board</b> - Speed wins each one",
       },
       {
         text: "All winner determinations are <b>final</b> and based solely on trivia performance metrics",

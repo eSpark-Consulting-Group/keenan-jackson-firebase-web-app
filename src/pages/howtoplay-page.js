@@ -19,7 +19,7 @@ export default function HowToPlay() {
   const steps = [
     {
       icon: DollarSign,
-      title: "1. Choose Your Board",
+      title: "1. Choose Your Board ($25/$50/$100)",
       description:
         "Select from 6 boards with guaranteed prizes ranging from $200 to $9,000 per quarter. NO FEES on playing or winning!",
       details: [
@@ -31,7 +31,7 @@ export default function HowToPlay() {
     },
     {
       icon: Brain,
-      title: "2. Answer Trivia Questions",
+      title: "2. Answer trivia questions to earn squares",
       description:
         "Test your sports knowledge with quick trivia questions. Questions get harder with higher boards.",
       details: [
@@ -43,7 +43,7 @@ export default function HowToPlay() {
     },
     {
       icon: Grid3X3,
-      title: "3. Claim Your Squares",
+      title: "3. Pick your squares",
       description:
         "Use your tokens to claim squares on the 50-square game board (10×5 grid).",
       details: [
@@ -55,7 +55,7 @@ export default function HowToPlay() {
     },
     {
       icon: Timer,
-      title: "4. Win by Speed",
+      title: "4. Compete in 5 speed contests per board (Q1-Q4 + Champion)",
       description:
         "When game scores match your square numbers, the player with the fastest trivia answer time wins!",
       details: [
@@ -63,6 +63,30 @@ export default function HowToPlay() {
         "Square (3,7) wins with scores 13-17 OR 17-13",
         "Fastest answer time takes the prize",
         "Answer times revealed only after winning",
+      ],
+    },
+    {
+      icon: Trophy,
+      title: "5. Fastest answer wins each contest",
+      description:
+        "Every contest rewards knowledge and quick thinking - the faster you answered your trivia, the bigger your edge.",
+      details: [
+        "Tiebreakers decided by earliest answer submission",
+        "Each win is automatically tracked and verified",
+        "Winners notified instantly after each quarter",
+        "Payouts processed within 24 hours",
+      ],
+    },
+    {
+      icon: Award,
+      title: "6. Speed Wins Always",
+      description:
+        "Square Trivia rewards the smartest and fastest players - no luck, no fees, just pure skill and competition.",
+      details: [
+        "Win multiple times per board with consistent play",
+        "Top players qualify for playoff and championship rounds",
+        "Climb leaderboards and earn recognition badges",
+        "Your trivia speed defines your legacy - every second counts!",
       ],
     },
   ];
@@ -101,6 +125,16 @@ export default function HowToPlay() {
         "Winners are determined by skill (trivia speed), not random chance. It's like a timed quiz competition with prizes.",
     },
     {
+      question: "How many contests per board? ",
+      answer:
+        "Each board runs 5 contests - one per quarter (Q1, Q2, Q3, Q4) plus the Board Champion (fastest overall time across all quarters).",
+    },
+    {
+      question: "What's the difference between boards?",
+      answer:
+        "Boards are separated by entry price - $25, $50, or $100 per square. Higher boards have bigger contest prizes.",
+    },
+    {
       question: "How much can I win?",
       answer:
         "Depends on your board! From $200/quarter in the $25 board up to $9,000/quarter in the $1000 board.",
@@ -114,6 +148,16 @@ export default function HowToPlay() {
       question: "What if I lose on a winning square?",
       answer:
         "You get consolation prizes! Free $25 board trivia questions based on your original board (1-4 questions).",
+    },
+    {
+      question: "How is the Board Champion determined",
+      answer:
+        "The player with the single fastest correct answer time across all 4 quarters becomes Board Champion and wins the championship bonus prize.",
+    },
+    {
+      question: "What if I win multiple contests on one board?",
+      answer:
+        "You can win multiple quarter contests AND the Board Championship! If you're fast consistently, you could sweep all prizes.",
     },
   ];
 

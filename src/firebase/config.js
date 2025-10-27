@@ -91,8 +91,9 @@ export const TIERS = {
     name: "$25 Board",
     color: "bg-green-600",
     prizePerQuarter: 200,
-    totalPrize: 800,
+    totalPrize: 1000,
     description: "Win $200 per quarter!",
+    championPrize: 200,
   },
   TIER_50: {
     id: "tier_50",
@@ -100,8 +101,9 @@ export const TIERS = {
     name: "$50 Board",
     color: "bg-blue-600",
     prizePerQuarter: 450,
-    totalPrize: 1800,
+    totalPrize: 2250,
     description: "Win $450 per quarter!",
+    championPrize: 450,
   },
   TIER_100: {
     id: "tier_100",
@@ -109,8 +111,9 @@ export const TIERS = {
     name: "$100 Board",
     color: "bg-purple-600",
     prizePerQuarter: 900,
-    totalPrize: 3600,
+    totalPrize: 4500,
     description: "Win $900 per quarter!",
+    championPrize: 900,
   },
   TIER_250: {
     id: "tier_250",
@@ -118,8 +121,9 @@ export const TIERS = {
     name: "$250 Board",
     color: "bg-yellow-600",
     prizePerQuarter: 2250,
-    totalPrize: 9000,
+    totalPrize: 11250,
     description: "Win $2,250 per quarter!",
+    championPrize: 2250,
   },
   TIER_500: {
     id: "tier_500",
@@ -127,8 +131,9 @@ export const TIERS = {
     name: "$500 Board",
     color: "bg-red-600",
     prizePerQuarter: 4500,
-    totalPrize: 18000,
+    totalPrize: 22500,
     description: "Win $4,500 per quarter!",
+    championPrize: 4500,
   },
   TIER_1000: {
     id: "tier_1000",
@@ -136,8 +141,9 @@ export const TIERS = {
     name: "$1000 Board",
     color: "bg-gray-800",
     prizePerQuarter: 9000,
-    totalPrize: 36000,
+    totalPrize: 45000,
     description: "Win $9,000 per quarter!",
+    championPrize: 9000,
   },
 };
 

@@ -52,6 +52,7 @@ import Payouts from "./pages/square-trivia-payouts-page";
 import Tier from "./pages/square-trivia-tier-page";
 import TeamsFanbase from "./pages/admin/teams-fanbase";
 import ReferralReports from "./pages/admin/referral-reports";
+import Leaderboard from "./pages/leaderboard";
 // import ReferalReports from "./pages/referal-reports";
 
 function App() {
@@ -351,6 +352,16 @@ function App() {
                   <AdminRoute>
                     <Layout>
                       <TeamsFanbase />
+                    </Layout>
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/leaderboard"
+                element={
+                  <AdminRoute>
+                    <Layout>
+                      <Leaderboard />
                     </Layout>
                   </AdminRoute>
                 }
