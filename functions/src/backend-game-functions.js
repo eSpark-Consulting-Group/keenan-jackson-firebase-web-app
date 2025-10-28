@@ -411,7 +411,15 @@ exports.determineWinners = functions.pubsub
           });
           return;
         }
-        if (quarterScore.processed) {
+
+        // 🧩 Early lock to prevent reprocessing
+        const gameRef = db.collection("games").doc(gameId);
+        const gameSnap = await gameRef.get();
+        const alreadyProcessed = gameSnap.get(
+          `quarterScores.${quarterToProcess}.processed`
+        );
+
+        if (alreadyProcessed) {
           console.log("✅ Quarter already processed, skipping", {
             gameId,
             quarterToProcess,
@@ -419,14 +427,23 @@ exports.determineWinners = functions.pubsub
           return;
         }
 
-        // Compute winning positions (always strings)
+        await gameRef.update({
+          [`quarterScores.${quarterToProcess}.processed`]: true,
+          [`quarterScores.${quarterToProcess}.lockedAt`]:
+            admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // Compute winning positions
         const homeLastDigit = Math.abs(Number(quarterScore.home)) % 10;
         const awayLastDigit = Math.abs(Number(quarterScore.away)) % 10;
 
-        const winningPositions = [
-          `${homeLastDigit}${awayLastDigit}`.padStart(2, "0"),
-          `${awayLastDigit}${homeLastDigit}`.padStart(2, "0"),
-        ];
+        const winningPositions = Array.from(
+          new Set([
+            `${homeLastDigit}${awayLastDigit}`.padStart(2, "0"),
+            `${awayLastDigit}${homeLastDigit}`.padStart(2, "0"),
+          ])
+        );
+
         console.log("🧮 Computed winning digits", {
           gameId,
           quarterToProcess,
@@ -458,15 +475,10 @@ exports.determineWinners = functions.pubsub
             console.log("➡️ Checking position", { gameId, position });
             const square = board.squares?.[position];
             console.log("Square data", { gameId, position, square });
+            
+            if (!square?.claims?.length) continue;
 
-            if (!square || !square.claims || square.claims.length === 0) {
-              console.log("⚠️ No claims for square, skipping", {
-                gameId,
-                position,
-              });
-              continue;
-            }
-
+            // 🧮 Determine winner (solo or fastest)
             if (square.claims.length === 1) {
               const onlyClaim = square.claims[0];
               winnerUserIds.push(onlyClaim.userId);
@@ -590,47 +602,38 @@ exports.determineWinners = functions.pubsub
                 const updatedClaims = square.claims.filter(
                   (c) => c.userId !== loser.userId
                 );
-                await db
-                  .collection("boards")
-                  .doc(boardId)
-                  .update({
-                    [`squares.${position}.claims`]: updatedClaims,
-                    claimedSquares: admin.firestore.FieldValue.increment(-1),
-                  });
+                await db.collection("boards").doc(boardId).update({
+                  [`squares.${position}.claims`]: updatedClaims,
+                  claimedSquares: admin.firestore.FieldValue.increment(-1),
+                });
               });
             }
           }
         }
 
         if (actions.length > 0) {
-          console.log("✅ Winner/loser actions found", {
+           console.log("✅ Winner/loser actions found", {
             gameId,
             quarterToProcess,
             actionsCount: actions.length,
           });
 
           await Promise.all(actions.map((fn) => fn()));
-
-          console.log("🔖 Marking quarter as processed", {
+console.log("🔖 Marking quarter as processed", {
             gameId,
             quarterToProcess,
             winningPositions,
             winnerUserIds,
           });
-
-          await gameDoc.ref.update({
-            [`quarterScores.${quarterToProcess}.processed`]: true,
+          await gameRef.update({
             [`quarterScores.${quarterToProcess}.processedAt`]:
               admin.firestore.FieldValue.serverTimestamp(),
             [`quarterScores.${quarterToProcess}.winningPositions`]:
-              winningPositions.map(String),
+              winningPositions,
             [`quarterScores.${quarterToProcess}.winnerUserIds`]: winnerUserIds,
           });
         } else {
-          console.log("⚠️ No winners, leaving unprocessed", {
-            gameId,
-            quarterToProcess,
-          });
+          console.log("⚠️ No winners found", { gameId, quarterToProcess });
         }
       });
 
@@ -638,7 +641,7 @@ exports.determineWinners = functions.pubsub
       console.log("🏁 Winner determination complete for all games");
       return null;
     } catch (err) {
-      console.error("💥 Error in determineWinners", { error: err });
+      console.error("💥 Error in determineWinners", err);
       return null;
     }
   });
@@ -872,7 +875,6 @@ async function processWinner(winnerData) {
     looserUserId,
   } = winnerData;
 
-  // ✅ Tier prize mapping
   const tierAmounts = {
     tier_25: { quarter: 200 },
     tier_50: { quarter: 450 },
@@ -884,35 +886,46 @@ async function processWinner(winnerData) {
 
   const prizeAmount = tierAmounts[tierId]?.quarter || 0;
 
-  // ✅ Get user safely
+  // 🧩 Duplicate prevention
+  const existingWinnerSnap = await db
+    .collection("winners")
+    .where("userId", "==", userId)
+    .where("gameId", "==", gameId)
+    .where("quarter", "==", quarter)
+    .where("position", "==", position)
+    .where("boardId", "==", boardId)
+    .limit(1)
+    .get();
+
+  if (!existingWinnerSnap.empty) {
+    console.log(
+      `⚠️ Duplicate winner skipped: ${userId}, ${gameId}, ${quarter}, ${position}`
+    );
+    return existingWinnerSnap.docs[0].id;
+  }
+
+  // ✅ Load user and game safely
   const userSnap = await db.collection("users").doc(userId).get();
   if (!userSnap.exists) throw new Error(`User ${userId} not found`);
   const userData = userSnap.data();
-
-  const displayName =
-    userData.displayName || userData.email || "Unknown Player";
+  const displayName = userData.displayName || userData.email || "Unknown Player";
 
   let displayLooserName = "";
-
-  if (!isSoloWin) {
+  if (!isSoloWin && looserUserId) {
     const looserSnap = await db.collection("users").doc(looserUserId).get();
-    if (!looserSnap.exists) throw new Error(`User ${looserUserId} not found`);
     const looserData = looserSnap.data();
-
     displayLooserName =
-      looserData.displayName || looserData.email || "Unknown Player";
+      looserData?.displayName || looserData?.email || "Unknown Player";
   }
 
-  // ✅ Get game info
   const gameSnap = await db.collection("games").doc(gameId).get();
-  if (!gameSnap.exists) throw new Error("Game not found");
   const game = gameSnap.data();
-
   const team1 = game.teams?.home || "Home Team";
   const team2 = game.teams?.away || "Away Team";
+  const isPhotoFinish =
+    opponentTime && Math.abs(answerTime - opponentTime) < 1000;
 
-  const isPhotoFinish = Math.abs(answerTime - opponentTime) < 1000;
-  // ✅ Create winner record
+  // ✅ Create the winner record
   const winnerRef = await db.collection("winners").add({
     userId,
     user: {
@@ -946,29 +959,22 @@ async function processWinner(winnerData) {
     isTelegramSend: false,
   });
 
+  // ✅ Update user’s totals
+  await db.collection("users").doc(userId).update({
+    totalWins: admin.firestore.FieldValue.increment(1),
+    totalWinnings: admin.firestore.FieldValue.increment(prizeAmount),
+  });
+
+  // ✅ Update game quarter data
+  await db.collection("games").doc(gameId).update({
+    [`quarterScores.${quarter}.winnerUserId`]: userId,
+  });
+
+  // ✅ Post to Telegram / Social
+  const mediaToUpload = "https://squaretrivia.com/apple-touch-icon.png";
+  const captionLink = "https://squaretrivia.com";
   const tierValue = Number(tierId.split("_")[1]);
   const isBigWin = tierValue >= 100;
-
-  // ✅ Update user's win stats
-  await db
-    .collection("users")
-    .doc(userId)
-    .update({
-      totalWins: admin.firestore.FieldValue.increment(1),
-      totalWinnings: admin.firestore.FieldValue.increment(prizeAmount),
-    });
-
-  // ✅ Update userId in quarter result
-  await db
-    .collection("games")
-    .doc(gameId)
-    .update({
-      [`quarterScores.${quarter}.winnerUserId`]: userId,
-    });
-
-  const mediaToUpload = "https://squaretrivia.com/apple-touch-icon.png";
-  // const ext = mediaToUpload.split(".").pop().toLowerCase(); // Extract file extension
-  const captionLink = "https://squaretrivia.com";
 
   if (isBigWin) {
     BigWinPost({
@@ -1007,7 +1013,6 @@ async function processWinner(winnerData) {
   }
 
   console.log(`🏆 Winner processed: ${displayName} - $${prizeAmount}`);
-
   return winnerRef.id;
 }
 

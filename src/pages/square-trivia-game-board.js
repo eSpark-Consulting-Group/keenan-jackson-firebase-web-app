@@ -479,40 +479,40 @@ export default function GameBoard() {
                 </span>
               </div>
               <div className="flex items-center space-x-4 text-sm text-gray-600">
-  <span className="flex items-center">
-    {(() => {
-      const rawDate = game.gameDate?.toDate?.() || game.gameDate;
-      const dateObj = new Date(rawDate);
+                <span className="flex items-center">
+                  {(() => {
+                    const rawDate = game.gameDate?.toDate?.() || game.gameDate;
+                    const dateObj = new Date(rawDate);
 
-      const date = dateObj.toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
+                    const date = dateObj.toLocaleDateString(undefined, {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    });
 
-      const time = dateObj.toLocaleTimeString(undefined, {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      });
+                    const time = dateObj.toLocaleTimeString(undefined, {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    });
 
-      return (
-        <>
-          Date: <b className="text-gray-600 ml-1">{date}</b>
-          <span className="mx-1 text-gray-600">|</span>
-          Time: <b className="text-gray-600 ml-1">{time}</b>
-        </>
-      );
-    })()}
-  </span>
-</div>
+                    return (
+                      <>
+                        Date: <b className="text-gray-600 ml-1">{date}</b>
+                        <span className="mx-1 text-gray-600">|</span>
+                        Time: <b className="text-gray-600 ml-1">{time}</b>
+                      </>
+                    );
+                  })()}
+                </span>
+              </div>
 
-<div className="flex items-center space-x-4 text-sm text-gray-600">
-  <span className="flex items-center">
-    Total Prize Pool: <b className="text-gray-600 ml-1">${tier.totalPrize}</b>
-  </span>
-</div>
-
+              <div className="flex items-center space-x-4 text-sm text-gray-600">
+                <span className="flex items-center">
+                  Total Prize Pool:{" "}
+                  <b className="text-gray-600 ml-1">${tier.totalPrize}</b>
+                </span>
+              </div>
             </div>
 
             {isGameActive && (
@@ -572,39 +572,39 @@ export default function GameBoard() {
             className="space-y-6"
           >
             <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                  Contests Complete: {game.currentQuarter - 1}/5
-                </h3>
+              <h3 className="text-lg font-semibold mb-4 flex items-center">
+                Contests Complete: {game.currentQuarter - 1}/5
+              </h3>
 
-                <div className="mb-4">
-                  <div className="flex justify-between text-sm text-gray-600 mb-2">
-                    <span>Current Progress</span>
-                    <span>{game.currentQuarter - 1} / 5</span>
-                  </div>
-
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div
-                      className="bg-yellow-500 h-3 rounded-full transition-all duration-300"
-                      style={{
-                        width: `${((game.currentQuarter - 1) / 5) * 100}%`,
-                      }}
-                    />
-                  </div>
+              <div className="mb-4">
+                <div className="flex justify-between text-sm text-gray-600 mb-2">
+                  <span>Current Progress</span>
+                  <span>{game.currentQuarter - 1} / 5</span>
                 </div>
-              {game.currentQuarter === 1 && new Date(game.gameDate.seconds) < new Date() && (
-  <div className="bg-yellow-50 rounded-md p-3 text-sm">
-    <p className="text-yellow-800 font-medium mb-1">
-      Game not started yet!
-    </p>
-    <p className="text-yellow-700">
-      Progress will update as the quarters start.
-    </p>
-  </div>
-)}
 
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className="bg-yellow-500 h-3 rounded-full transition-all duration-300"
+                    style={{
+                      width: `${((game.currentQuarter - 1) / 5) * 100}%`,
+                    }}
+                  />
+                </div>
+              </div>
+              {game.currentQuarter === 1 &&
+                new Date(game.gameDate.seconds) < new Date() && (
+                  <div className="bg-yellow-50 rounded-md p-3 text-sm">
+                    <p className="text-yellow-800 font-medium mb-1">
+                      Game not started yet!
+                    </p>
+                    <p className="text-yellow-700">
+                      Progress will update as the quarters start.
+                    </p>
+                  </div>
+                )}
 
-
-                {game.currentQuarter === 1 && new Date(game.gameDate.seconds) > new Date() && (
+              {game.currentQuarter === 1 &&
+                new Date(game.gameDate.seconds) > new Date() && (
                   <div className="bg-yellow-50 rounded-md p-3 text-sm">
                     <p className="text-yellow-800 font-medium mb-1">
                       Game Just Started!
@@ -615,33 +615,31 @@ export default function GameBoard() {
                   </div>
                 )}
 
-                {game.currentQuarter > 1 && game.currentQuarter <= 5 && (
-                  <div className="bg-yellow-50 rounded-md p-3 text-sm">
-                    <p className="text-yellow-800 font-medium mb-1">
-                      Quarter {game.currentQuarter - 1} Complete
-                    </p>
-                    <p className="text-yellow-700">
-                      Keep going — {5 - (game.currentQuarter - 1)} quarters
-                      left!
-                    </p>
-                  </div>
-                )}
+              {game.currentQuarter > 1 && game.currentQuarter <= 5 && (
+                <div className="bg-yellow-50 rounded-md p-3 text-sm">
+                  <p className="text-yellow-800 font-medium mb-1">
+                    Quarter {game.currentQuarter - 1} Complete
+                  </p>
+                  <p className="text-yellow-700">
+                    Keep going — {5 - (game.currentQuarter - 1)} quarters left!
+                  </p>
+                </div>
+              )}
 
-                {game.currentQuarter > 5 && (
-                  <div className="bg-green-50 rounded-md p-3 text-sm">
-                    <p className="text-green-800 font-medium mb-1">
-                      🏁 Game Completed
-                    </p>
-                    <p className="text-green-700">Check results and winners!</p>
-                  </div>
-                )}
-              </div>
+              {game.currentQuarter > 5 && (
+                <div className="bg-green-50 rounded-md p-3 text-sm">
+                  <p className="text-green-800 font-medium mb-1">
+                    🏁 Game Completed
+                  </p>
+                  <p className="text-green-700">Check results and winners!</p>
+                </div>
+              )}
+            </div>
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-lg font-semibold mb-4 flex items-center">
                 <Trophy className="h-5 w-5 mr-2 text-yellow-400" />
-                Successful Contestants 
+                Successful Contestants
               </h3>
-              
 
               {winners && winners.length > 0 ? (
                 <ul className="space-y-3">
@@ -671,7 +669,7 @@ export default function GameBoard() {
                               🏆 Board Champion
                             </span>
                           ) : (
-                            <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">
+                            <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 capitalize">
                               {win.quarter} Contest Winner
                             </span>
                           )}
