@@ -43,6 +43,7 @@ export default function GameBoard() {
 
   const [board, setBoard] = useState(null);
   const [game, setGame] = useState(null);
+  console.log(game, "GAME STATE");
   const [userSquares, setUserSquares] = useState([]);
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [showTriviaModal, setShowTriviaModal] = useState(false);
@@ -590,18 +591,20 @@ export default function GameBoard() {
                     />
                   </div>
                 </div>
-                {game.currentQuarter= null && (
-                  <div className="bg-yellow-50 rounded-md p-3 text-sm">
-                    <p className="text-yellow-800 font-medium mb-1">
-                      Game not Started yet!
-                    </p>
-                    <p className="text-yellow-700">
-                      Progress will update as the quarters starts.
-                    </p>
-                  </div>
-                )}
+              {game.currentQuarter === 1 && new Date(game.gameDate.seconds) < new Date() && (
+  <div className="bg-yellow-50 rounded-md p-3 text-sm">
+    <p className="text-yellow-800 font-medium mb-1">
+      Game not started yet!
+    </p>
+    <p className="text-yellow-700">
+      Progress will update as the quarters start.
+    </p>
+  </div>
+)}
 
-                {game.currentQuarter <= 1 && (
+
+
+                {game.currentQuarter === 1 && new Date(game.gameDate.seconds) > new Date() && (
                   <div className="bg-yellow-50 rounded-md p-3 text-sm">
                     <p className="text-yellow-800 font-medium mb-1">
                       Game Just Started!
