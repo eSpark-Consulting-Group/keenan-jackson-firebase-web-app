@@ -100,9 +100,9 @@ export default function LandingPage() {
       name: "Starter",
       amount: 25,
       prizePerQuarter: 200,
-      totalPrize: 800,
+      totalPrize: 1000,
       features: [
-        "$900 Total Prize Pool",
+        "$1000 Total Prize Pool per Game",
         "Available All Games",
         "1 Consolation Question",
         "Perfect for Beginners",
@@ -113,10 +113,10 @@ export default function LandingPage() {
       name: "Most Popular",
       amount: 100,
       prizePerQuarter: 900,
-      totalPrize: 3600,
+      totalPrize: 4500,
       features: [
-        "$3,600 Total Prize Pool",
-        "Available All Games",
+        "$4,500 Total Prize Pool per Game",
+        "Big wins at an accessible entry point ",
         "1 Consolation Question",
         "Best Value for Players",
       ],
@@ -126,12 +126,12 @@ export default function LandingPage() {
       name: "High Roller",
       amount: 500,
       prizePerQuarter: 4500,
-      totalPrize: 18000,
+      totalPrize: 22500,
       features: [
-        "$18,000 Total Prize Pool",
+        "$22,500 Total Prize Pool",
         "Playoffs & Championships",
-        "2 Consolation Questions",
-        "Serious Players Only",
+        "2 consolation trivia questions ",
+        "For serious competitors ",
       ],
       popular: false,
     },
@@ -302,7 +302,7 @@ export default function LandingPage() {
                 <div className="grid grid-cols-3 gap-4 pt-4 border-t">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-emerald-500">
-                      $900
+                      $1,000
                     </div>
                     <div className="text-sm text-gray-600">Prize Pool</div>
                   </div>

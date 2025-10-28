@@ -24,6 +24,7 @@ const TIERS = {
     id: "tier_25",
     amount: 25,
     name: "$25 Board",
+    title:'Starter Board',
     color: "from-green-500 to-emerald-600",
     bgColor: "bg-green-50",
     borderColor: "border-green-500",
@@ -33,8 +34,10 @@ const TIERS = {
     payoutPercentage: 64,
     features: [
       "Entry for all 4 quarters",
-      "$200 prize per quarter",
-      "$200 prize for board champion",  
+      "$200 Prize per Quarter",
+      "$200 Prize for Board Champion",
+      "Great for first-time players learning the system",
+      "1 consolation trivia question included  ",
       "50 squares available",
       "Skill-based competition",
     ],
@@ -44,6 +47,7 @@ const TIERS = {
     id: "tier_50",
     amount: 50,
     name: "$50 Board",
+    title:'Competitive Board',
     color: "from-blue-500 to-indigo-600",
     bgColor: "bg-blue-50",
     borderColor: "border-blue-500",
@@ -53,9 +57,11 @@ const TIERS = {
     payoutPercentage: 64,
     features: [
       "Entry for all 4 quarters",
-      "$450 prize per quarter",
-      "$450 prize for board champion",
+      "$450 Prize per Quarter",
+      "$450 Prize for Board Champion",
       "50 squares available",
+      "Perfect balance of risk and reward ",
+      "1 consolation trivia question included ",
       "Higher stakes competition",
     ],
     availability: ["regular", "playoff", "championship"],
@@ -64,6 +70,7 @@ const TIERS = {
     id: "tier_100",
     amount: 100,
     name: "$100 Board",
+    title:'Popular Board',
     color: "from-purple-500 to-pink-600",
     bgColor: "bg-purple-50",
     borderColor: "border-purple-500",
@@ -73,9 +80,12 @@ const TIERS = {
     payoutPercentage: 64,
     features: [
       "Entry for all 4 quarters",
-      "$900 prize per quarter",
-      "$900 prize for board champion",
+      "$900 Prize per Quarter",
+      "$900 Prize for Board Champion",
       "50 squares available",
+      "Most popular tier — big wins at an accessible entry point",
+
+      "1 consolation trivia question included ",
       "Premium competition",
     ],
     availability: ["regular", "playoff", "championship"],
@@ -84,6 +94,7 @@ const TIERS = {
     id: "tier_250",
     amount: 250,
     name: "$250 Board",
+    title:'High Stakes Board',
     color: "from-orange-500 to-red-600",
     bgColor: "bg-orange-50",
     borderColor: "border-orange-500",
@@ -93,10 +104,12 @@ const TIERS = {
     payoutPercentage: 72,
     features: [
       "Entry for all 4 quarters",
-      "$2,250 prize per quarter",
-      "$2,250 prize for board champion",
+      "$2,250 Prize per Quarter",
+      "$2,250 Prize for Board Champion",
       "50 squares available",
       "Elite competition",
+      "Strong payouts for mid- to high-level players",
+      "2 consolation trivia questions included ",
       "Playoff games only",
     ],
     availability: ["playoff", "championship"],
@@ -105,6 +118,7 @@ const TIERS = {
     id: "tier_500",
     amount: 500,
     name: "$500 Board",
+    title:'Elite Board',
     color: "from-indigo-500 to-purple-700",
     bgColor: "bg-indigo-50",
     borderColor: "border-indigo-500",
@@ -114,10 +128,12 @@ const TIERS = {
     payoutPercentage: 72,
     features: [
       "Entry for all 4 quarters",
-      "$4,500 prize per quarter",
-      "$4,500 prize for board champion",
+      "$4,500 Prize per Quarter",
+      "$4,500 Prize for Board Champion",
       "50 squares available",
       "High roller competition",
+      "For serious competitors chasing large wins",
+      "2 consolation trivia questions included ",
       "Playoff games only",
     ],
     availability: ["playoff", "championship"],
@@ -126,6 +142,7 @@ const TIERS = {
     id: "tier_1000",
     amount: 1000,
     name: "$1000 Board",
+    title:'Championship Board',
     color: "from-yellow-500 to-yellow-700",
     bgColor: "bg-yellow-50",
     borderColor: "border-yellow-500",
@@ -135,10 +152,12 @@ const TIERS = {
     payoutPercentage: 72,
     features: [
       "Entry for all 4 quarters",
-      "$9,000 prize per quarter",
-      "$9,000 prize for board champion",
+      "$9,000 Prize per Quarter",
+      "$9,000 Prize for Board Champion",
       "50 squares available",
       "Championship exclusive",
+      "Highest tier with massive guaranteed payouts ",
+      "3 consolation trivia questions included ",
       "Ultimate competition",
     ],
     availability: ["championship"],
@@ -263,16 +282,16 @@ export default function TierSelection({
     <div className="max-w-7xl mx-auto px-4 py-8 ">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">
-          Choose Your Board
+          Square Trivia Boards
         </h2>
         <p className="text-lg text-gray-600">
-          Choose your competition level - prizes are guaranteed!
+          5 Winners Every Game – 1 Board Champion + 4 Quarter Winner
+          <br />
+          Win by knowledge and speed. No fees. Guaranteed payouts.
         </p>
         <div className="mt-4 flex items-center justify-center text-sm text-gray-500">
           <AlertCircle className="h-4 w-4 mr-1" />
-          <span>
-            NO FEES on entries or winnings • Instant payouts available
-          </span>
+          <span>NO FEES on winnings • Instant payouts available</span>
         </div>
       </div>
 
@@ -321,7 +340,7 @@ export default function TierSelection({
                       <Icon className="h-6 w-6 text-white" />
                     </div>
                     <h3 className="ml-3 text-xl font-bold text-gray-900">
-                      {tier.name}
+                      {tier.title}
                     </h3>
                   </div>
                   {isSelected && (
@@ -343,7 +362,7 @@ export default function TierSelection({
                 <div className="bg-gray-50 rounded-lg p-4 mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-gray-600">
-                      Prize per quarter:
+                      Prize per Quarter:
                     </span>
                     <span className="text-lg font-semibold text-gray-900">
                       ${tier.prizePerQuarter.toLocaleString()}
@@ -432,7 +451,7 @@ export default function TierSelection({
         <ul className="space-y-2 text-sm text-gray-600">
           <li className="flex items-start">
             <span className="font-semibold mr-2">1.</span>
-            Choose Your entry Board based on your budget and desired prize level
+            Choose Your entry board based on your budget and desired prize level
           </li>
           <li className="flex items-start">
             <span className="font-semibold mr-2">2.</span>
