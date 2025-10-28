@@ -509,7 +509,7 @@ export default function GameBoard() {
 
               <div className="flex items-center space-x-4 text-sm text-gray-600">
                 <span className="flex items-center">
-                  Total Prize Pool:{" "}
+                  Total Contest Prizes:{" "}
                   <b className="text-gray-600 ml-1">${tier.totalPrize}</b>
                 </span>
               </div>

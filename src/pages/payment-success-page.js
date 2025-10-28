@@ -178,7 +178,7 @@ export default function PaymentSuccess() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
               <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">Total Prize Pool</p>
+                <p className="text-sm text-gray-600 mb-1">Total Contest Prizes</p>
                 <p className="text-lg font-semibold text-gray-900">
                   ${paymentDetails.tier.totalPrize}
                 </p>

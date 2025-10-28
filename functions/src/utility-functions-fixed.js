@@ -753,7 +753,7 @@ function calculatePrizes(tierAmount) {
   // Default to 77% if tier not found
   const payoutPercentage = tier ? tier.payoutPercentage : 0.77;
   
-  // Calculate total prize pool (50 squares * tier amount * payout percentage)
+  // Calculate total contest prizes (50 squares * tier amount * payout percentage)
   const totalPrize = tierAmount * 50 * payoutPercentage;
   
   // Each quarter winner gets 1/4 of the total prize

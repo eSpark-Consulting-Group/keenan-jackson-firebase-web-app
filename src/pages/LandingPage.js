@@ -102,7 +102,7 @@ export default function LandingPage() {
       prizePerQuarter: 200,
       totalPrize: 1000,
       features: [
-        "$1000 Total Prize Pool per Game",
+        "$1000 Total Contest Prizes per Game",
         "Available All Games",
         "1 Consolation Question",
         "Perfect for Beginners",
@@ -115,7 +115,7 @@ export default function LandingPage() {
       prizePerQuarter: 900,
       totalPrize: 4500,
       features: [
-        "$4,500 Total Prize Pool per Game",
+        "$4,500 Total Contest Prizes per Game",
         "Big wins at an accessible entry point ",
         "1 Consolation Question",
         "Best Value for Players",
@@ -128,7 +128,7 @@ export default function LandingPage() {
       prizePerQuarter: 4500,
       totalPrize: 22500,
       features: [
-        "$22,500 Total Prize Pool",
+        "$22,500 Total Contest Prizes",
         "Playoffs & Championships",
         "2 consolation trivia questions ",
         "For serious competitors ",
@@ -304,7 +304,7 @@ export default function LandingPage() {
                     <div className="text-2xl font-bold text-emerald-500">
                       $1,000
                     </div>
-                    <div className="text-sm text-gray-600">Prize Pool</div>
+                    <div className="text-sm text-gray-600">Contest Prizes</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-emerald-500">
