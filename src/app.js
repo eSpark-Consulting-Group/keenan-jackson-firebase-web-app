@@ -30,6 +30,7 @@ import Games from "./pages/square-trivia-games-page";
 import GameBoard from "./pages/square-trivia-game-board";
 import Profile from "./pages/square-trivia-profile-page";
 import HowToPlay from "./pages/howtoplay-page";
+import GameResults from "./pages/game-results";
 import Legal from "./pages/legal-page";
 import FreeEntry from "./pages/freeentry-page";
 import PaymentSuccess from "./pages/payment-success-page";
@@ -212,6 +213,14 @@ function App() {
                       <GameBoard />
                     </Layout>
                   </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/game/:boardId/results"
+                element={
+                  <Layout>
+                    <GameResults />
+                  </Layout>
                 }
               />
               <Route

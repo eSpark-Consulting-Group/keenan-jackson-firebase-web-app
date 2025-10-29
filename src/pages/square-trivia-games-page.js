@@ -11,6 +11,7 @@ import {
   Shield,
   Plus,
   Lock,
+  Check,
 } from "lucide-react";
 import { useAuth } from "../contexts/authcontext";
 import { db, collections, TIERS, formatCurrency } from "../firebase/config";
@@ -33,8 +34,7 @@ export default function Games() {
   const [selectedTier, setSelectedTier] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [groupedGames, setGroupedGames] = useState({});
-  const [userTierAccess, setUserTierAccess] = useState([]); // store allowed tierIds
-
+  const [userTierAccess, setUserTierAccess] = useState([]);
   useEffect(() => {
     loadGames();
     const unsubscribe = setupRealtimeListeners();
@@ -436,7 +436,10 @@ export default function Games() {
                                 const hasAccess = userTierAccess.includes(
                                   board.id
                                 );
-
+                                const quarters = ["q1", "q2", "q3", "q4"];
+                                const isComplete = quarters.every(
+                                  (q) => board?.[q]?.processed === true
+                                );
                                 return (
                                   <div
                                     key={board.id}
@@ -488,6 +491,14 @@ export default function Games() {
                                         className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
                                       >
                                         View Board
+                                      </Link>
+                                    ) : isComplete ? (
+                                      <Link
+                                        to={`/game/${board.id}/results`}
+                                        className="block w-full bg-green-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-green-700 transition-colors hover:text-white"
+                                      >
+                                        <Check className="h-4 w-4 inline mr-1" />
+                                        View Results
                                       </Link>
                                     ) : (
                                       <button

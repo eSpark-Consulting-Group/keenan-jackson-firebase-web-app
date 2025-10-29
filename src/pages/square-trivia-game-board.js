@@ -645,32 +645,32 @@ export default function GameBoard() {
                 <ul className="space-y-3">
                   {winners.map((win) => {
                     const formattedPosition =
-                      win.position?.toString().split("").join("-") || "";
+                      win?.position?.toString().split("").join("-") || "";
 
                     return (
                       <li
-                        key={win.id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between border rounded-lg p-3"
+                        key={win?.id}
+                        className="flex flex-col md:flex-row md:items-center justify-between border rounded-lg p-3"
                       >
-                        <div>
+                        <div className="w-full md:w-auto">
                           <p className="font-medium text-gray-800 text-lg">
                             {formattedPosition && (
                               <span className="mr-2 text-indigo-600 font-semibold">
                                 {formattedPosition}
                               </span>
                             )}
-                            {win.displayName}
+                            {win?.displayName}
                           </p>
-                          <p className="text-sm text-gray-500">{win.email}</p>
+                          <p className="text-sm text-gray-500">{win?.email}</p>
                         </div>
-                        <div className="mt-2 sm:mt-0">
-                          {win.isFastest ? (
-                            <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700">
+                        <div className="mt-2 md:mt-0 md:ml-4 w-full md:w-auto">
+                          {win?.isFastest ? (
+                            <span className="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700 block md:inline-block text-center">
                               🏆 Board Champion
                             </span>
                           ) : (
-                            <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 capitalize">
-                              {win.quarter} Contest Winner
+                            <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 capitalize block md:inline-block text-center">
+                              {win?.quarter} Contest Winner
                             </span>
                           )}
                         </div>
