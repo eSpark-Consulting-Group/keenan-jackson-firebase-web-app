@@ -56,12 +56,20 @@ import AdminUsersSingle from "./pages/admin/admin-users-single";
 import AdminPayoutsSingle from "./pages/admin/admin-payouts-single";
 import TeamsFanbase from "./pages/admin/teams-fanbase";
 import ReferralReports from "./pages/admin/referral-reports";
+import { checkEligibility } from "./check-eligibility";
 
 function App() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
+  useEffect(() => {
+    const runEligibilityCheck = async () => {
+      const data = await checkEligibility();
+      console.log("[Session Eligibility]", data);
+    };
 
+    runEligibilityCheck();
+  }, []); // ← runs once per page load (new session)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
