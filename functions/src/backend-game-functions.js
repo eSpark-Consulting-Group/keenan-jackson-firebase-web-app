@@ -11,6 +11,12 @@ const {
   handleRefund,
 } = require("./payment-system-modified");
 const { default: axios } = require("axios");
+const {
+  BigWinPost,
+  StandardWinPost,
+  PhotoFinishPost,
+  NewBoardAlertPost,
+} = require("./social-posts-functions");
 // const { query, collection, where } = require("firebase/firestore");
 
 // Initialize admin if not already done
@@ -19,6 +25,7 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
+require("dotenv").config();
 
 const TELEGRAM_BOT_TOKEN = "7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ";
 
@@ -95,13 +102,53 @@ exports.createGame = functions.https.onCall(async (data, context) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       createdBy: context.auth.uid,
     });
-
+    functions.logger.info(enabledTiers, enabledTiers);
     // Create boards for each enabled tier
     const boardPromises = enabledTiers.map((tierId) =>
       createBoardForTier(gameRef.id, tierId)
     );
 
     await Promise.all(boardPromises);
+
+    (async () => {
+      try {
+        // Convert Firestore timestamp to JS Date
+        const startDate = new Date(parsedDate);
+
+        // Format date (e.g., "Sun, Oct 19")
+        const day = startDate.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          timeZone: "UTC",
+        });
+
+        // Format time (e.g., "12:00 PM")
+        const time = startDate.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+          timeZone: "UTC",
+        });
+
+        // Post New Board Alert
+        await NewBoardAlertPost({
+          team1: teams?.home || "",
+          team2: teams?.away || "",
+          day,
+          time,
+          enabledTiers,
+          mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+          captionLink: "https://squaretrivia.com",
+        });
+
+        console.log(
+          `📢 New Board Alert posted for ${teams?.away || ""} vs ${teams?.home || ""} (${day} ${time})`
+        );
+      } catch (err) {
+        console.error("❌ Error posting New Board Alert:", err);
+      }
+    })();
 
     return {
       success: true,
@@ -143,6 +190,7 @@ async function createBoardForTier(gameId, tierId) {
     gameInfo,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
+  functions.logger.info("gameData", { gameData });
 
   return boardRef.id;
 }
@@ -522,6 +570,7 @@ exports.determineWinners = functions.pubsub
                   answerTime: winner.answerTime,
                   isSoloWin: false,
                   opponentTime: loser.answerTime,
+                  looserUserId: loser.userId,
                 });
 
                 // Loser
@@ -759,7 +808,7 @@ async function cleanupOldClaims(boardId, board, currentQuarter, game) {
 
 exports.cleanupClaims = functions.pubsub
   .schedule("every 2 minutes")
-  .onRun(async () => {
+  .onRun(async (context) => {
     console.log("🧹 Running scheduled cleanup job...");
 
     const boardsSnapshot = await db.collection("boards").get();
@@ -820,9 +869,10 @@ async function processWinner(winnerData) {
     instantPayoutFee,
     consolationSquareGranted,
     processedBy,
+    looserUserId,
   } = winnerData;
 
-  // Get tier info for prize amount
+  // ✅ Tier prize mapping
   const tierAmounts = {
     tier_25: { quarter: 200 },
     tier_50: { quarter: 450 },
@@ -833,19 +883,47 @@ async function processWinner(winnerData) {
   };
 
   const prizeAmount = tierAmounts[tierId]?.quarter || 0;
-  const winningUser = db.collection("users").where("userId", "==", userId);
 
-  functions.logger.info("User Query:", { winningUser });
-  const gameSnap = await db.collection("games").doc(gameId).get();
-  if (!gameSnap.exists) {
-    throw new functions.https.HttpsError("not-found", "Game not found");
+  // ✅ Get user safely
+  const userSnap = await db.collection("users").doc(userId).get();
+  if (!userSnap.exists) throw new Error(`User ${userId} not found`);
+  const userData = userSnap.data();
+
+  const displayName =
+    userData.displayName || userData.email || "Unknown Player";
+
+  let displayLooserName = "";
+
+  if (!isSoloWin) {
+    const looserSnap = await db.collection("users").doc(looserUserId).get();
+    if (!looserSnap.exists) throw new Error(`User ${looserUserId} not found`);
+    const looserData = looserSnap.data();
+
+    displayLooserName =
+      looserData.displayName || looserData.email || "Unknown Player";
   }
+
+  // ✅ Get game info
+  const gameSnap = await db.collection("games").doc(gameId).get();
+  if (!gameSnap.exists) throw new Error("Game not found");
   const game = gameSnap.data();
-  // Create winner record
+
+  const team1 = game.teams?.home || "Home Team";
+  const team2 = game.teams?.away || "Away Team";
+
+  const isPhotoFinish = Math.abs(answerTime - opponentTime) < 1000;
+  // ✅ Create winner record
   const winnerRef = await db.collection("winners").add({
-    userId: winningUser.uid,
-    user: winningUser,
-    gameInfo: game,
+    userId,
+    user: {
+      displayName,
+      email: userData.email || null,
+      photoURL: userData.photoURL || null,
+    },
+    gameInfo: {
+      teams: game.teams || null,
+      externalGameId: game.externalGameId || null,
+    },
     isSoloWin: isSoloWin || false,
     claimId: claimId || null,
     notificationStatus: notificationStatus || "pending",
@@ -866,10 +944,12 @@ async function processWinner(winnerData) {
     status: "pending_payout",
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     isTelegramSend: false,
-    ...winnerData,
   });
 
-  // Update user's win count
+  const tierValue = Number(tierId.split("_")[1]);
+  const isBigWin = tierValue >= 100;
+
+  // ✅ Update user's win stats
   await db
     .collection("users")
     .doc(userId)
@@ -878,7 +958,7 @@ async function processWinner(winnerData) {
       totalWinnings: admin.firestore.FieldValue.increment(prizeAmount),
     });
 
-  // update userId in quarter result
+  // ✅ Update userId in quarter result
   await db
     .collection("games")
     .doc(gameId)
@@ -886,8 +966,47 @@ async function processWinner(winnerData) {
       [`quarterScores.${quarter}.winnerUserId`]: userId,
     });
 
-  // Send notification
-  await sendWinnerNotification(userId, prizeAmount, quarter);
+  const mediaToUpload = "https://squaretrivia.com/apple-touch-icon.png";
+  // const ext = mediaToUpload.split(".").pop().toLowerCase(); // Extract file extension
+  const captionLink = "https://squaretrivia.com";
+
+  if (isBigWin) {
+    BigWinPost({
+      winner: displayName,
+      prize: prizeAmount,
+      time: answerTime,
+      team1,
+      team2,
+      square: position,
+      mediaToUpload,
+      captionLink,
+    });
+  } else {
+    StandardWinPost({
+      winner: displayName,
+      prize: prizeAmount,
+      time: answerTime,
+      team1,
+      team2,
+      square: position,
+      mediaToUpload,
+      captionLink,
+    });
+  }
+
+  if (isPhotoFinish) {
+    PhotoFinishPost({
+      winner: displayName,
+      loser: displayLooserName,
+      diff: Math.round((opponentTime - answerTime) * 1000) / 1000,
+      winTime: answerTime,
+      loseTime: opponentTime,
+      mediaToUpload,
+      captionLink,
+    });
+  }
+
+  console.log(`🏆 Winner processed: ${displayName} - $${prizeAmount}`);
 
   return winnerRef.id;
 }

@@ -6,6 +6,20 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const nodemailer = require("nodemailer");
+const {
+  DailyRecapPost,
+  WeeklyChampionPost,
+  NoFeesPost,
+  SkillCelebration,
+  RecordBreakerPost,
+  PlatformMilestonePost,
+  ReferralLeaderboard,
+  TeamRivalryPost,
+  MultiGameUpdatePost,
+} = require("./social-posts-functions");
+
+// admin.initializeApp();
+const db = admin.firestore();
 
 // Initialize services
 const mailTransport = nodemailer.createTransport({
@@ -158,7 +172,7 @@ async function checkApiSportsHealth() {
         headers: {
           "x-rapidapi-key":
             // functions.config().apisports.key ||
-             process.env.APISPORTS_KEY,
+            process.env.APISPORTS_KEY,
           "x-rapidapi-host": "v1.american-football.api-sports.io",
         },
         timeout: MONITORING_CONFIG.API_TIMEOUT,
@@ -1507,6 +1521,626 @@ exports.monitorPaymentStructure = functions.pubsub
         "Payment Structure Compliance Issues",
         issues.join("\n")
       );
+    }
+  });
+
+/**
+ * DAILY RECAP FUNCTION
+ * Runs every day at 11:59 PM (America/Denver time)
+ */
+exports.dailyRecapTrigger = functions.pubsub
+  .schedule("every day 23:59")
+  .timeZone("America/Denver")
+  .onRun(async () => {
+    const now = new Date();
+
+    // Convert current time to America/Denver timezone
+    const denverNow = new Date(
+      now.toLocaleString("en-US", { timeZone: "America/Denver" })
+    );
+
+    // Get start (00:00:00) and end (23:59:59) of current Denver day
+    const startOfDay = new Date(denverNow);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(denverNow);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Convert to Firestore Timestamp.seconds range (UTC-based)
+    const startSeconds = Math.floor(startOfDay.getTime() / 1000);
+    const endSeconds = Math.floor(endOfDay.getTime() / 1000);
+
+    const snapshot = await db
+      .collection("winners")
+      .where("createdAt.seconds", ">=", startSeconds)
+      .where("createdAt.seconds", "<=", endSeconds)
+      .get();
+
+    if (snapshot.empty) {
+      console.log("⚠️ No winners found for today.");
+      return null;
+    }
+
+    const winners = snapshot.docs.map((doc) => doc.data());
+    const totalPrizes = winners.reduce(
+      (sum, w) => sum + (w.prizeAmount || 0),
+      0
+    );
+    const winnerCount = winners.length;
+
+    const fastest = winners.reduce((a, b) =>
+      a.answerTime < b.answerTime ? a : b
+    );
+    const fastestTime = fastest.answerTime?.toFixed(2) || "0.00";
+    const fastestUser = fastest.user?.displayName || "Anonymous";
+
+    const biggest = winners.reduce((a, b) =>
+      a.prizeAmount > b.prizeAmount ? a : b
+    );
+    const biggestWin = biggest.prizeAmount || 0;
+
+    await DailyRecapPost({
+      totalPrizes,
+      winnerCount,
+      fastestTime,
+      fastestUser,
+      biggestWin,
+      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+      captionLink: "https://squaretrivia.com",
+    });
+
+    console.log("✅ Daily Recap Post published successfully.");
+    return null;
+  });
+
+exports.weeklyRecapTrigger = functions.pubsub
+  .schedule("1 1 * * 1") // Runs every Monday at 1:01 AM Denver time
+  // .schedule("*/5 * * * *")
+  .timeZone("America/Denver")
+  .onRun(async () => {
+    const now = new Date();
+
+    // Convert current UTC time → Denver local time
+    const denverNow = new Date(
+      now.toLocaleString("en-US", { timeZone: "America/Denver" })
+    );
+
+    // 🗓️ Determine the *previous week's* Monday 00:00:00
+    const day = denverNow.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+    const diffToPreviousMonday = ((day + 6) % 7) + 7; // force previous week’s Monday
+    const startOfWeek = new Date(denverNow);
+    startOfWeek.setDate(denverNow.getDate() - diffToPreviousMonday);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    // 🗓️ Determine end of that week (Sunday 23:59:59)
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    console.log("📅 Weekly Range (Denver):");
+    console.log("Start:", startOfWeek.toISOString());
+    console.log("End:", endOfWeek.toISOString());
+
+    // 🎯 Query winners created within that week
+    const snapshot = await db
+      .collection("winners")
+      .where("createdAt", ">=", admin.firestore.Timestamp.fromDate(startOfWeek))
+      .where("createdAt", "<=", admin.firestore.Timestamp.fromDate(endOfWeek))
+      .get();
+
+    console.log("snapshot.docs:", snapshot.docs);
+
+    if (snapshot.empty) {
+      console.log("⚠️ No winners found for last week.");
+      return null;
+    }
+
+    const winners = snapshot.docs.map((doc) => doc.data());
+    console.log(`✅ Found ${winners.length} weekly winners.`);
+
+    // 🧠 Aggregate stats per userId
+    const userStats = {};
+    winners.forEach((w) => {
+      if (!w.userId) return; // Skip invalid
+      if (!userStats[w.userId]) userStats[w.userId] = { total: 0, wins: 0 };
+      userStats[w.userId].total += w.prizeAmount || 0;
+      userStats[w.userId].wins += 1;
+    });
+
+    const userIds = Object.keys(userStats);
+    if (userIds.length === 0) {
+      console.log("⚠️ No valid userIds found in winners data.");
+      return null;
+    }
+
+    // 👥 Fetch corresponding user documents
+    const userDocs = await Promise.all(
+      userIds.map(async (id) => {
+        const userSnap = await db.collection("users").doc(id).get();
+        return { id, data: userSnap.exists ? userSnap.data() : null };
+      })
+    );
+
+    // 🧾 Merge user display names into stats
+    const userList = userDocs.map((u) => {
+      const name = u.data?.displayName || u.data?.email || "Anonymous";
+      const stats = userStats[u.id];
+      return {
+        userId: u.id,
+        name,
+        total: stats.total,
+        wins: stats.wins,
+      };
+    });
+
+    // 🥇 Sort by total prize (and wins as tiebreaker)
+    const sorted = userList
+      .sort((a, b) => b.total - a.total || b.wins - a.wins)
+      .slice(0, 3);
+
+    const [w1, w2, w3] = sorted;
+
+    if (!w1) {
+      console.log("⚠️ No valid weekly champions found.");
+      return null;
+    }
+    // 📣 Publish the post
+    await WeeklyChampionPost({
+      winner1: w1?.name || "—",
+      amount1: w1?.total || 0,
+      wins1: w1?.wins || 0,
+      winner2: w2?.name || "—",
+      amount2: w2?.total || 0,
+      wins2: w2?.wins || 0,
+      winner3: w3?.name || "—",
+      amount3: w3?.total || 0,
+      wins3: w3?.wins || 0,
+      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+      captionLink: "https://squaretrivia.com",
+    });
+
+    console.log("✅ Weekly Recap Post published successfully.");
+    return null;
+  });
+
+/**
+ * WEEKLY "NO FEES" REMINDER
+ * Runs every Friday at 6 PM (America/Denver)
+ */
+exports.noFeesTrigger = functions.pubsub
+  .schedule("every friday 18:00")
+  .timeZone("America/Denver")
+  .onRun(async () => {
+    console.log("🚀 Running NoFeesPost trigger...");
+
+    await NoFeesPost({
+      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+      captionLink: "https://squaretrivia.com",
+    });
+
+    console.log("✅ No Fees Post published successfully.");
+    return null;
+  });
+
+/**
+ * SKILL CELEBRATION POST
+ * Runs every 3 hours (America/Denver)
+ * Finds the most recent winner with answerTime < 1s
+ */
+exports.skillCelebrationTrigger = functions.pubsub
+  .schedule("every 3 hours")
+  .timeZone("America/Denver")
+  .onRun(async () => {
+    console.log("⚡ Running SkillCelebration trigger...");
+
+    const snapshot = await db
+      .collection("winners")
+      .orderBy("createdAt.seconds", "desc")
+      .limit(20)
+      .get();
+
+    if (snapshot.empty) {
+      console.log("⚠️ No winners found.");
+      return null;
+    }
+
+    const winners = snapshot.docs.map((doc) => doc.data());
+    const notable = winners.find((w) => w.answerTime && w.answerTime < 1);
+
+    if (!notable) {
+      console.log("⏸ No fast winners found (<1s).");
+      return null;
+    }
+
+    const recentWinner = notable.user?.displayName || "Anonymous";
+    const time = notable.answerTime.toFixed(2);
+    const prize = notable.prizeAmount || 0;
+
+    await SkillCelebration({
+      recentWinner,
+      time,
+      prize,
+      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+      captionLink: "https://squaretrivia.com",
+    });
+
+    console.log(
+      `✅ Skill Celebration posted for ${recentWinner} (${time}s / $${prize})`
+    );
+    return null;
+  });
+
+/**
+ * PLATFORM MILESTONE CHECKER
+ * Runs every 6 hours — posts when total payouts cross a major milestone
+ */
+exports.platformMilestoneTrigger = functions.pubsub
+  .schedule("every 12 hours")
+  .timeZone("America/Denver")
+  .onRun(async () => {
+    console.log("🚀 Checking for payout milestones...");
+
+    const snapshot = await db.collection("winners").get();
+    if (snapshot.empty) {
+      console.log("⚠️ No winners found.");
+      return null;
+    }
+
+    const winners = snapshot.docs.map((doc) => doc.data());
+    const totalPayouts = winners.reduce(
+      (sum, w) => sum + (w.prizeAmount || 0),
+      0
+    );
+    const totalWinners = winners.length;
+
+    // milestones to track
+    const milestones = [
+      10000, 50000, 100000, 250000, 500000, 1000000, 5000000, 10000000,
+      50000000, 100000000,
+    ];
+    const lastMilestoneRef = db.collection("system").doc("milestoneTracker");
+    const lastMilestoneDoc = await lastMilestoneRef.get();
+    const lastMilestone = lastMilestoneDoc.exists
+      ? lastMilestoneDoc.data().lastAmount
+      : 0;
+
+    // find next milestone reached
+    const crossed = milestones.find(
+      (m) => totalPayouts >= m && lastMilestone < m
+    );
+
+    if (!crossed) {
+      console.log("⏸ No new milestones reached yet.");
+      return null;
+    }
+
+    console.log(`🎉 Milestone crossed: $${crossed}`);
+    await PlatformMilestonePost({
+      amount: crossed.toLocaleString(),
+      totalWinners,
+      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+      captionLink: "https://squaretrivia.com",
+    });
+
+    // Update tracker
+    await lastMilestoneRef.set({ lastAmount: crossed }, { merge: true });
+
+    console.log(`✅ Milestone Post published for $${crossed}`);
+    return null;
+  });
+
+/**
+ * RECORD BREAKER CHECKER
+ * Runs every hour — posts when a new fastest-answer record is set
+ */
+exports.recordBreakerTrigger = functions.pubsub
+  .schedule("every 1 hours")
+  .timeZone("America/Denver")
+  .onRun(async () => {
+    console.log("⚡ Checking for record-breaking answers...");
+
+    // 🔹 Fetch fastest winner
+    const snapshot = await db
+      .collection("winners")
+      .orderBy("answerTime", "asc")
+      .limit(1)
+      .get({ source: "server" }); // Force fresh read
+
+    if (snapshot.empty) {
+      console.log("⚠️ No winners found.");
+      return null;
+    }
+
+    const fastestDoc = snapshot.docs[0];
+    const fastest = fastestDoc.data();
+    const fastestId = String(fastestDoc.id);
+    const currentFastestTime = Number(fastest.answerTime);
+    const userId = fastest.userId;
+    const gameId = fastest.gameId || "unknown";
+
+    console.log(fastest, "FASTEST");
+    console.log(fastestId, "FASTEST ID");
+
+    if (!userId) {
+      console.log("⚠️ Missing userId in winner doc:", fastestId);
+      return null;
+    }
+
+    // 🔹 Fetch user info
+    const userRef = db.collection("users").doc(userId);
+    const userSnap = await userRef.get({ source: "server" });
+    const userData = userSnap.exists ? userSnap.data() : {};
+    const winner = userData.displayName || userData.email || `User ${userId}`;
+
+    console.log(
+      `🏃 Fastest: ${winner} (${userId}), time: ${currentFastestTime}s`
+    );
+
+    // 🔹 Fetch record tracker from new collection "fastestRecord"
+    const recordRef = db.collection("system").doc("recordTracker");
+    const recordDoc = await recordRef.get({ source: "server" });
+    const recordData = recordDoc.exists ? recordDoc.data() : {};
+
+    console.log(recordData, "RECORD DATA");
+
+    const lastFastestTime = Number(recordData.fastestTime) || null;
+    const lastRecordId = String(recordData.lastRecordId || "");
+
+    console.log("📘 Current fastestId:", fastestId);
+    console.log("📗 Last recordId:", lastRecordId);
+    console.log("⏱ Current:", currentFastestTime, "Last:", lastFastestTime);
+
+    // ✅ Skip if same record or not faster
+    if (lastRecordId === fastestId) {
+      console.log("⏸ Same record detected. Skipping post.");
+      return null;
+    }
+
+    if (lastFastestTime && currentFastestTime >= lastFastestTime) {
+      console.log(
+        `⏸ Not a new record. Current (${currentFastestTime}s) is slower than or equal to last (${lastFastestTime}s).`
+      );
+      return null;
+    }
+
+    if (!currentFastestTime || isNaN(currentFastestTime)) {
+      console.log("⚠️ Invalid current fastest time, skipping...");
+      return null;
+    }
+
+    console.log("🏁 New record detected — posting...");
+
+    await RecordBreakerPost({
+      winner,
+      time: currentFastestTime.toFixed(3),
+      oldTime: lastFastestTime ? lastFastestTime.toFixed(3) : "—",
+      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+      captionLink: "https://squaretrivia.com",
+    });
+
+    await recordRef.set(
+      {
+        fastestTime: currentFastestTime,
+        winner,
+        lastRecordId: fastestId,
+        lastUpdated: admin.firestore.Timestamp.now(),
+        userId,
+        gameId,
+      },
+      { merge: true }
+    );
+
+    console.log(
+      `✅ RecordBreaker updated (${currentFastestTime}s by ${winner}, game: ${gameId}, user: ${userId})`
+    );
+
+    return null;
+  });
+
+/**
+ * REFERRAL LEADERBOARD TRIGGER
+ * Runs weekly (Monday 9:00 AM Denver time)
+ */
+exports.referralLeaderboardTrigger = functions.pubsub
+  .schedule("0 9 * * MON") // Runs weekly (Monday 9:00 AM Denver time)
+  .timeZone("America/Denver")
+  .onRun(async () => {
+    console.log("🏆 Running Referral Leaderboard Trigger...");
+
+    const lastWeek = new Date();
+    lastWeek.setDate(lastWeek.getDate() - 7);
+
+    // Get users who referred others within the last week
+    const snapshot = await db
+      .collection("users")
+      .where("referrals", ">", 0)
+      .get();
+
+    if (snapshot.empty) {
+      console.log("⚠️ No referral data found.");
+      return null;
+    }
+
+    const leaderboard = snapshot.docs
+      .map((doc) => {
+        const d = doc.data();
+        const referrals = d.referrals || 0;
+        const totalEarned = d.totalEarned || 0;
+        return {
+          name: d.displayName || "Anonymous",
+          referrals,
+          amount: totalEarned,
+        };
+      })
+      .sort((a, b) => b.referrals - a.referrals)
+      .slice(0, 5);
+
+    await ReferralLeaderboard({
+      winners: leaderboard,
+      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+      captionLink: "https://squaretrivia.com/referrals",
+    });
+
+    console.log("✅ Referral Leaderboard post published.");
+    return null;
+  });
+
+/**
+ * TEAM RIVALRY TRIGGER
+ * Runs mid-week (Wednesday 11:00 AM Denver time)
+ */
+exports.teamRivalryTrigger = functions.pubsub
+  .schedule("0 11 * * WED") // Runs mid-week (Wednesday 11:00 AM Denver time)
+  .timeZone("America/Denver")
+  .onRun(async () => {
+    console.log("⚔️ Running Team Rivalry Trigger...");
+
+    // Example rivalry list (expand or fetch dynamically)
+    const rivalries = [
+      { teamA: "Cowboys", teamB: "Eagles" },
+      { teamA: "Chiefs", teamB: "Bills" },
+      { teamA: "49ers", teamB: "Rams" },
+    ];
+
+    // Pick a random rivalry each week
+    const matchup = rivalries[Math.floor(Math.random() * rivalries.length)];
+
+    // Count recent team wins (past week)
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    const snapshot = await db
+      .collection("winners")
+      .where("createdAt", ">", weekAgo)
+      .get();
+
+    let teamAWins = 0,
+      teamBWins = 0;
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      const team = data.team || "";
+      if (team === matchup.teamA) teamAWins++;
+      if (team === matchup.teamB) teamBWins++;
+    });
+
+    await TeamRivalryPost({
+      teamA: matchup.teamA,
+      teamB: matchup.teamB,
+      teamAWins,
+      teamBWins,
+      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+      captionLink: "https://squaretrivia.com",
+    });
+
+    console.log(
+      `✅ Rivalry post published: ${matchup.teamA} vs ${matchup.teamB}`
+    );
+    return null;
+  });
+
+exports.multiGameUpdateTrigger = functions.pubsub
+  .schedule("50 23 * * *") // Runs daily at 11:50 PM
+  // .schedule("*/5 * * * *") // Runs every 5 minutes for testing
+  .timeZone("America/Denver")
+  .onRun(async () => {
+    console.log("🚀 [multiGameUpdateTrigger] Function started...");
+
+    try {
+      // Step 1: Calculate tomorrow's date range
+      const now = new Date();
+      console.log("🕓 [Step 1] Current Date (Server):", now.toISOString());
+
+      const tomorrow = new Date(now);
+      tomorrow.setDate(now.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+
+      const dayAfter = new Date(tomorrow);
+      dayAfter.setDate(tomorrow.getDate() + 1);
+
+      console.log("📅 [Step 1] Tomorrow:", tomorrow.toISOString());
+      console.log("📅 [Step 1] Day After Tomorrow:", dayAfter.toISOString());
+
+      // Step 2: Convert to Timestamps
+      const startTimestampSeconds = Math.floor(tomorrow.getTime() / 1000);
+      const endTimestampSeconds = Math.floor(dayAfter.getTime() / 1000);
+
+      console.log("🧭 [Step 2] startTimestampSeconds:", startTimestampSeconds);
+      console.log("🧭 [Step 2] endTimestampSeconds:", endTimestampSeconds);
+
+      const startTimestamp = admin.firestore.Timestamp.fromMillis(
+        startTimestampSeconds * 1000
+      );
+      const endTimestamp = admin.firestore.Timestamp.fromMillis(
+        endTimestampSeconds * 1000
+      );
+
+      console.log(
+        "📌 [Step 2] Firestore Start Timestamp:",
+        startTimestamp.toDate().toISOString()
+      );
+      console.log(
+        "📌 [Step 2] Firestore End Timestamp:",
+        endTimestamp.toDate().toISOString()
+      );
+
+      // Step 3: Query Games
+      console.log(
+        `🔍 [Step 3] Querying games scheduled between ${startTimestamp.toDate().toISOString()} and ${endTimestamp.toDate().toISOString()}`
+      );
+
+      const snapshot = await db
+        .collection("games")
+        .where("gameDate", ">=", startTimestamp)
+        .where("gameDate", "<", endTimestamp)
+        .get();
+
+      console.log("📝 [Step 3] Query executed. Docs found:", snapshot.size);
+
+      if (snapshot.empty) {
+        console.log("❌ [Step 3] No games found for tomorrow.");
+        return null;
+      }
+
+      // Step 4: Format Game Data
+      const games = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        console.log(
+          `🎮 [Step 4] Game ID: ${doc.id} | gameDate:`,
+          data.gameDate?.toDate?.().toISOString?.() || data.gameDate
+        );
+        return {
+          id: doc.id,
+          ...data,
+        };
+      });
+
+      // Step 5: Determine Day Name
+      const dayName = tomorrow.toLocaleDateString("en-US", { weekday: "long" });
+      console.log(`📆 [Step 5] Day Name for tomorrow: ${dayName}`);
+
+      // Step 6: Trigger Post
+      console.log("📣 [Step 6] Triggering MultiGameUpdatePost with payload:", {
+        gameCount: games.length,
+        mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+        captionLink: "https://squaretrivia.com",
+        day: dayName,
+      });
+
+      await MultiGameUpdatePost({
+        games,
+        mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+        captionLink: "https://squaretrivia.com",
+        day: dayName,
+      });
+
+      console.log(
+        `✅ [Step 6] Multi-game update post triggered successfully for ${dayName}.`
+      );
+      return null;
+    } catch (error) {
+      console.error("❌ [ERROR] multiGameUpdateTrigger failed:", error);
+      console.error("🧠 [ERROR STACK]", error?.stack);
+      return null;
     }
   });
 

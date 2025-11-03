@@ -39,6 +39,7 @@ import { getFunctions, httpsCallable } from "firebase/functions";
 export default function AdminPayouts() {
   const [loading, setLoading] = useState(true);
   const [payouts, setPayouts] = useState([]);
+  console.log(payouts);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);

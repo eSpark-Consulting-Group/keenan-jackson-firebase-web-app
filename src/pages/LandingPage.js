@@ -102,7 +102,7 @@ export default function LandingPage() {
       prizePerQuarter: 200,
       totalPrize: 800,
       features: [
-        "$800 Total Prize Pool",
+        "$900 Total Prize Pool",
         "Available All Games",
         "1 Consolation Question",
         "Perfect for Beginners",
@@ -302,7 +302,7 @@ export default function LandingPage() {
                 <div className="grid grid-cols-3 gap-4 pt-4 border-t">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-emerald-500">
-                      $800
+                      $900
                     </div>
                     <div className="text-sm text-gray-600">Prize Pool</div>
                   </div>
@@ -314,7 +314,7 @@ export default function LandingPage() {
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-emerald-500">
-                      47/50
+                      {activeSquares.size}/50
                     </div>
                     <div className="text-sm text-gray-600">Squares Filled</div>
                   </div>
@@ -553,7 +553,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      {/* <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div
@@ -590,7 +590,7 @@ export default function LandingPage() {
             </p>
           </div>
         </div>
-      </footer>
+      </footer> */}
     </div>
   );
 }

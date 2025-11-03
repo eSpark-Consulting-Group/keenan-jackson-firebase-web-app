@@ -8,8 +8,17 @@ const { default: axios } = require("axios");
 // import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 const { logger } = require("firebase-functions");
 const { GAME_CONFIG } = require("./constants-configuration-fixed");
+const {
+  BoardGoingFastPost,
+  LastChancePost,
+  BoardFullAnnouncementPost,
+  FinalCallPost,
+  TierStatusUpdatePost,
+  UpcomingGamePost,
+} = require("./social-posts-functions");
 
 const db = admin.firestore();
+require("dotenv").config();
 
 // User Data Collection & Monetization System
 
@@ -162,7 +171,6 @@ async function handleGrantTelegramAccess(userId, telegramUsername, tier) {
     return { success: false, message: err.message || "Grant failed" };
   }
 }
-
 async function handleGameCommand(chatId) {
   const gamesSnapshot = await admin.firestore().collection("games").get();
 
@@ -175,7 +183,6 @@ async function handleGameCommand(chatId) {
 
   gamesSnapshot.forEach((doc) => {
     const game = doc.data();
-
     let formattedDate = "";
     if (game.gameDate && game.gameDate.toDate) {
       formattedDate = game.gameDate.toDate().toLocaleDateString("en-US", {
@@ -681,7 +688,7 @@ exports.telegramWebhook = functions.https.onRequest(async (req, res) => {
 exports.sendTriviaAttemptNotifications = functions.pubsub
   .schedule("every 3 hours")
   .timeZone("UTC")
-  .onRun(async () => {
+  .onRun(async (context) => {
     const usersSnapshot = await admin.firestore().collection("users").get();
 
     const promises = [];
@@ -715,7 +722,7 @@ exports.sendTriviaAttemptNotifications = functions.pubsub
 exports.sendGameReminders = functions.pubsub
   .schedule("every 3 hours")
   .timeZone("UTC")
-  .onRun(async () => {
+  .onRun(async (context) => {
     const now = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(now.getDate() + 1);
@@ -777,7 +784,7 @@ exports.sendGameReminders = functions.pubsub
 
 exports.sendPayoutMessages = functions.pubsub
   .schedule("every 5 minutes")
-  .onRun(async () => {
+  .onRun(async (context) => {
     try {
       logger.info("Hello Payout Function");
       const winnersSnap = await db
@@ -864,8 +871,8 @@ exports.checkCancelledGames = functions.pubsub
   .onRun(async (context) => {
     const db = admin.firestore();
     const now = new Date();
-    // const year = now.getFullYear();
-    const year = 2021;
+    const year = now.getFullYear();
+    // const year = 2021;
 
     try {
       logger.info("checkCancelledGames started");
@@ -1000,6 +1007,254 @@ exports.checkCancelledGames = functions.pubsub
     } catch (error) {
       logger.error("Error in Checking Cancel Game: ", { error });
     }
+  });
+
+exports.checkBoardsFillingFast = functions.pubsub
+  .schedule("every 5 minutes")
+  .timeZone("America/Denver")
+  .onRun(async (context) => {
+    console.log("🚀 Checking boards filling fast...");
+
+    const now = new Date();
+
+    const gamesSnap = await db
+      .collection("games")
+      .where("status", "==", "active")
+      .get();
+
+    for (const gameDoc of gamesSnap.docs) {
+      const gameId = gameDoc.id;
+      const game = gameDoc.data();
+
+      const team1 = game.teams?.home || "Home Team";
+      const team2 = game.teams?.away || "Away Team";
+
+      const startTime = game.startTime?.toDate
+        ? game.startTime.toDate()
+        : new Date(game.startTime);
+      const timeDiffHrs = (startTime - now) / (1000 * 60 * 60);
+
+      const currentQuarterNum = Number(game.currentQuarter) || 1;
+      const boundedQuarter = Math.min(Math.max(currentQuarterNum, 1), 4);
+      const quarterLabel = `Q${boundedQuarter}`;
+
+      const boardsSnap = await db
+        .collection("boards")
+        .where("gameId", "==", gameId)
+        .get();
+
+      for (const boardDoc of boardsSnap.docs) {
+        const board = boardDoc.data();
+        logger.info("BOARD: ", { board });
+        const boardId = boardDoc.id;
+
+        const tierId = board.tierId || "unknown_tier";
+        const totalSquares = 50;
+        const claimedSquares = board.claimedSquares || 0;
+        logger.info("TOTAL CLAIMS: ", { claimedSquares });
+        const fillPercent = (claimedSquares / totalSquares) * 100;
+
+        const postKey = `${gameId}_Q${boundedQuarter}_${tierId}_${boardId}`;
+        const postRef = db.collection("fastFillPosts").doc(postKey);
+        const existingPost = await postRef.get();
+
+        const nowTs = admin.firestore.Timestamp.now();
+        const postData = existingPost.exists ? existingPost.data() : {};
+        const lastPostedAt = postData.lastTriggeredAt?.toDate?.() || null;
+        const triggerCount = postData.triggerCount || 0;
+        const timeSinceLastPost = lastPostedAt
+          ? (now - lastPostedAt) / (1000 * 60)
+          : Infinity;
+
+        // Helper function to record a new post event
+        async function recordPost(type, extraData = {}) {
+          await postRef.set(
+            {
+              gameId,
+              quarter: boundedQuarter,
+              quarterLabel,
+              tierId,
+              boardId,
+              fillPercent,
+              type,
+              triggerCount: admin.firestore.FieldValue.increment(1),
+              lastTriggeredAt: admin.firestore.FieldValue.serverTimestamp(),
+              postedAt: admin.firestore.FieldValue.serverTimestamp(),
+              ...extraData,
+            },
+            { merge: true }
+          );
+        }
+
+        // ---------------------------
+        // 🎯 FULL BOARD ANNOUNCEMENT (once only)
+        // ---------------------------
+        if (fillPercent === 100 && postData.type !== "boardFull") {
+          console.log(
+            `🎯 [${gameId}] ${quarterLabel} - ${tierId} board FULL (${boardId})`
+          );
+
+          await BoardFullAnnouncementPost({
+            team1,
+            team2,
+            totalPrize: board.prizeAmount,
+            mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+            captionLink: "https://squaretrivia.com",
+          });
+
+          await recordPost("boardFull");
+          continue; // Skip rest once full
+        }
+
+        // ---------------------------
+        // ⚡ FAST FILL (70%–99%) — trigger once only
+        // ---------------------------
+        if (
+          fillPercent >= 70 &&
+          fillPercent < 100 &&
+          postData.type !== "fastFill"
+        ) {
+          console.log(
+            `📣 [${gameId}] ${quarterLabel} - ${tierId} board ${fillPercent.toFixed(
+              1
+            )}% filled (fast fill alert)`
+          );
+
+          await BoardGoingFastPost({
+            team1,
+            team2,
+            tier: tierId,
+            totalClaims: { total: totalSquares, claimed: claimedSquares },
+            mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+            captionLink: "https://squaretrivia.com",
+          });
+
+          await recordPost("fastFill");
+        }
+
+        // ---------------------------
+        // ⚠️ LAST CHANCE (<20%) — up to twice (2–3h before)
+        // ---------------------------
+        if (timeDiffHrs > 2 && timeDiffHrs <= 3 && triggerCount < 2) {
+          console.log(
+            `⚠️ [${gameId}] ${quarterLabel} - ${tierId} (${fillPercent.toFixed(
+              1
+            )}% filled) — Last Chance alert`
+          );
+
+          const spotsLeft = totalSquares - claimedSquares;
+
+          await LastChancePost({
+            team1,
+            team2,
+            spotsLeft,
+            highestTier: tierId,
+            mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+            captionLink: "https://squaretrivia.com",
+          });
+
+          await recordPost("lastChance");
+        }
+
+        // ---------------------------
+        // 📅 UPCOMING GAME (2–3 days before) — up to twice
+        // ---------------------------
+        if (
+          timeDiffHrs >= 48 &&
+          timeDiffHrs <= 72 &&
+          triggerCount < 2 &&
+          timeSinceLastPost >= 360 // 6 hours
+        ) {
+          console.log(
+            `📅 [${gameId}] Upcoming Game — ${team1} vs ${team2} (${Math.round(
+              timeDiffHrs / 24
+            )} days)`
+          );
+
+          try {
+            await UpcomingGamePost({
+              team1,
+              team2,
+              mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+              captionLink: "https://squaretrivia.com",
+            });
+            await recordPost("upcomingGame");
+          } catch (err) {
+            console.error("❌ Error posting upcoming game alert:", err);
+          }
+        }
+
+        // ---------------------------
+        // ⏰ FINAL CALL (1–2h before) — up to twice
+        // ---------------------------
+        if (
+          timeDiffHrs > 1 &&
+          timeDiffHrs <= 2 &&
+          triggerCount < 2 &&
+          timeSinceLastPost >= 30
+        ) {
+          console.log(
+            `⏰ [${gameId}] Final Call — ${team1} vs ${team2} starts in ${timeDiffHrs.toFixed(
+              1
+            )}h`
+          );
+
+          const squaresLeft = totalSquares - claimedSquares;
+
+          await FinalCallPost({
+            team1,
+            team2,
+            timeLeft: `${Math.round(timeDiffHrs * 60)} minutes`,
+            squaresLeft,
+            mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+            captionLink: "https://squaretrivia.com",
+          });
+
+          await recordPost("finalCall");
+        }
+
+        // ---------------------------
+        // 💎 PREMIUM TIER STATUS UPDATES — once per quarter
+        // ---------------------------
+        const premiumTiers = ["tier_100", "tier_250", "tier_500", "tier_1000"];
+
+        if (
+          premiumTiers.includes(tierId) &&
+          fillPercent >= 70 &&
+          fillPercent < 100 &&
+          postData.type !== "tierStatusUpdate"
+        ) {
+          const tierDocs = await db
+            .collection("boards")
+            .where("gameId", "==", gameId)
+            .where("tierId", "in", premiumTiers)
+            .get();
+
+          const tiers = tierDocs.docs.map((doc) => {
+            const d = doc.data();
+            const total = d.totalSquares || 100;
+            const claimed = d.claimedSquares || 0;
+            const left = total - claimed;
+            return { tier: Number(d.tierId.replace("tier_", "")), left };
+          });
+
+          tiers.sort((a, b) => b.tier - a.tier);
+
+          await TierStatusUpdatePost({
+            team1,
+            team2,
+            tiers,
+            mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+            captionLink: "https://squaretrivia.com",
+          });
+
+          await recordPost("tierStatusUpdate", { tiersSnapshot: tiers });
+        }
+      }
+    }
+
+    console.log("✅ All active games checked and processed.");
+    return null;
   });
 
 async function sendTelegramNotification(chatId, message) {

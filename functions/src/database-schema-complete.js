@@ -6,7 +6,7 @@
 // COMMONJS IMPORTS
 // =====================================
 
-const admin = require('firebase-admin');
+const admin = require("firebase-admin");
 
 // Note: Constants will be imported from another file in the actual implementation
 // For this schema file, we'll define what we need locally
@@ -14,9 +14,9 @@ const TIERS = {
   tier_25: { amount: 25, payoutPercentage: 0.77 },
   tier_50: { amount: 50, payoutPercentage: 0.77 },
   tier_100: { amount: 100, payoutPercentage: 0.77 },
-  tier_250: { amount: 250, payoutPercentage: 0.80 },
-  tier_500: { amount: 500, payoutPercentage: 0.80 },
-  tier_1000: { amount: 1000, payoutPercentage: 0.80 }
+  tier_250: { amount: 250, payoutPercentage: 0.8 },
+  tier_500: { amount: 500, payoutPercentage: 0.8 },
+  tier_1000: { amount: 1000, payoutPercentage: 0.8 },
 };
 
 // =====================================
@@ -26,133 +26,133 @@ const TIERS = {
 // User Collection Schema
 const UserSchema = {
   // Required fields
-  email: '', // string - validated email
+  email: "", // string - validated email
   createdAt: null, // Timestamp - account creation
-  
+
   // Profile fields
   telegramUsername: null, // string - @username format (OPTIONAL)
   phone: null, // string - +1XXXXXXXXXX format
   hasTelegram: false, // boolean - tracks if user has added Telegram
   telegramPromptDismissed: false, // boolean - if user dismissed Telegram prompts
-  preferredNotificationMethod: 'email', // string - 'email', 'telegram', 'both'
+  preferredNotificationMethod: "email", // string - 'email', 'telegram', 'both'
   referralCode: null, // string - unique 6-char code
   referredBy: null, // string - referral code used
-  
+
   // Financial fields
   totalDonations: 0, // number - lifetime donation total
   lifetimeValue: 0, // number - total value including prizes
   currentTiers: [], // array - active tier IDs ['tier_25', 'tier_50']
   lastDonation: null, // Timestamp - most recent donation
-  
+
   // Payout preferences
   payoutMethod: {
     type: null, // string - 'paypal', 'venmo', 'zelle', 'check', 'crypto'
     details: {}, // object - method-specific details
-    verified: false // boolean - payout method verified
+    verified: false, // boolean - payout method verified
   },
   instantPayoutPreference: false, // boolean - user's default choice for instant payouts
   totalInstantPayoutFees: 0, // number - lifetime instant fees paid
-  
+
   // Tax information
   taxInfo: {
     ssn_last4: null, // string - last 4 digits only
     fullName: null, // string - legal name
     address: null, // object - mailing address
     w9_submitted: false, // boolean
-    total_annual_winnings: 0 // number - for 1099 tracking
+    total_annual_winnings: 0, // number - for 1099 tracking
   },
-  
+
   // Activity tracking
   lastActive: null, // Timestamp
   loginCount: 0, // number
   gamesPlayed: 0, // number
   squaresWon: 0, // number
   totalWinnings: 0, // number - lifetime prize total
-  
+
   // SKILL-BASED: New stats
   triviaCorrect: 0, // number - correct trivia answers
   triviaIncorrect: 0, // number - incorrect trivia answers
   squaresPlaced: 0, // number - total squares placed
-  
+
   // Preferences
   notifications: {
     email: true,
     telegram: true,
     sms: false,
-    marketing: true
+    marketing: true,
   },
-  
+
   // System fields
   isAdmin: false, // boolean
   isBanned: false, // boolean
   banReason: null, // string
-  metadata: {} // object - for future use
+  metadata: {}, // object - for future use
 };
 
 // Donation Collection Schema - COMPLETE VERSION
 const DonationSchema = {
   // Core fields
-  userId: '', // string - Firebase Auth UID
+  userId: "", // string - Firebase Auth UID
   amount: 0, // number - donation amount
-  tierId: '', // string - 'tier_25', 'tier_50', etc.
-  
+  tierId: "", // string - 'tier_25', 'tier_50', etc.
+
   // Payment details
-  stripePaymentIntentId: '', // string
-  paymentMethod: '', // string - 'card', 'apple_pay', 'google_pay', etc.
+  stripePaymentIntentId: "", // string
+  paymentMethod: "", // string - 'card', 'apple_pay', 'google_pay', etc.
   paymentMethodDetails: {}, // object - card last4, brand, etc.
-  currency: 'usd', // string
+  currency: "usd", // string
   payoutPercentage: 0, // number - 0.77 or 0.80 based on tier
-  
+
   // Status tracking
-  status: 'pending', // string - 'pending', 'completed', 'failed', 'refunded'
+  status: "pending", // string - 'pending', 'completed', 'failed', 'refunded'
   completedAt: null, // Timestamp - when payment completed
   failedAt: null, // Timestamp - if payment failed
   failureReason: null, // string - reason for failure
-  
+
   // Access management
   telegramUsername: null, // string - for group access (OPTIONAL)
   telegramAccessGranted: false, // boolean
   hasTelegram: false, // boolean - whether user provided Telegram
   webOnlyAccess: false, // boolean - user chose web-only access
   accessExpiresAt: null, // Timestamp - 30 days from completion
-  
+
   // Refund tracking
   refundedAt: null, // Timestamp
   refundAmount: 0, // number - partial refunds allowed
   refundReason: null, // string
   refundRequestedBy: null, // string - 'user' or 'admin'
-  
+
   // Free entries earned
   freeEntriesGranted: 0, // number - based on donation amount
-  
+
   // Metadata
   createdAt: null, // Timestamp
   updatedAt: null, // Timestamp
   ipAddress: null, // string - for fraud detection
   userAgent: null, // string - browser info
-  metadata: {} // object - additional Stripe data, promo codes, etc.
+  metadata: {}, // object - additional Stripe data, promo codes, etc.
 };
 
 // Game Collection Schema
 const GameSchema = {
   // Game identification
-  sport: '', // string - 'NFL', 'NBA', 'NCAA_FB', 'NCAA_BB'
-  apiSportsId: '', // string - CRITICAL for live updates
-  gameType: 'regular', // string - 'regular', 'playoff', 'championship'
-  
+  sport: "", // string - 'NFL', 'NBA', 'NCAA_FB', 'NCAA_BB'
+  apiSportsId: "", // string - CRITICAL for live updates
+  gameType: "regular", // string - 'regular', 'playoff', 'championship'
+
   // Teams
   teams: {
-    home: '', // string - team name
-    away: '', // string - team name
+    home: "", // string - team name
+    away: "", // string - team name
   },
-  
+
   // Scheduling
   startTime: null, // Timestamp
   actualStartTime: null, // Timestamp - when game actually started
-  
+
   // Status tracking
-  status: 'scheduled', // string - 'scheduled', 'active', 'completed', 'cancelled'
-  
+  status: "scheduled", // string - 'scheduled', 'active', 'completed', 'cancelled'
+
   // Score tracking
   scores: {
     q1: { home: null, away: null },
@@ -160,127 +160,127 @@ const GameSchema = {
     q3: { home: null, away: null },
     q4: { home: null, away: null },
     ot: { home: null, away: null }, // if applicable
-    final: { home: null, away: null }
+    final: { home: null, away: null },
   },
-  
+
   // Processing status
   processedQuarters: {
     q1: false,
     q2: false,
     q3: false,
     q4: false,
-    ot: false
+    ot: false,
   },
-  
+
   // API monitoring
   lastApiCheck: null, // Timestamp
   lastApiStatus: null, // string - last API response status
   apiCheckCount: 0, // number - total API calls made
-  
+
   // Manual overrides
   manualScoreEntry: false, // boolean
   manualScores: {}, // object - admin-entered scores
-  
+
   // Metadata
   createdAt: null, // Timestamp
-  createdBy: '', // string - admin user ID
+  createdBy: "", // string - admin user ID
   completedAt: null, // Timestamp
   cancelledAt: null, // Timestamp
-  cancelReason: null // string
+  cancelReason: null, // string
 };
 
 // Board Collection Schema - UPDATED FOR SKILL-BASED SYSTEM
 const BoardSchema = {
   // Board identification
-  gameId: '', // string - reference to game
-  tierId: '', // string - 'tier_25', 'tier_50', etc.
-  gameType: '', // string - copied from game for querying
-  
+  gameId: "", // string - reference to game
+  tierId: "", // string - 'tier_25', 'tier_50', etc.
+  gameType: "", // string - copied from game for querying
+
   // SKILL-BASED: Updated square management
   // Each position can have up to 2 claims
   // Structure: { position: { claims: [{userId, claimId, answerTimeSeconds}...], isFull: boolean }}
   squares: {}, // object - position -> square data
   maxSquares: 50, // number - always 50
-  
+
   // SKILL-BASED: New fields
   maxPlayersPerSquare: 2, // number - always 2 for skill-based system
   consolationSquaresAwarded: 0, // number - track total (max 4 per board)
-  
+
   // Cached game info (for display without joins)
   gameInfo: {
-    teams: { home: '', away: '' },
-    sport: '',
-    startTime: null
+    teams: { home: "", away: "" },
+    sport: "",
+    startTime: null,
   },
-  
+
   // Status
   isActive: true, // boolean
   isFull: false, // boolean - auto-updated when all squares have 2 players
-  
+
   // Metadata
   createdAt: null, // Timestamp
-  lastUpdated: null // Timestamp
+  lastUpdated: null, // Timestamp
 };
 
 // Square Claims Collection Schema - UPDATED FOR SKILL-BASED SYSTEM
 const SquareClaimSchema = {
   // Claim details
-  userId: '', // string - who claimed it
-  boardId: '', // string - which board
+  userId: "", // string - who claimed it
+  boardId: "", // string - which board
   position: 0, // number - 0-49
-  
+
   // SKILL-BASED: Timing fields
   triviaAnswerTimeMs: 0, // number - milliseconds to answer trivia
   triviaAnswerTimeSeconds: 0, // number - seconds (for display)
-  
+
   // SKILL-BASED: Consolation tracking
   isConsolationSquare: false, // boolean - earned via consolation prize
   sourceWinnerId: null, // string - winner record that granted this consolation
   canEarnConsolation: true, // boolean - false for consolation squares (can't win another)
-  
+
   // Earning details
-  earnedVia: 'trivia', // string - 'trivia', 'free_entry', 'admin', 'consolation'
+  earnedVia: "trivia", // string - 'trivia', 'free_entry', 'admin', 'consolation'
   triviaQuestionId: null, // string - if earned via trivia
   accessTokenId: null, // string - token used
-  
+
   // Timestamps
   earnedAt: null, // Timestamp - when trivia was answered
   placedAt: null, // Timestamp - when square was placed
-  
+
   // Result tracking
   isWinner: false, // boolean
   winningQuarter: null, // string - 'q1', 'q2', etc.
   prizeAmount: 0, // number
-  
+
   // Metadata
   ipAddress: null, // string - for fraud detection
-  userAgent: null // string - browser info
+  userAgent: null, // string - browser info
 };
 
 // SKILL-BASED: NEW Trivia Session Schema
 const TriviaSessionSchema = {
-  sessionId: '', // string - unique session ID
-  userId: '', // string - player's user ID
-  boardId: '', // string - board they're playing for
-  questionId: '', // string - trivia question ID
-  
+  sessionId: "", // string - unique session ID
+  userId: "", // string - player's user ID
+  boardId: "", // string - board they're playing for
+  questionId: "", // string - trivia question ID
+
   // Timing fields (critical for skill-based system)
   questionDisplayedAt: null, // Timestamp - when question shown to user
   answerSubmittedAt: null, // Timestamp - when user submitted answer
   answerTimeMs: null, // number - calculated milliseconds to answer
   answerTimeSeconds: null, // number - seconds for display (ms / 1000)
-  
+
   // Answer tracking
   answered: false, // boolean - whether user answered
   isCorrect: false, // boolean - whether answer was correct
   answerIndex: null, // number - which answer they selected (0-3)
-  
+
   // Session info
-  sport: '', // string - sport category
-  tier: '', // string - tier they're playing for
+  sport: "", // string - sport category
+  tier: "", // string - tier they're playing for
   startedAt: null, // Timestamp - session start
   expiresAt: null, // Timestamp - session expiration
-  
+
   // Metadata
   createdAt: null, // Timestamp
 };
@@ -288,18 +288,18 @@ const TriviaSessionSchema = {
 // Winners Collection Schema - UPDATED FOR SKILL-BASED SYSTEM
 const WinnerSchema = {
   // Winner identification
-  userId: '', // string
-  gameId: '', // string
-  boardId: '', // string
-  claimId: '', // string - reference to square claim
-  
+  userId: "", // string
+  gameId: "", // string
+  boardId: "", // string
+  claimId: "", // string - reference to square claim
+
   // Winning details
   position: 0, // number - winning square position
-  quarter: '', // string - 'q1', 'q2', 'q3', 'q4', 'ot'
-  score: '', // string - '21-17' format
-  tierId: '', // string - for prize calculation
+  quarter: "", // string - 'q1', 'q2', 'q3', 'q4', 'ot'
+  score: "", // string - '21-17' format
+  tierId: "", // string - for prize calculation
   prizeAmount: 0, // number
-  
+
   // SKILL-BASED: Speed competition fields
   winnerAnswerTimeMs: 0, // number - winner's trivia answer time in ms
   winnerAnswerTimeSeconds: 0, // number - winner's time in seconds
@@ -307,151 +307,151 @@ const WinnerSchema = {
   loserUserId: null, // string - who lost the speed competition
   consolationSquareGranted: false, // boolean - whether consolation was given
   consolationSquareId: null, // string - reference to granted consolation square
-  
+
   // Cached info for display
   gameInfo: {
-    teams: { home: '', away: '' },
-    sport: ''
+    teams: { home: "", away: "" },
+    sport: "",
   },
   userInfo: {
-    email: '',
-    telegramUsername: ''
+    email: "",
+    telegramUsername: "",
   },
-  
+
   // Notification status
-  notificationStatus: 'pending', // string - 'pending', 'sent', 'failed'
+  notificationStatus: "pending", // string - 'pending', 'sent', 'failed'
   notifiedAt: null, // Timestamp
   notificationErrors: [], // array - any errors
-  
+
   // Payout status
-  status: 'pending_payout', // string - 'pending_payout', 'processing', 'completed', 'failed'
+  status: "pending_payout", // string - 'pending_payout', 'processing', 'completed', 'failed'
   payoutMethod: null, // string
   payoutDetails: {}, // object - transaction details
   payoutCompletedAt: null, // Timestamp
-  payoutType: 'standard', // string - 'instant' or 'batch' or 'standard'
+  payoutType: "standard", // string - 'instant' or 'batch' or 'standard'
   instantPayoutFee: 0, // number - fee amount if instant payout
   relayBatchId: null, // string - reference to relay batch if applicable
-  
+
   // Tax tracking
   reportedOn1099: false, // boolean
   taxYear: 0, // number - year for tax purposes
-  
+
   // Metadata
   createdAt: null, // Timestamp
-  processedBy: null // string - admin who processed payout
+  processedBy: null, // string - admin who processed payout
 };
 
 // Trivia Collection Schema
 const TriviaSchema = {
   // Question details
-  question: '', // string - the question text
+  question: "", // string - the question text
   answers: [], // array - 4 answer options
   correctAnswerIndex: 0, // number - 0-3
-  
+
   // Categorization
-  sport: '', // string - 'NFL', 'NBA', etc.
-  category: '', // string - 'history', 'stats', 'current', etc.
-  difficulty: 'medium', // string - 'easy', 'medium', 'hard'
-  
+  sport: "", // string - 'NFL', 'NBA', etc.
+  category: "", // string - 'history', 'stats', 'current', etc.
+  difficulty: "medium", // string - 'easy', 'medium', 'hard'
+
   // Usage tracking
   timesUsed: 0, // number
   timesCorrect: 0, // number
   successRate: 0, // number - calculated percentage
-  
+
   // Validation
   isActive: true, // boolean
   requiresUpdate: false, // boolean - for time-sensitive questions
-  
+
   // Metadata
   createdAt: null, // Timestamp
-  createdBy: '', // string - admin who created
+  createdBy: "", // string - admin who created
   lastUsed: null, // Timestamp
-  tags: [] // array - for searching
+  tags: [], // array - for searching
 };
 
 // Access Tokens Collection Schema - RENAMED from squareTokens
 const AccessTokenSchema = {
   // Token details
-  userId: '', // string - who earned it
-  tierId: '', // string - which tier it's for
-  
+  userId: "", // string - who earned it
+  tierId: "", // string - which tier it's for
+
   // Earning details
-  earnedVia: 'trivia', // string - 'trivia', 'free_entry', 'consolation'
+  earnedVia: "trivia", // string - 'trivia', 'free_entry', 'consolation'
   triviaQuestionId: null, // string - if from trivia
-  
+
   // SKILL-BASED: Consolation token tracking
   isConsolationToken: false, // boolean - if this is a consolation prize
   sourceWinnerId: null, // string - winner record that granted this
   canEarnConsolation: true, // boolean - whether this can earn consolation if it loses
-  
+
   // SKILL-BASED: Timing data from trivia
   answerTimeMs: 0, // number - milliseconds (for skill-based wins)
   answerTimeSeconds: 0, // number - seconds (for display)
-  
+
   // Usage tracking
   usedForSquare: false, // boolean
   usedAt: null, // Timestamp
   usedOnBoardId: null, // string
   assignedPosition: null, // number
-  
+
   // Expiration
   expiresAt: null, // Timestamp - 24 hours for regular, 30 days for consolation
-  
+
   // Metadata
   createdAt: null, // Timestamp
-  ipAddress: null // string
+  ipAddress: null, // string
 };
 
 // Free Entries Collection Schema
 const FreeEntrySchema = {
   // Entry details
-  email: '', // string
-  fullName: '', // string
+  email: "", // string
+  fullName: "", // string
   mailingAddress: {
-    street1: '',
+    street1: "",
     street2: null,
-    city: '',
-    state: '',
-    zip: '',
-    country: 'US'
+    city: "",
+    state: "",
+    zip: "",
+    country: "US",
   },
   phone: null, // string
-  
+
   // Tier selection
-  requestedTier: '', // string - 'tier_25', etc.
-  
+  requestedTier: "", // string - 'tier_25', etc.
+
   // Processing
-  status: 'pending', // string - 'pending', 'approved', 'rejected'
+  status: "pending", // string - 'pending', 'approved', 'rejected'
   processedAt: null, // Timestamp
   processedBy: null, // string - admin ID
-  
+
   // If approved
   userId: null, // string - created account
   accessTokenId: null, // string - token granted
-  
+
   // Metadata
   receivedAt: null, // Timestamp
   createdAt: null, // Timestamp
-  notes: null // string - admin notes
+  notes: null, // string - admin notes
 };
 
 // Relay Batch Collection Schema
 const RelayBatchSchema = {
   // Batch identification
-  batchId: '', // string - unique batch identifier
-  batchType: 'scheduled', // string - 'scheduled', 'manual'
-  
+  batchId: "", // string - unique batch identifier
+  batchType: "scheduled", // string - 'scheduled', 'manual'
+
   // Batch schedule
-  scheduledFor: '', // string - 'tuesday' or 'friday'
+  scheduledFor: "", // string - 'tuesday' or 'friday'
   dateRange: {
     start: null, // Timestamp - start of period
-    end: null // Timestamp - end of period
+    end: null, // Timestamp - end of period
   },
-  
+
   // Winners included
   winnerIds: [], // array - winner document IDs
   totalWinners: 0, // number - count of winners
-  
+
   // Financial totals
   totalAmount: 0, // number - sum of all payouts
   tierBreakdown: {
@@ -460,35 +460,35 @@ const RelayBatchSchema = {
     tier_100: { count: 0, total: 0 },
     tier_250: { count: 0, total: 0 },
     tier_500: { count: 0, total: 0 },
-    tier_1000: { count: 0, total: 0 }
+    tier_1000: { count: 0, total: 0 },
   },
-  
+
   // Mercury account info
   mercuryBalance: 0, // number - balance at time of batch
   sufficientFunds: false, // boolean - whether balance covers batch
-  
+
   // Processing status
-  status: 'pending', // string - 'pending', 'csv_generated', 'uploaded', 'processing', 'completed', 'failed'
+  status: "pending", // string - 'pending', 'csv_generated', 'uploaded', 'processing', 'completed', 'failed'
   csvGeneratedAt: null, // Timestamp
   csvFilePath: null, // string - storage path
   uploadedToRelayAt: null, // Timestamp
-  
+
   // Relay processing
   relayConfirmationId: null, // string - from Relay
   relayStatus: null, // string - status from Relay
   relayErrors: [], // array - any errors from Relay
-  
+
   // Completion tracking
   completedAt: null, // Timestamp
   completedPayouts: 0, // number - successful payouts
   failedPayouts: 0, // number - failed payouts
   failedPayoutDetails: [], // array - details of failures
-  
+
   // Metadata
   createdAt: null, // Timestamp
-  createdBy: '', // string - admin user ID
+  createdBy: "", // string - admin user ID
   lastUpdated: null, // Timestamp
-  notes: null // string - admin notes
+  notes: null, // string - admin notes
 };
 
 // =====================================
@@ -622,10 +622,10 @@ const firestoreIndexes = {
       queryScope: "COLLECTION",
       fields: [
         { fieldPath: "currentTiers", arrayConfig: "CONTAINS" },
-        { fieldPath: "createdAt", order: "DESCENDING" }
-      ]
+        { fieldPath: "createdAt", order: "DESCENDING" },
+      ],
     },
-    
+
     // Donation queries
     {
       collectionGroup: "donations",
@@ -633,8 +633,8 @@ const firestoreIndexes = {
       fields: [
         { fieldPath: "userId", order: "ASCENDING" },
         { fieldPath: "status", order: "ASCENDING" },
-        { fieldPath: "createdAt", order: "DESCENDING" }
-      ]
+        { fieldPath: "createdAt", order: "DESCENDING" },
+      ],
     },
     {
       collectionGroup: "donations",
@@ -642,18 +642,18 @@ const firestoreIndexes = {
       fields: [
         { fieldPath: "tierId", order: "ASCENDING" },
         { fieldPath: "telegramAccessGranted", order: "ASCENDING" },
-        { fieldPath: "accessExpiresAt", order: "ASCENDING" }
-      ]
+        { fieldPath: "accessExpiresAt", order: "ASCENDING" },
+      ],
     },
-    
+
     // Game queries
     {
       collectionGroup: "games",
       queryScope: "COLLECTION",
       fields: [
         { fieldPath: "status", order: "ASCENDING" },
-        { fieldPath: "startTime", order: "ASCENDING" }
-      ]
+        { fieldPath: "startTime", order: "ASCENDING" },
+      ],
     },
     {
       collectionGroup: "games",
@@ -661,18 +661,18 @@ const firestoreIndexes = {
       fields: [
         { fieldPath: "sport", order: "ASCENDING" },
         { fieldPath: "gameType", order: "ASCENDING" },
-        { fieldPath: "startTime", order: "DESCENDING" }
-      ]
+        { fieldPath: "startTime", order: "DESCENDING" },
+      ],
     },
-    
+
     // Board queries
     {
       collectionGroup: "boards",
       queryScope: "COLLECTION",
       fields: [
         { fieldPath: "gameId", order: "ASCENDING" },
-        { fieldPath: "tierId", order: "ASCENDING" }
-      ]
+        { fieldPath: "tierId", order: "ASCENDING" },
+      ],
     },
     {
       collectionGroup: "boards",
@@ -680,28 +680,28 @@ const firestoreIndexes = {
       fields: [
         { fieldPath: "tierId", order: "ASCENDING" },
         { fieldPath: "gameType", order: "ASCENDING" },
-        { fieldPath: "isActive", order: "ASCENDING" }
-      ]
+        { fieldPath: "isActive", order: "ASCENDING" },
+      ],
     },
-    
+
     // Square claim queries
     {
       collectionGroup: "squareClaims",
       queryScope: "COLLECTION",
       fields: [
         { fieldPath: "userId", order: "ASCENDING" },
-        { fieldPath: "boardId", order: "ASCENDING" }
-      ]
+        { fieldPath: "boardId", order: "ASCENDING" },
+      ],
     },
     {
       collectionGroup: "squareClaims",
       queryScope: "COLLECTION",
       fields: [
         { fieldPath: "boardId", order: "ASCENDING" },
-        { fieldPath: "isWinner", order: "ASCENDING" }
-      ]
+        { fieldPath: "isWinner", order: "ASCENDING" },
+      ],
     },
-    
+
     // SKILL-BASED: Trivia session queries
     {
       collectionGroup: "triviaSessions",
@@ -709,8 +709,8 @@ const firestoreIndexes = {
       fields: [
         { fieldPath: "userId", order: "ASCENDING" },
         { fieldPath: "answered", order: "ASCENDING" },
-        { fieldPath: "createdAt", order: "DESCENDING" }
-      ]
+        { fieldPath: "createdAt", order: "DESCENDING" },
+      ],
     },
     {
       collectionGroup: "triviaSessions",
@@ -718,18 +718,18 @@ const firestoreIndexes = {
       fields: [
         { fieldPath: "boardId", order: "ASCENDING" },
         { fieldPath: "isCorrect", order: "ASCENDING" },
-        { fieldPath: "answerTimeMs", order: "ASCENDING" }
-      ]
+        { fieldPath: "answerTimeMs", order: "ASCENDING" },
+      ],
     },
-    
+
     // Winner queries
     {
       collectionGroup: "winners",
       queryScope: "COLLECTION",
       fields: [
         { fieldPath: "gameId", order: "ASCENDING" },
-        { fieldPath: "quarter", order: "ASCENDING" }
-      ]
+        { fieldPath: "quarter", order: "ASCENDING" },
+      ],
     },
     {
       collectionGroup: "winners",
@@ -737,18 +737,18 @@ const firestoreIndexes = {
       fields: [
         { fieldPath: "userId", order: "ASCENDING" },
         { fieldPath: "status", order: "ASCENDING" },
-        { fieldPath: "createdAt", order: "DESCENDING" }
-      ]
+        { fieldPath: "createdAt", order: "DESCENDING" },
+      ],
     },
     {
       collectionGroup: "winners",
       queryScope: "COLLECTION",
       fields: [
         { fieldPath: "status", order: "ASCENDING" },
-        { fieldPath: "createdAt", order: "ASCENDING" }
-      ]
+        { fieldPath: "createdAt", order: "ASCENDING" },
+      ],
     },
-    
+
     // Trivia queries
     {
       collectionGroup: "trivia",
@@ -756,10 +756,10 @@ const firestoreIndexes = {
       fields: [
         { fieldPath: "sport", order: "ASCENDING" },
         { fieldPath: "difficulty", order: "ASCENDING" },
-        { fieldPath: "isActive", order: "ASCENDING" }
-      ]
+        { fieldPath: "isActive", order: "ASCENDING" },
+      ],
     },
-    
+
     // Access token queries
     {
       collectionGroup: "accessTokens",
@@ -767,8 +767,8 @@ const firestoreIndexes = {
       fields: [
         { fieldPath: "userId", order: "ASCENDING" },
         { fieldPath: "usedForSquare", order: "ASCENDING" },
-        { fieldPath: "expiresAt", order: "ASCENDING" }
-      ]
+        { fieldPath: "expiresAt", order: "ASCENDING" },
+      ],
     },
     {
       collectionGroup: "accessTokens",
@@ -776,10 +776,10 @@ const firestoreIndexes = {
       fields: [
         { fieldPath: "isConsolationToken", order: "ASCENDING" },
         { fieldPath: "boardId", order: "ASCENDING" },
-        { fieldPath: "expiresAt", order: "ASCENDING" }
-      ]
+        { fieldPath: "expiresAt", order: "ASCENDING" },
+      ],
     },
-    
+
     // Relay batch queries
     {
       collectionGroup: "relayBatches",
@@ -787,8 +787,8 @@ const firestoreIndexes = {
       fields: [
         { fieldPath: "status", order: "ASCENDING" },
         { fieldPath: "scheduledFor", order: "ASCENDING" },
-        { fieldPath: "createdAt", order: "DESCENDING" }
-      ]
+        { fieldPath: "createdAt", order: "DESCENDING" },
+      ],
     },
     {
       collectionGroup: "relayBatches",
@@ -796,10 +796,10 @@ const firestoreIndexes = {
       fields: [
         { fieldPath: "scheduledFor", order: "ASCENDING" },
         { fieldPath: "dateRange.start", order: "ASCENDING" },
-        { fieldPath: "dateRange.end", order: "ASCENDING" }
-      ]
-    }
-  ]
+        { fieldPath: "dateRange.end", order: "ASCENDING" },
+      ],
+    },
+  ],
 };
 
 // =====================================
@@ -808,90 +808,93 @@ const firestoreIndexes = {
 
 // SKILL-BASED: Migrate to skill-based system
 async function migrateToSkillBasedSystem(db) {
-  console.log('Starting skill-based system migration...');
-  
+  console.log("Starting skill-based system migration...");
+
   const batch = db.batch();
   let updateCount = 0;
-  
+
   try {
     // 1. Update all boards to new square structure
-    const boards = await db.collection('boards').get();
-    
-    boards.forEach(doc => {
+    const boards = await db.collection("boards").get();
+
+    boards.forEach((doc) => {
       const board = doc.data();
       const newSquares = {};
-      
+
       // Convert old format to new skill-based format
       Object.entries(board.squares || {}).forEach(([position, square]) => {
         if (square && square.userId) {
           // Old format had single user
           newSquares[position] = {
-            claims: [{
-              userId: square.userId,
-              claimId: square.claimId || `legacy-${doc.id}-${position}`,
-              answerTimeSeconds: 5.0 // Default time for old squares
-            }],
-            isFull: false // Can accept one more player
+            claims: [
+              {
+                userId: square.userId,
+                claimId: square.claimId || `legacy-${doc.id}-${position}`,
+                answerTimeSeconds: 5.0, // Default time for old squares
+              },
+            ],
+            isFull: false, // Can accept one more player
           };
         }
       });
-      
-      batch.update(doc.ref, { 
+
+      batch.update(doc.ref, {
         squares: newSquares,
         maxPlayersPerSquare: 2,
-        consolationSquaresAwarded: 0
+        consolationSquaresAwarded: 0,
       });
       updateCount++;
     });
-    
+
     // 2. Update existing claims with default timing
-    const claims = await db.collection('squareClaims').get();
-    
-    claims.forEach(doc => {
+    const claims = await db.collection("squareClaims").get();
+
+    claims.forEach((doc) => {
       batch.update(doc.ref, {
         triviaAnswerTimeMs: 5000, // Default 5 seconds
         triviaAnswerTimeSeconds: 5.0,
         isConsolationSquare: false,
         sourceWinnerId: null,
-        canEarnConsolation: true
+        canEarnConsolation: true,
       });
       updateCount++;
     });
-    
+
     // 3. Update winners with skill fields
-    const winners = await db.collection('winners').get();
-    
-    winners.forEach(doc => {
+    const winners = await db.collection("winners").get();
+
+    winners.forEach((doc) => {
       batch.update(doc.ref, {
         winnerAnswerTimeMs: 5000,
         winnerAnswerTimeSeconds: 5.0,
         loserAnswerTimeMs: null,
         loserUserId: null,
         consolationSquareGranted: false,
-        consolationSquareId: null
+        consolationSquareId: null,
       });
       updateCount++;
     });
-    
+
     // 4. Update access tokens (previously squareTokens)
-    const tokens = await db.collection('accessTokens').get();
-    
-    tokens.forEach(doc => {
+    const tokens = await db.collection("accessTokens").get();
+
+    tokens.forEach((doc) => {
       batch.update(doc.ref, {
         isConsolationToken: false,
         sourceWinnerId: null,
         canEarnConsolation: true,
         answerTimeMs: 5000,
-        answerTimeSeconds: 5.0
+        answerTimeSeconds: 5.0,
       });
       updateCount++;
     });
-    
+
     await batch.commit();
-    console.log(`Skill-based migration complete: ${updateCount} documents updated`);
-    
+    console.log(
+      `Skill-based migration complete: ${updateCount} documents updated`
+    );
   } catch (error) {
-    console.error('Error during skill-based migration:', error);
+    console.error("Error during skill-based migration:", error);
     throw error;
   }
 }
@@ -905,11 +908,16 @@ const seedTriviaQuestions = [
   // NFL Questions
   {
     question: "Which NFL team has won the most Super Bowl championships?",
-    answers: ["New England Patriots (6)", "Pittsburgh Steelers (6)", "Dallas Cowboys (5)", "San Francisco 49ers (5)"],
+    answers: [
+      "New England Patriots (6)",
+      "Pittsburgh Steelers (6)",
+      "Dallas Cowboys (5)",
+      "San Francisco 49ers (5)",
+    ],
     correctAnswerIndex: 1,
     sport: "NFL",
     category: "history",
-    difficulty: "medium"
+    difficulty: "medium",
   },
   {
     question: "Who holds the NFL record for most career passing touchdowns?",
@@ -917,55 +925,70 @@ const seedTriviaQuestions = [
     correctAnswerIndex: 2,
     sport: "NFL",
     category: "records",
-    difficulty: "medium"
+    difficulty: "medium",
   },
   {
     question: "Which NFL team plays in the newest stadium?",
-    answers: ["Las Vegas Raiders", "Los Angeles Rams", "Minnesota Vikings", "Atlanta Falcons"],
+    answers: [
+      "Las Vegas Raiders",
+      "Los Angeles Rams",
+      "Minnesota Vikings",
+      "Atlanta Falcons",
+    ],
     correctAnswerIndex: 0,
     sport: "NFL",
     category: "current",
-    difficulty: "hard"
+    difficulty: "hard",
   },
-  
+
   // NBA Questions
   {
     question: "Who holds the NBA record for most points in a single game?",
-    answers: ["Kobe Bryant (81)", "Michael Jordan (69)", "Wilt Chamberlain (100)", "David Thompson (73)"],
+    answers: [
+      "Kobe Bryant (81)",
+      "Michael Jordan (69)",
+      "Wilt Chamberlain (100)",
+      "David Thompson (73)",
+    ],
     correctAnswerIndex: 2,
     sport: "NBA",
     category: "records",
-    difficulty: "easy"
+    difficulty: "easy",
   },
   {
     question: "Which NBA team has won the most championships?",
-    answers: ["Los Angeles Lakers", "Boston Celtics", "Chicago Bulls", "Golden State Warriors"],
+    answers: [
+      "Los Angeles Lakers",
+      "Boston Celtics",
+      "Chicago Bulls",
+      "Golden State Warriors",
+    ],
     correctAnswerIndex: 1,
     sport: "NBA",
     category: "history",
-    difficulty: "medium"
+    difficulty: "medium",
   },
-  
+
   // Add more questions as needed...
 ];
 
 // Initialize system with seed data
 async function initializeSystem(db) {
-  console.log('Initializing Square Trivia system...');
-  
+  console.log("Initializing Square Trivia system...");
+
   try {
     // 1. Run migration to skill-based system
     await migrateToSkillBasedSystem(db);
-    
+
     // 2. Seed trivia questions if collection is empty
-    const triviaSnapshot = await db.collection('trivia').limit(1).get();
-    
+    const triviaSnapshot = await db.collection("trivia").limit(1).get();
+
     if (triviaSnapshot.empty) {
-      console.log('Seeding trivia questions...');
+      console.log("Seeding trivia questions...");
       const batch = db.batch();
-      
-      seedTriviaQuestions.forEach(question => {
-        const ref = db.collection('trivia').doc();
+
+      seedTriviaQuestions.forEach((question) => {
+        const ref = db.collection("trivia").doc();
         batch.set(ref, {
           ...question,
           timesUsed: 0,
@@ -973,21 +996,20 @@ async function initializeSystem(db) {
           successRate: 0,
           isActive: true,
           requiresUpdate: false,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          createdBy: 'system',
+          createdAt: Date.now(),
+          createdBy: "system",
           lastUsed: null,
-          tags: []
+          tags: [],
         });
       });
-      
+
       await batch.commit();
       console.log(`Seeded ${seedTriviaQuestions.length} trivia questions`);
     }
-    
-    console.log('System initialization complete!');
-    
+
+    console.log("System initialization complete!");
   } catch (error) {
-    console.error('Error during system initialization:', error);
+    console.error("Error during system initialization:", error);
     throw error;
   }
 }
@@ -1009,7 +1031,7 @@ module.exports = {
   AccessTokenSchema,
   FreeEntrySchema,
   RelayBatchSchema,
-  
+
   // Grouped schemas
   schemas: {
     UserSchema,
@@ -1022,21 +1044,21 @@ module.exports = {
     TriviaSessionSchema,
     AccessTokenSchema,
     FreeEntrySchema,
-    RelayBatchSchema
+    RelayBatchSchema,
   },
-  
+
   // Security rules and indexes
   firestoreRules,
   firestoreIndexes,
-  
+
   // Migration functions
   migrations: {
-    migrateToSkillBasedSystem
+    migrateToSkillBasedSystem,
   },
-  
+
   // Seed data and initialization
   seedData: {
     seedTriviaQuestions,
-    initializeSystem
-  }
+    initializeSystem,
+  },
 };

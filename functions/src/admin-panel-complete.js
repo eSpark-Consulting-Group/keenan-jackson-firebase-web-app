@@ -5,9 +5,8 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const { sendMail } = require("./payment-system-modified");
-const { DUMMY_GAMES } = require("./constants-configuration-fixed");
-// const { DUMMY_GAMES } = require("./constants-configuration-fixed");
 const { logger } = require("firebase-functions");
+// const { DUMMY_GAMES } = require("./constants-configuration-fixed");
 
 // =====================================
 // CONSTANTS - Configure these during deployment
@@ -416,7 +415,6 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
 exports.createGameWithApiMapping = functions.https.onCall(
   async (data, context) => {
     const adminId = requireAdmin(context);
-
     const { sport, homeTeam, awayTeam, startTime, gameType, apiSportsId } =
       data;
 

@@ -92,16 +92,7 @@ export default function Layout({ children }) {
             {/* Logo and main nav */}
             <div className="flex items-center">
               <Link to="/" className="flex items-center min-w-0">
-                <Brain
-                  className="h-6 w-6 text-blue-600 flex-shrink-0 mr-1
-    max-[320px]:h-5 max-[320px]:w-5"
-                />
-                <span
-                  className="text-base font-bold text-gray-900 truncate
-      max-[320px]:text-sm max-[320px]:max-w-[100px]"
-                >
-                  Square Trivia
-                </span>
+                <img src="../logo.svg" alt="Square Trivia" width="150px" />
               </Link>
 
               {/* Desktop navigation */}
@@ -348,12 +339,17 @@ export default function Layout({ children }) {
       <main className="pt-16">{children}</main>
 
       {/* Footer */}
-      <footer className="bg-gray-800 text-white mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <footer className="bg-gray-800 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* About */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Square Trivia</h3>
+              <Link
+                to="/"
+                className="text-lg font-semibold mb-4 flex items-center gap-2"
+              >
+                <img src="../logo.svg" alt="Square Trivia" width="220px" />
+              </Link>
               <p className="text-gray-400 text-sm">
                 100% skill-based sports competition platform. Win money with
                 your knowledge!
@@ -361,7 +357,7 @@ export default function Layout({ children }) {
             </div>
 
             {/* Quick Links */}
-            <div>
+            <div className="mt-2">
               <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
               <ul className="space-y-2 text-sm">
                 <li>
@@ -389,7 +385,7 @@ export default function Layout({ children }) {
             </div>
 
             {/* Legal */}
-            <div>
+            <div className="mt-2">
               <h3 className="text-lg font-semibold mb-4">Legal</h3>
               <ul className="space-y-2 text-sm">
                 <li>
@@ -420,7 +416,7 @@ export default function Layout({ children }) {
             </div>
 
             {/* Contact */}
-            <div>
+            <div className="mt-2">
               <h3 className="text-lg font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-sm">
                 <li className="flex items-center text-gray-400">
@@ -440,7 +436,7 @@ export default function Layout({ children }) {
           </div>
 
           <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
-            <p>&copy; 2024 Square Trivia. All rights reserved.</p>
+            <p>&copy; 2024 Square Trivia. All rights reserved. 18+ only.</p>
             <p className="mt-2">
               Skill-based competition platform • Not gambling • No purchase
               necessary
