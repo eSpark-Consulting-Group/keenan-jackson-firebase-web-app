@@ -59,10 +59,27 @@ import TeamsFanbase from "./pages/admin/admin-teams-fanbase";
 // Utility Functions
 import checkEligibility from "./utils/check-eligibility";
 
+// ---- PWA Registration ----
+const registerServiceWorker = () => {
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("/service-worker.js")
+        .then((reg) => console.log("✅ Service Worker registered:", reg))
+        .catch((err) => console.error("❌ SW registration failed:", err));
+    });
+  }
+};
+
 function App() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
+
+   useEffect(() => {
+    registerServiceWorker();
+  }, []);
+  
   useEffect(() => {
     const runEligibilityCheck = async () => {
       const data = await checkEligibility();
