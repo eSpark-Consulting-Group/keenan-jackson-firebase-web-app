@@ -118,7 +118,7 @@ function App() {
     { path: "/payment-success", element: <PaymentSuccess />, layout: true, protected: true },
     { path: "/payment-cancel", element: <PaymentCancel />, layout: true, protected: true },
     { path: "/leaderboard", element: <Leaderboard />, layout: true, admin: true },
-    { path: "/blocked", element: <BlockedPage />, layout: false },
+    { path: "/restricted", element: <BlockedPage />, layout: false },
 
     // Admin routes
     { path: "/admin", element: <AdminDashboard />, layout: true, admin: true },

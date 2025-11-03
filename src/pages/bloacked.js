@@ -1,20 +1,22 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ShieldAlert, MapPinOff, WifiOff, Lock } from "lucide-react";
 
 export default function BlockedPage() {
-  const { search } = useLocation();
+  const { search, pathname } = useLocation();
   const navigate = useNavigate();
 
+  // detect reason from query or fallback
   const reason =
-    new URLSearchParams(search).keys().next().value || "unknown_error";
+    new URLSearchParams(search).get("reason") ||
+    (pathname.includes("restricted") ? "location_blocked" : "unknown_error");
 
   const reasonData = {
     location_blocked: {
-      title: "Location Restricted",
+      title: "Contests Unavailable in Your Location",
       message:
-        "Access denied. Your current location is restricted by policy.",
+        "Paid contests are not available in your state due to legal restrictions.",
       icon: MapPinOff,
       color: "text-red-600",
     },
@@ -35,7 +37,7 @@ export default function BlockedPage() {
     unknown_error: {
       title: "Access Restricted",
       message:
-        "Access blocked due to security restrictions. Please contact support if this is unexpected.",
+        "Access blocked due to eligibility restrictions. Please contact support if you believe this is an error.",
       icon: Lock,
       color: "text-gray-600",
     },
@@ -46,22 +48,27 @@ export default function BlockedPage() {
 
   const allReasons = [
     {
-      title: "Restricted Region",
-      desc: "Some US states like Louisiana or DC are not allowed access.",
+      title: "Restricted Regions",
+      desc: "Certain US states such as Louisiana, Tennessee, Maryland, and Arizona are not eligible for paid contests.",
     },
     {
       title: "VPN or Proxy Usage",
-      desc: "Using a VPN or proxy can trigger an automatic block.",
+      desc: "Using a VPN or proxy can mask your location and trigger access restrictions.",
     },
     {
       title: "Location Access Disabled",
-      desc: "We need permission to verify your region before granting access.",
+      desc: "We require permission to verify your region before granting contest access.",
     },
     {
       title: "Suspicious Activity",
-      desc: "Unusual IP behavior or tampering can result in temporary blocking.",
+      desc: "Unusual IP or location mismatch can temporarily restrict access for your security.",
     },
   ];
+
+  // Automatically scroll to top on page load
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-100 via-orange-50 to-white p-6">
@@ -79,14 +86,25 @@ export default function BlockedPage() {
           <h1 className={`text-3xl font-bold ${color} mb-2`}>{title}</h1>
           <p className="text-gray-700 mb-6">{message}</p>
 
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => navigate(0)}
-            className="bg-red-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-red-700 transition-all"
-          >
-            Try Again
-          </motion.button>
+          <div className="flex gap-3">
+            {/* <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => navigate(0)}
+              className="bg-red-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-red-700 transition-all"
+            >
+              Try Again
+            </motion.button> */}
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => navigate("/")}
+              className="bg-gray-100 text-gray-800 px-5 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-all"
+            >
+              Back to Home
+            </motion.button>
+          </div>
         </div>
 
         <div className="mt-8">

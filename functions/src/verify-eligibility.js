@@ -69,7 +69,7 @@ exports.verifyEligibility = functions.https.onCall(async (data, context) => {
   if (restricted)
     throw new functions.https.HttpsError("permission-denied", reason);
 
-  return { status: "eligible", message: "OK" };
+  return { status: "eligible", message: "You are eligible to play paid contests" };
 });
 
 /**

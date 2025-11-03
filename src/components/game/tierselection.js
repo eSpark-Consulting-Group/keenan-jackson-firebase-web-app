@@ -14,6 +14,7 @@ import { useAuth } from "../../contexts/authcontext";
 import { useNotification } from "../../contexts/notificationcontext";
 import { callFunction } from "../../firebase/config";
 import toast from "react-hot-toast";
+import RestrictedAlert from "../RestrictedAlert";
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
@@ -189,6 +190,11 @@ export default function TierSelection({
     }
   }, [gameId]);
 
+  const eligibility =
+    JSON.parse(localStorage.getItem("squareTrivia_eligibility") || "{}") || {};
+
+   const isRestricted = eligibility?.status === "restricted";
+console.log("Eligibility Status:", isRestricted);
   const fetchBoardData = async () => {
     try {
       setLoading(true);
@@ -212,37 +218,45 @@ export default function TierSelection({
   };
 
   const processPayment = async () => {
-    if (!selectedTier) return;
-    if (!user) {
-      toast.error("Please login to continue");
-      navigate("/login");
-      return;
-    }
+  if (!selectedTier) return;
 
-    setProcessing(true);
-    const loadingToast = toast.loading("Preparing secure checkout...");
+  if (!user) {
+    toast.error("Please login to continue");
+    navigate("/login");
+    return;
+  }
 
-    try {
-      // Create Stripe checkout session
-      const { sessionId, url } = await callFunction("createCheckoutSession", {
-        tierId: selectedTier.id,
-        tierAmount: selectedTier.amount,
-        gameId: gameId,
-        userId: user.uid,
-        userEmail: user.email,
-        successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-        cancelUrl: `${window.location.origin}/payment-cancel`,
-      });
+  if (isRestricted) {
+    toast.error("You are not eligible to enter paid contests.");
+    setProcessing(false); // ✅ Make sure processing is false
+    navigate("/restricted");
+    return; // ✅ Prevent further code execution
+  }
 
-      toast.dismiss(loadingToast);
+  setProcessing(true);
+  const loadingToast = toast.loading("Preparing secure checkout...");
 
-      if (url) {
-        window.location.href = url;
-      } else if (sessionId) {
-        const stripe = await loadStripe(
-          process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY
-        );
-        const { error } = await stripe.redirectToCheckout({ sessionId });
+  try {
+    // Create Stripe checkout session
+    const { sessionId, url } = await callFunction("createCheckoutSession", {
+      tierId: selectedTier.id,
+      tierAmount: selectedTier.amount,
+      gameId: gameId,
+      userId: user.uid,
+      userEmail: user.email,
+      successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${window.location.origin}/payment-cancel`,
+    });
+
+    toast.dismiss(loadingToast);
+
+    if (url) {
+      window.location.href = url;
+    } else if (sessionId) {
+      const stripe = await loadStripe(
+        process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY
+      );
+      const { error } = await stripe.redirectToCheckout({ sessionId });
 
         if (error) {
           toast.error(error.message);
@@ -410,6 +424,7 @@ export default function TierSelection({
       {/* Action buttons */}
       {selectedTier && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-lg md:relative md:shadow-none md:border-0 md:p-0">
+          <RestrictedAlert/>
           <div className="max-w-3xl mx-auto flex flex-col sm:flex-row gap-4 items-center justify-between">
             <div className="text-center sm:text-left">
               <p className="text-sm text-gray-600">Selected board:</p>

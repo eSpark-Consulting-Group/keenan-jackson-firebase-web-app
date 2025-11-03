@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/authcontext";
 import toast from "react-hot-toast";
+import RestrictedAlert from "../components/RestrictedAlert";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -35,6 +36,12 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  const eligibility =
+    JSON.parse(localStorage.getItem("squareTrivia_eligibility") || "{}") || {};
+
+  const isRestricted = eligibility?.status === "restricted";
+  console.log("Eligibility Status:", isRestricted);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -105,7 +112,13 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validateForm()) {
+    if (!validateForm()) return;
+
+    // 🚫 Check restriction before proceeding
+    if (isRestricted) {
+      toast.error("You are not eligible to register or enter paid contests.");
+      setLoading(false); 
+      navigate("/restricted"); 
       return;
     }
 
@@ -160,7 +173,7 @@ export default function Register() {
         {/* Header */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center justify-center mb-4">
-            <Brain className="h-12 w-12 text-blue-600" />
+            <img src="../logo.svg" alt="Square Trivia" width="150px" />
           </Link>
           <h2 className="text-3xl font-bold text-gray-900">
             Create your account
@@ -175,7 +188,7 @@ export default function Register() {
             </Link>
           </p>
         </div>
-
+        <RestrictedAlert />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Registration Form */}
           <motion.div

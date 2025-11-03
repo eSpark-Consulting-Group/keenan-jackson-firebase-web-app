@@ -24,6 +24,7 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
+import EligibilityGate from "../components/EligibilityGate";
 
 export default function Games() {
   const { userData } = useAuth();
@@ -371,7 +372,6 @@ export default function Games() {
             </div>
           </div>
         </motion.div>
-
         {/* Games List */}
         {Object.keys(groupedGames).length > 0 ? (
           Object.entries(groupedGames).map(([date, dateGames]) => {
@@ -393,6 +393,7 @@ export default function Games() {
                   {date}
                 </h2>
 
+<EligibilityGate>
                 <div className="grid gap-4">
                   {filteredDateGames.map((game) => {
                     return (
@@ -519,6 +520,7 @@ export default function Games() {
                     );
                   })}
                 </div>
+        </EligibilityGate>
               </motion.div>
             );
           })
