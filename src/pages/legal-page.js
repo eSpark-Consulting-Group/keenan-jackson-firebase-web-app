@@ -10,7 +10,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { skillCertification, TERMS_OF_SERVICE } from "../constant";
-import CircleList from "../components/legal/CircleList";
+import CircleList from "../components/legal/circle-list";
 
 export default function Legal() {
   const { page } = useParams();

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/authcontext";
 import toast from "react-hot-toast";
-import RestrictedAlert from "../components/RestrictedAlert";
+import RestrictedAlert from "../components/restricted-alert";
 
 export default function Login() {
   const navigate = useNavigate();

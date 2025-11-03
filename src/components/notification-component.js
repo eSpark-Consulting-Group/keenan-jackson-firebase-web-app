@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNotification } from '../../contexts/notificationcontext';
+import { useNotification } from '../contexts/notificationcontext';
 
 export default function Notification() {
   const { notifications, removeNotification } = useNotification();

@@ -14,7 +14,7 @@ import { useAuth } from "../../contexts/authcontext";
 import { useNotification } from "../../contexts/notificationcontext";
 import { callFunction } from "../../firebase/config";
 import toast from "react-hot-toast";
-import RestrictedAlert from "../RestrictedAlert";
+import RestrictedAlert from "../restricted-alert";
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);

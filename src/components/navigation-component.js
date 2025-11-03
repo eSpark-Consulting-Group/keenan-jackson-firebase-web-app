@@ -10,8 +10,8 @@ import {
   HelpCircle,
   Shield,
 } from "lucide-react";
-import { useAuth } from "../../contexts/authcontext";
-import { auth } from "../../firebase/config";
+import { useAuth } from "../contexts/authcontext";
+import { auth } from "../firebase/config";
 import toast from "react-hot-toast";
 
 export default function Navigation() {

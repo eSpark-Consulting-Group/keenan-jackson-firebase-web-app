@@ -33,7 +33,7 @@ import {
   addDoc,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
-import { bulkUploadQuestions } from "../../components/game/uploadFile";
+import { bulkUploadQuestions } from "../../components/game/upload-file";
 
 export default function AdminTrivia() {
   const [loading, setLoading] = useState(true);

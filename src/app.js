@@ -19,8 +19,8 @@ import { GameProvider } from "./contexts/gamecontext";
 
 // Layout Components
 import Layout from "./components/layout/layout";
-import ProtectedRoute from "./components/Auth/protected-route";
-import AdminRoute from "./components/Auth/admin-route";
+import ProtectedRoute from "./components/auth/protected-route";
+import AdminRoute from "./components/auth/admin-route";
 
 // Styles
 import "./styles/index.css";

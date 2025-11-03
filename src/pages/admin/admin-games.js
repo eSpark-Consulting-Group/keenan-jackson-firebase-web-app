@@ -34,7 +34,7 @@ import {
 } from "firebase/firestore";
 import toast from "react-hot-toast";
 import { httpsCallable } from "firebase/functions";
-import UpdateScoreModal from "../../components/game/updatescoremodal";
+import UpdateScoreModal from "../../components/game/update-score-modal";
 
 export default function AdminGames() {
   const [loading, setLoading] = useState(false);

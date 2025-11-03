@@ -1,5 +1,3 @@
-import { Award, CheckCircle } from "lucide-react";
-
 export const nflTeams = [
   "Arizona Cardinals",
   "Atlanta Falcons",

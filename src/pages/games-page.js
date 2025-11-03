@@ -24,7 +24,7 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
-import EligibilityGate from "../components/EligibilityGate";
+import EligibilityGate from "../components/eligibility-gate";
 
 export default function Games() {
   const { userData } = useAuth();
