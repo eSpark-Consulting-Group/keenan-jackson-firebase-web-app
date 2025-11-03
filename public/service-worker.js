@@ -43,29 +43,26 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
-  // Ignore non-GET requests (like POST to APIs)
   if (request.method !== "GET") return;
+
+  // Skip non-HTTP(S) requests
+  if (!request.url.startsWith("http")) return;
 
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
+      if (cachedResponse) return cachedResponse;
 
       return fetch(request)
         .then((networkResponse) => {
-          // Cache dynamic assets for next time
-          return caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, networkResponse.clone());
-            return networkResponse;
-          });
-        })
-        .catch(() => {
-          // Optional: return a fallback page/image if offline
-          if (request.destination === "document") {
-            return caches.match("/index.html");
+          // Cache valid responses only
+          if (networkResponse.ok) {
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, networkResponse.clone());
+            });
           }
-        });
+          return networkResponse;
+        })
+        .catch(() => caches.match("/index.html"));
     })
   );
 });
