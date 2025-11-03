@@ -2,7 +2,7 @@
 
 ## 📁 Complete Project Structure
 
-```
+```txt
 square-trivia-frontend/
 │
 ├── 📁 public/
@@ -102,6 +102,7 @@ square-trivia-frontend/
 ## 🆕 New Files to Create
 
 ### Session 1 - Critical Foundation (6 files)
+
 - ✅ `src/index.js` - React entry point
 - ✅ `postcss.config.js` - Tailwind CSS config
 - ✅ `.env.example` - Environment template
@@ -110,6 +111,7 @@ square-trivia-frontend/
 - ✅ `.gitignore` - Git ignore file
 
 ### Session 2 - Auth & Routing (6 files)
+
 - ✅ `src/components/Auth/ProtectedRoute.js`
 - ✅ `src/components/Auth/AdminRoute.js`
 - ✅ `src/contexts/GameContext.js`
@@ -118,6 +120,7 @@ square-trivia-frontend/
 - ✅ File renaming instructions
 
 ### Session 3 - Missing Pages (6 files)
+
 - ✅ `src/pages/HowToPlay.js`
 - ✅ `src/pages/Legal.js`
 - ✅ `src/pages/FreeEntry.js`
@@ -126,6 +129,7 @@ square-trivia-frontend/
 - ✅ `src/components/Game/TierSelection.js`
 
 ### Session 4 - Admin Pages (6 files)
+
 - ✅ `src/pages/Admin/Dashboard.js`
 - ✅ `src/pages/Admin/Games.js`
 - ✅ `src/pages/Admin/Users.js`
@@ -134,6 +138,7 @@ square-trivia-frontend/
 - ✅ `src/pages/Admin/Reports.js`
 
 ### Session 5 - Documentation (6 files)
+
 - ✅ `README.md`
 - ✅ `DEPLOYMENT.md`
 - ✅ `IMPORT_FIXES.md`
@@ -144,6 +149,7 @@ square-trivia-frontend/
 ## 🔧 Setup Instructions
 
 1. **Create the folder structure**
+
    ```bash
    mkdir -p square-trivia-frontend/{public,src/{components/{Auth,Game,Layout},contexts,firebase,pages/Admin,styles}}
    ```
@@ -164,6 +170,7 @@ square-trivia-frontend/
    - Add missing imports
 
 5. **Verify structure**
+
    ```bash
    # Count total files (should be ~40+)
    find square-trivia-frontend -type f -name "*.js" -o -name "*.css" -o -name "*.json" | wc -l
@@ -174,13 +181,15 @@ square-trivia-frontend/
 Your delivery package should contain:
 
 ### ✅ From Original Files (17 files - renamed)
+
 - All component files properly renamed and organized
 - Fixed import paths
 - Added missing imports
 
 ### ✅ From Chat Sessions (30 new files)
+
 - Session 1: Foundation files (6)
-- Session 2: Auth components (6) 
+- Session 2: Auth components (6)
 - Session 3: Page components (6)
 - Session 4: Admin pages (6)
 - Session 5: Documentation (6)

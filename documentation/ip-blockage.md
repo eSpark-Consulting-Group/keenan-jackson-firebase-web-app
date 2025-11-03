@@ -11,14 +11,14 @@ contests**:
 
 ## What to implement
 
-### 1) Hard Blocks (all layers)
+### 1. Hard Blocks (all layers)
 
 - Account creation / sign-in gating
 - If user is located in AZ/TN/MD/LA → block with error.
 - Contest join & payment
 - Deny access to paid contests and block any payment attempt if user location is in a restricted state.
 
-### 2) Location Verification (defense in depth)
+### 2. Location Verification (defense in depth)
 
 Use all three checks; deny if any says restricted.
 
@@ -37,19 +37,19 @@ Use all three checks; deny if any says restricted.
 - Require billing state on payment; if AZ/TN/MD/LA → block.
   Decision rule: restricted_if( ip_state ∈ banned OR gps_state ∈ banned OR billing_state ∈ banned )
 
-### 3) VPN/Proxy Handling
+### 3. VPN/Proxy Handling
 
 - If IP is VPN/hosting/anonymous (per provider flags), force device GPS verification to proceed.
 - If GPS unavailable or mismatched → block.
 
-### 4) Feature Flag & Config
+### 4. Feature Flag & Config
 
 Add an environment-driven allow/deny list.
 RESTRICTED_STATES=AZ,TN,MD,LA
 RESTRICTION_MODE=paid_contests
 RESTRICTION_HARDFAIL=true
 
-### 5) API Contract
+### 5. API Contract
 
 - New middleware: enforceStateEligibility(req, user)
 - Reads ip_state, optional gps_state, and billing_state.
@@ -59,20 +59,20 @@ RESTRICTION_HARDFAIL=true
   412_LOCATION_UNVERIFIED: “We couldn’t verify your location. Enable location or update your billing
   address.”
 
-### 6) UI/UX Requirements
+### 6. UI/UX Requirements
 
 - Sign-up / Onboarding gate: “Square Trivia paid contests are not available in AZ, TN, MD, or LA.”
 - Contest page banner (geo-detected): “Contests unavailable in your location.”
 - Payment modal inline error: “We can’t process entries from Arizona, Tennessee, Maryland, or Louisiana.”
 - Help/FAQ update: Add sentence + “Void where prohibited.”
 
-### 7) Data Model / Telemetry
+### 7. Data Model / Telemetry
 
 Add fields to user/session for auditability.
 last_ip_state, last_gps_state, last_billing_state, eligibility_status (eligible|restricted|unverified)
 Log denied attempts with reason and state.
 
-### 8) Tests (must pass)
+### 8. Tests (must pass)
 
 - User in TX → allowed.
 - User in TN → blocked.
@@ -81,11 +81,11 @@ Log denied attempts with reason and state.
 - Billing address LA → blocked.
 - Unverifiable location → blocked.
 
-### 9) Admin Controls
+### 9. Admin Controls
 
 Add Compliance → Jurisdictions screen.
 
-### 10) Copy (use verbatim)
+### 10. Copy (use verbatim)
 
 Eligibility: “Participation in paid Square Trivia contests is open to residents of the United States excluding
 residents of Arizona, Tennessee, Maryland, and Louisiana.”

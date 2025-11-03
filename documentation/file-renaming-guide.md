@@ -6,7 +6,7 @@ Follow this guide to rename all files and place them in the correct folders. Rem
 
 ## 📁 Folder Structure to Create First
 
-```
+```txt
 square-trivia-frontend/
 ├── public/
 ├── src/
@@ -65,6 +65,7 @@ square-trivia-frontend/
 After renaming and moving files, fix these import paths in each file:
 
 ### 1. **App.js** (src/App.js)
+
 ```javascript
 // Change from:
 import { auth, db } from './firebase/config';
@@ -74,6 +75,7 @@ import { AuthProvider } from './contexts/AuthContext';
 ```
 
 ### 2. **All Component Files**
+
 ```javascript
 // Change from:
 import { auth, db, callFunction } from '../../firebase/config';
@@ -84,6 +86,7 @@ import { auth, db, callFunction } from '../firebase/config';
 ```
 
 ### 3. **Firebase Config** (src/firebase/config.js)
+
 ```javascript
 // Add missing import:
 import { httpsCallable } from 'firebase/functions';
@@ -92,6 +95,7 @@ import { httpsCallable } from 'firebase/functions';
 ```
 
 ### 4. **Context Files**
+
 ```javascript
 // Change from:
 import { db, callFunction } from '../../firebase/config';
@@ -103,6 +107,7 @@ import { db, callFunction } from '../firebase/config';
 ## 📂 Step-by-Step Process
 
 ### Step 1: Create Folder Structure
+
 ```bash
 mkdir -p square-trivia-frontend/src/components/Auth
 mkdir -p square-trivia-frontend/src/components/Game
@@ -115,13 +120,17 @@ mkdir -p square-trivia-frontend/public
 ```
 
 ### Step 2: Rename and Move Files
+
 For each file in the renaming chart:
+
 1. Remove `square-trivia-` prefix
 2. Fix extension (remove duplicate .js, .json, etc.)
 3. Move to correct folder
 
 ### Step 3: Add New Files
+
 Place all newly created files from this session:
+
 - ProtectedRoute.js → src/components/Auth/
 - AdminRoute.js → src/components/Auth/
 - GameContext.js → src/contexts/
@@ -129,6 +138,7 @@ Place all newly created files from this session:
 - Layout.js → src/components/Layout/ (replace old one)
 
 ### Step 4: Fix Import Paths
+
 Go through each JavaScript file and update import paths according to the fixes listed above.
 
 ## 🚨 Critical Notes
@@ -141,6 +151,7 @@ Go through each JavaScript file and update import paths according to the fixes l
 ## ✅ Verification Checklist
 
 After completing the renaming:
+
 - [ ] All files renamed without `square-trivia-` prefix
 - [ ] All files in correct folders per structure
 - [ ] Import paths updated in all files
@@ -152,6 +163,7 @@ After completing the renaming:
 ## 📦 Files Still Needed (for next sessions)
 
 These files are referenced but not yet created:
+
 - src/index.js
 - src/pages/HowToPlay.js
 - src/pages/Legal.js

@@ -25,7 +25,7 @@ They run via **scheduled Pub/Sub triggers** - meaning posts are published **auto
 
 All posts are implemented inside `social-posts-functions.js`, and each is imported into the main function entry file:
 
-```js
+```javascript
 const {
   DailyRecapPost,
   WeeklyChampionPost,
