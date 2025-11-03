@@ -83,6 +83,7 @@ export default function AdminReports() {
     totalAttempts: 0,
     correctRate: 0,
     averageAnswerTime: 0,
+    fastestAnswerTime: 0,
     popularQuestions: [],
     questionsByDifficulty: {},
   });
@@ -306,6 +307,10 @@ export default function AdminReports() {
       // 3. Calculate average
       const averageAnswerTime =
         totalClaims > 0 ? totalAnswerTime / totalClaims : 0;
+      const fastestAnswerTime =
+        allClaims.length > 0
+          ? Math.min(...allClaims.map((c) => c.answerTime || Infinity))
+          : 0;
 
       let gamesByStatus = {
         active: 0,
@@ -439,6 +444,7 @@ export default function AdminReports() {
         totalAttempts,
         correctRate,
         averageAnswerTime,
+        fastestAnswerTime,
         popularQuestions,
         questionsByDifficulty,
       });

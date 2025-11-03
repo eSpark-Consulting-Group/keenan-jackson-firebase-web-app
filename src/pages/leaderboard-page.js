@@ -163,7 +163,7 @@ const Leaderboard = () => {
         </div>
 
         {/* Pagination Controls */}
-        {users.length > 0 && (
+        {users.length > 10  && (
           <div className="flex justify-center items-center mt-6 space-x-4">
             <button
               onClick={handlePrev}
