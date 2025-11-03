@@ -112,7 +112,6 @@ const API_SPORTS_CONFIG = {
     endpoint: "/v3/cfb/scores/json/GamesByWeek",
   },
 };
-
 // =====================================
 // DATA COLLECTION FUNCTIONS
 // =====================================

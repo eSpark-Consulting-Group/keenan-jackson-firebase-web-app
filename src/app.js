@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -22,7 +22,13 @@ import Layout from "./components/layout/layout";
 import ProtectedRoute from "./components/Auth/protected-route";
 import AdminRoute from "./components/Auth/admin-route";
 
+// Styles
+import "./styles/index.css";
+
 // Page Components
+import LandingPage from "./pages/LandingPage";
+import Payouts from "./pages/square-trivia-payouts-page";
+import Tier from "./pages/square-trivia-tier-page";
 import Login from "./pages/square-trivia-login-page";
 import Register from "./pages/square-trivia-register-page";
 import Dashboard from "./pages/square-trivia-dashboard (1)";
@@ -35,6 +41,9 @@ import Legal from "./pages/legal-page";
 import FreeEntry from "./pages/freeentry-page";
 import PaymentSuccess from "./pages/payment-success-page";
 import PaymentCancel from "./pages/payment-cancel-page";
+import Leaderboard from "./pages/leaderboard";
+import BlockedPage from "./pages/bloacked";
+// import ReferalReports from "./pages/referal-reports";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/admin-dashboard";
@@ -45,29 +54,26 @@ import AdminTrivia from "./pages/admin/admin-trivia";
 import AdminReports from "./pages/admin/admin-reports";
 import AdminUsersSingle from "./pages/admin/admin-users-single";
 import AdminPayoutsSingle from "./pages/admin/admin-payouts-single";
-
-// Styles
-import "./styles/index.css";
-import LandingPage from "./pages/LandingPage";
-import Payouts from "./pages/square-trivia-payouts-page";
-import Tier from "./pages/square-trivia-tier-page";
 import TeamsFanbase from "./pages/admin/teams-fanbase";
 import ReferralReports from "./pages/admin/referral-reports";
-import Leaderboard from "./pages/leaderboard";
-// import ReferalReports from "./pages/referal-reports";
+import { checkEligibility } from "./check-eligibility";
 
 function App() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
-
   useEffect(() => {
-    // Listen for auth state changes
+    const runEligibilityCheck = async () => {
+      const data = await checkEligibility();
+      console.log("[Session Eligibility]", data);
+    };
+
+    runEligibilityCheck();
+  }, []); // ← runs once per page load (new session)
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
-
-        // Fetch additional user data from Firestore
         try {
           const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
           if (userDoc.exists()) {
@@ -94,307 +100,84 @@ function App() {
     );
   }
 
+  const routesConfig = [
+    { path: "/", element: <LandingPage />, layout: true },
+    { path: "/home", element: <LandingPage />, layout: true },
+    { path: "/login", element: <Login />, layout: true },
+    { path: "/register", element: <Register />, layout: true },
+    { path: "/how-to-play", element: <HowToPlay />, layout: true },
+    { path: "/legal/:page", element: <Legal />, layout: true },
+    { path: "/free-entry", element: <FreeEntry />, layout: true },
+    { path: "/dashboard", element: <Dashboard />, layout: true, protected: true },
+    { path: "/games", element: <Games />, layout: true, protected: true },
+    { path: "/game/:boardId", element: <GameBoard />, layout: true, protected: true },
+    { path: "/game/:boardId/results", element: <GameResults />, layout: true },
+    { path: "/profile", element: <Profile />, layout: true, protected: true },
+    { path: "/tiers", element: <Tier />, layout: true, protected: true },
+    { path: "/payouts", element: <Payouts />, layout: true, protected: true },
+    { path: "/payment-success", element: <PaymentSuccess />, layout: true, protected: true },
+    { path: "/payment-cancel", element: <PaymentCancel />, layout: true, protected: true },
+    { path: "/leaderboard", element: <Leaderboard />, layout: true, admin: true },
+    { path: "/restricted", element: <BlockedPage />, layout: false },
+
+    // Admin routes
+    { path: "/admin", element: <AdminDashboard />, layout: true, admin: true },
+    { path: "/admin/games", element: <AdminGames />, layout: true, admin: true },
+    { path: "/admin/users", element: <AdminUsers />, layout: true, admin: true },
+    { path: "/admin/users/:userId", element: <AdminUsersSingle />, layout: true, admin: true },
+    { path: "/admin/payouts", element: <AdminPayouts />, layout: true, admin: true },
+    { path: "/admin/payouts/:payoutId", element: <AdminPayoutsSingle />, layout: true, admin: true },
+    { path: "/admin/trivia", element: <AdminTrivia />, layout: true, admin: true },
+    { path: "/admin/reports", element: <AdminReports />, layout: true, admin: true },
+    { path: "/admin/teams-reports", element: <TeamsFanbase />, layout: true, admin: true },
+    { path: "/admin/referral-reports", element: <ReferralReports />, layout: true, admin: true },
+  ];
+
   return (
     <AuthProvider value={{ user, userData }}>
       <GameProvider>
-        {/* <NotificationProvider> */}
         <Router>
-          <div className="App">
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: "#363636",
-                  color: "#fff",
-                },
-                success: {
-                  duration: 3000,
-                  iconTheme: {
-                    primary: "#10B981",
-                    secondary: "#fff",
-                  },
-                },
-                error: {
-                  duration: 4000,
-                  iconTheme: {
-                    primary: "#EF4444",
-                    secondary: "#fff",
-                  },
-                },
-              }}
-            />
-
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: { background: "#363636", color: "#fff" },
+              success: { duration: 3000 },
+              error: { duration: 4000 },
+            }}
+          />
+          <Suspense
+            fallback={
+              <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            }
+          >
             <Routes>
-              {/* Public Routes */}
-              <Route
-                path="/"
-                element={
-                  <Layout>
-                    <LandingPage />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/home"
-                element={
-                  <Layout>
-                    <LandingPage />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/login"
-                element={
-                  <Layout>
-                    <Login />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/register"
-                element={
-                  <Layout>
-                    <Register />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/how-to-play"
-                element={
-                  <Layout>
-                    <HowToPlay />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/legal/:page"
-                element={
-                  <Layout>
-                    <Legal />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/free-entry"
-                element={
-                  <Layout>
-                    <FreeEntry />
-                  </Layout>
-                }
-              />
+              {routesConfig.map(({ path, element, layout, protected: isProtected, admin }) => {
+                const wrappedElement = layout ? <Layout>{element}</Layout> : element;
 
-              {/* Protected Routes */}
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Dashboard />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/games"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Games />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/game/:boardId"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <GameBoard />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/game/:boardId/results"
-                element={
-                  <Layout>
-                    <GameResults />
-                  </Layout>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Profile />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/tiers"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Tier />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/payment-success"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <PaymentSuccess />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/payment-cancel"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <PaymentCancel />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/payouts"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Payouts />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
+                if (admin)
+                  return (
+                    <Route key={path} path={path} element={<AdminRoute>{wrappedElement}</AdminRoute>} />
+                  );
 
-              {/* Admin Routes */}
-              <Route
-                path="/admin"
-                element={
-                  <AdminRoute>
-                    <Layout>
-                      <AdminDashboard />
-                    </Layout>
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin/games"
-                element={
-                  <AdminRoute>
-                    <Layout>
-                      <AdminGames />
-                    </Layout>
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin/users"
-                element={
-                  <AdminRoute>
-                    <Layout>
-                      <AdminUsers />
-                    </Layout>
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin/users/:userId"
-                element={
-                  <AdminRoute>
-                    <Layout>
-                      <AdminUsersSingle />
-                    </Layout>
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin/payouts"
-                element={
-                  <AdminRoute>
-                    <Layout>
-                      <AdminPayouts />
-                    </Layout>
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin/payouts/:payoutId"
-                element={
-                  <AdminRoute>
-                    <Layout>
-                      <AdminPayoutsSingle />
-                    </Layout>
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin/trivia"
-                element={
-                  <AdminRoute>
-                    <Layout>
-                      <AdminTrivia />
-                    </Layout>
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin/reports"
-                element={
-                  <AdminRoute>
-                    <Layout>
-                      <AdminReports />
-                    </Layout>
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin/teams-reports"
-                element={
-                  <AdminRoute>
-                    <Layout>
-                      <TeamsFanbase />
-                    </Layout>
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/leaderboard"
-                element={
-                  <AdminRoute>
-                    <Layout>
-                      <Leaderboard />
-                    </Layout>
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin/referral-reports"
-                element={
-                  <AdminRoute>
-                    <Layout>
-                      <ReferralReports />
-                    </Layout>
-                  </AdminRoute>
-                }
-              />
+                if (isProtected)
+                  return (
+                    <Route key={path} path={path} element={<ProtectedRoute>{wrappedElement}</ProtectedRoute>} />
+                  );
 
-              {/* Catch all - redirect to dashboard or landing */}
+                return <Route key={path} path={path} element={wrappedElement} />;
+              })}
+
+              {/* Catch-all */}
               <Route
                 path="*"
                 element={<Navigate to={user ? "/dashboard" : "/"} replace />}
               />
             </Routes>
-          </div>
+          </Suspense>
         </Router>
-        {/* </NotificationProvider> */}
       </GameProvider>
     </AuthProvider>
   );
