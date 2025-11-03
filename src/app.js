@@ -26,37 +26,38 @@ import AdminRoute from "./components/Auth/admin-route";
 import "./styles/index.css";
 
 // Page Components
-import LandingPage from "./pages/LandingPage";
-import Payouts from "./pages/square-trivia-payouts-page";
-import Tier from "./pages/square-trivia-tier-page";
-import Login from "./pages/square-trivia-login-page";
-import Register from "./pages/square-trivia-register-page";
-import Dashboard from "./pages/square-trivia-dashboard (1)";
-import Games from "./pages/square-trivia-games-page";
-import GameBoard from "./pages/square-trivia-game-board";
-import Profile from "./pages/square-trivia-profile-page";
-import HowToPlay from "./pages/howtoplay-page";
-import GameResults from "./pages/game-results";
-import Legal from "./pages/legal-page";
+import BlockedPage from "./pages/blocked-page";
+import Dashboard from "./pages/dashboard-page";
 import FreeEntry from "./pages/freeentry-page";
-import PaymentSuccess from "./pages/payment-success-page";
+import GameBoard from "./pages/game-board-page";
+import GameResults from "./pages/game-results-page";
+import Games from "./pages/games-page";
+import HowToPlay from "./pages/howtoplay-page";
+import LandingPage from "./pages/landing-page";
+import Leaderboard from "./pages/leaderboard-page";
+import Legal from "./pages/legal-page";
+import Login from "./pages/login-page";
 import PaymentCancel from "./pages/payment-cancel-page";
-import Leaderboard from "./pages/leaderboard";
-import BlockedPage from "./pages/bloacked";
-// import ReferalReports from "./pages/referal-reports";
+import PaymentSuccess from "./pages/payment-success-page";
+import Payouts from "./pages/payouts-page";
+import Profile from "./pages/profile-page";
+import Register from "./pages/register-page";
+import Tier from "./pages/tiers-page";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/admin-dashboard";
 import AdminGames from "./pages/admin/admin-games";
-import AdminUsers from "./pages/admin/admin-users";
 import AdminPayouts from "./pages/admin/admin-payouts";
-import AdminTrivia from "./pages/admin/admin-trivia";
-import AdminReports from "./pages/admin/admin-reports";
-import AdminUsersSingle from "./pages/admin/admin-users-single";
 import AdminPayoutsSingle from "./pages/admin/admin-payouts-single";
-import TeamsFanbase from "./pages/admin/teams-fanbase";
-import ReferralReports from "./pages/admin/referral-reports";
-import { checkEligibility } from "./check-eligibility";
+import AdminReports from "./pages/admin/admin-reports";
+import AdminTrivia from "./pages/admin/admin-trivia";
+import AdminUsers from "./pages/admin/admin-users";
+import AdminUsersSingle from "./pages/admin/admin-users-single";
+import ReferralReports from "./pages/admin/admin-referral-reports";
+import TeamsFanbase from "./pages/admin/admin-teams-fanbase";
+
+// Utility Functions
+import checkEligibility from "./utils/check-eligibility";
 
 function App() {
   const [loading, setLoading] = useState(true);

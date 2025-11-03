@@ -1,7 +1,7 @@
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { getAuth } from "firebase/auth";
 
-export async function checkEligibility() {
+export default async function checkEligibility() {
   const LOCAL_KEY = "squareTrivia_eligibility";
   const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
