@@ -23,10 +23,12 @@
 ### 1. **Skill-Based Competition System**
 
 **The Revolutionary Difference:**
+
 - Traditional squares: Random winner based on score
-- Square Trivia: **Fastest trivia answer wins** - 100% skill-based
+- Square Trivia:**Fastest trivia answer wins** - 100% skill-based
 
 **Answer Time Privacy:**
+
 - Answer times are **hidden** until a square wins
 - Players can see their own times but not others'
 - Creates suspense and prevents gaming the system
@@ -47,11 +49,14 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 ### 3. **Game Board System**
 
 **Board Structure:**
+
 - 50 squares (10×5 grid)
 - Each square can hold **2 players maximum**
+
 - 100 total player slots per board
 
 **Square Assignment:**
+
 - Squares are numbered 0-49 or use (row,column) notation
 - Winners determined by last digit of each team's score
 - **IMPORTANT: Digit order doesn't matter!**
@@ -63,6 +68,7 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 ### 4. **Trivia Challenge System**
 
 **Question Flow:**
+
 1. Player requests trivia challenge
 2. System presents sport-specific question
 3. Timer starts when question appears
@@ -71,6 +77,7 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 6. Token valid for 48 hours
 
 **Question Difficulty:**
+
 - Scales with tier (higher tiers = harder questions)
 - Categories: Rules, History, Stats, Players, Records
 - Pool of 1000+ questions per sport
@@ -78,12 +85,14 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 ### 5. **Winner Determination**
 
 **When Squares Win:**
+
 - End of each quarter, check score
 - Example: Score is 14-7 → Square at position (4,7) wins
 - Both players on that square compete
 - **Fastest trivia answer time wins the prize**
 
 **Prize Distribution:**
+
 - Guaranteed fixed prizes each quarter (no calculations needed!)
 - Instant payout: Get 96% of prize immediately
 - Standard payout: Full prize amount in 2-3 days
@@ -92,7 +101,9 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 ### 6. **Consolation System**
 
 **Protecting Player Engagement:**
+
 - **ONLY for players who lose speed competitions on WINNING squares**
+
 - If your square's numbers match the score BUT you had the slower answer time, you get consolation
 - Consolation prizes by tier:
   - **$25, $50, $100 tiers:** Get 1 free $25 trivia question
@@ -111,7 +122,7 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 
 ## 👤 User Journey - Step by Step
 
-### New User Flow:
+### New User Flow
 
 1. **Landing Page** → Learn about skill-based competition
 2. **Registration** → Email, optional Telegram/phone
@@ -120,21 +131,21 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 5. **Telegram Invite** → Join tier-specific group
 6. **Dashboard Access** → View available games
 
-### Playing Flow:
+### Playing Flow
 
 1. **View Boards** → See upcoming games and guaranteed prizes
-2. **Request Trivia** → Click "Play Trivia" 
+2. **Request Trivia** → Click "Play Trivia"
 3. **Answer Question** → Beat the clock!
 4. **Claim Square** → Choose position (if available)
 5. **Wait for Game** → Watch live scores
 6. **Get Notified** → Instant notification if you win
 7. **Choose Payout** → Instant (96%) or standard (100%)
 
-### Winning Flow:
+### Winning Flow
 
 1. **Win Notification** → Email/Telegram alert with prize amount
 2. **View Details** → See your winning time vs opponent
-3. **Payout Choice** → 
+3. **Payout Choice** →
    - Instant: Get 96% immediately
    - Standard: Get 100% in 2-3 days
 4. **Receive Funds** → Via chosen method
@@ -144,27 +155,31 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 
 ## 💻 Technical Architecture
 
-### Frontend:
+### Frontend
+
 - **Framework:** React.js
 - **Styling:** Tailwind CSS
 - **State Management:** React Context
 - **Hosting:** Firebase Hosting
 
-### Backend:
+### Backend
+
 - **Runtime:** Node.js
 - **Functions:** Firebase Cloud Functions
 - **Database:** Cloud Firestore
 - **Auth:** Firebase Authentication
 - **Storage:** Firebase Storage
 
-### Integrations:
+### Integrations
+
 - **Payments:** Stripe (donations & payouts)
 - **Sports Data:** API-Sports (live scores)
 - **Notifications:** Telegram Bot API
 - **Email:** Nodemailer with Gmail
 - **Batch Payouts:** Relay (Tuesday/Friday batches)
 
-### Security:
+### Security
+
 - **Answer Times:** Encrypted until reveal
 - **Firestore Rules:** Role-based access
 - **Payment Security:** PCI compliant via Stripe
@@ -175,7 +190,7 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 
 ## 💰 Business Model & Economics
 
-### Revenue Streams:
+### Revenue Streams
 
 1. **Platform Operations:**
    - Built into the guaranteed prize structure
@@ -192,32 +207,37 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
    - Special event games
    - Corporate tournaments
 
-### Prize Structure:
+### Prize Structure
 
 **Example $25 Tier Board:**
+
 - Entry: $25 per square
 - Guaranteed prizes: $200 per quarter
 - Total contest prizes: $800 (4 quarters)
 - Clear, simple, no math needed!
 
 **Example $100 Tier Board:**
+
 - Entry: $100 per square
 - Guaranteed prizes: $900 per quarter
 - Total contest prizes: $3,600
 - Users love the transparency!
 
 **Payout Options:**
+
 1. **Instant:** 96% of prize (4% service fee)
    - Example: $200 win = $192 instant
 2. **Standard:** 100% of prize (2-3 days)
    - Example: $200 win = $200 full amount
 
-### Key Messaging:
+### Key Messaging
+
 - "NO FEES on playing or winning!"
 - "Guaranteed prize amounts every game"
 - "Choose instant or full payout"
 
-### Operational Costs:
+### Operational Costs
+
 - Firebase: ~$25-100/month
 - Stripe: 2.9% + $0.30 per transaction
 - API-Sports: $24/month
@@ -228,18 +248,21 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 
 ## 🛡️ Legal & Compliance
 
-### Skill-Based Classification:
+### Skill-Based Classification
+
 - **No gambling license required** (skill-based)
 - Winners determined by ability, not chance
 - Free entry option (AMOE) available
 - Legal precedent: Similar to trivia competitions
 
-### Tax Compliance:
+### Tax Compliance
+
 - W-9 collection for $600+ annual winners
 - 1099 forms issued
 - Automatic tax tracking per user
 
-### Terms of Service Include:
+### Terms of Service Include
+
 - 18+ only
 - US residents only
 - One account per person
@@ -250,31 +273,36 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 
 ## 👨‍💼 Admin Features
 
-### Game Management:
+### Game Management
+
 - Create games with API-Sports integration
 - Manual score override capability
 - Cancel/postpone games
 - View all active boards
 
-### User Management:
+### User Management
+
 - View user profiles and history
 - Ban/unban capabilities
 - Manual square assignments
 - Refund processing
 
-### Financial Management:
+### Financial Management
+
 - Payout queue management
 - Relay CSV export (batch payouts)
 - Revenue reporting
 - Fee tracking
 
-### Monitoring:
+### Monitoring
+
 - Real-time error tracking
 - API health monitoring
 - User activity analytics
 - Performance metrics
 
-### Support Tools:
+### Support Tools
+
 - User lookup
 - Transaction history
 - Manual notifications
@@ -284,21 +312,24 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 
 ## 📱 Platform Features by Interface
 
-### Web Application:
+### Web Application
+
 - Full gameplay
 - Account management  
 - Payment processing
 - Board visualization
 - Real-time updates
 
-### Telegram Integration:
+### Telegram Integration
+
 - Game notifications
 - Quick stats
 - Community chat
 - Winner announcements
 - Support bot
 
-### Email System:
+### Email System
+
 - Welcome sequences
 - Donation confirmations
 - Winner notifications
@@ -324,18 +355,21 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 
 ## 📈 Growth Features
 
-### Referral System:
+### Referral System
+
 - Both parties get $25 credit
 - Unique referral codes
 - Automatic tracking
 
 ### Achievements: (Planned)
+
 - Speed badges
 - Win streaks  
 - Sport expertise levels
 - Leaderboards
 
 ### Special Events: (Planned)
+
 - Tournament mode
 - Head-to-head challenges
 - Season-long competitions
@@ -345,25 +379,29 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 
 ## 🚀 Future Roadmap
 
-### Phase 1 (Current):
+### Phase 1 (Current)
+
 - ✅ Core gameplay
 - ✅ Payment system
 - ✅ Basic notifications
 - ✅ Manual admin tools
 
-### Phase 2 (Next 3 months):
+### Phase 2 (Next 3 months)
+
 - Mobile app
 - Advanced analytics
 - Automated customer support
 - More payment methods
 
-### Phase 3 (6 months):
+### Phase 3 (6 months)
+
 - Multiple countries
 - Cryptocurrency payouts
 - Custom corporate games
 - AI-powered question generation
 
-### Phase 4 (1 year):
+### Phase 4 (1 year)
+
 - White-label solution
 - API for partners
 - Season passes
@@ -381,6 +419,7 @@ A: NO! There are no fees to play or win. Prizes are guaranteed fixed amounts. Th
 
 **Q: How much can I win?**
 A: It depends on your tier:
+
 - $25 tier: Win $200 per quarter
 - $50 tier: Win $450 per quarter  
 - $100 tier: Win $900 per quarter
@@ -400,6 +439,7 @@ A: Only after a square wins. This prevents strategic avoidance of fast players.
 
 **Q: What happens if I lose?**
 A: If you were on a WINNING square but had the slower answer time, you get consolation prizes! Free $25 tier trivia questions based on your original tier:
+
 - $25-$100 tiers: 1 free question
 - $250-$500 tiers: 2 free questions  
 - $1000 tier: 4 free questions
@@ -426,25 +466,28 @@ A: Yes! Skill-based competitions are legal in most US states. Check your local l
 
 ## 📞 Support & Resources
 
-### For Players:
-- Email: support@squaretrivia.com
+### For Players
+
+- Email: [support@squaretrivia.com](mailto:support@squaretrivia.com)
 - Telegram: @SquareTriviaSupport
 - FAQ: squaretrivia.com/help
 
-### For Developers:
-- GitHub: [Repository Link]
-- API Docs: [Documentation Link]
-- Firebase Console: [Console Link]
+### For Developers
 
-### For Partners:
-- Business: partners@squaretrivia.com
-- White-label: enterprise@squaretrivia.com
+- GitHub: [Repository Link](https://github.com)
+- API Docs: [Documentation Link](https://github.com)
+- Firebase Console: [Console Link](https://github.com)
+
+### For Partners
+
+- Business: [partners@squaretrivia.com](mailto:partners@squaretrivia.com)
+- White-label: [enterprise@squaretrivia.com](mailto:enterprise@squaretrivia.com)
 
 ---
 
 ## 🔧 Implementation Notes for Developer (Nishant)
 
-### Key Changes from Original Code:
+### Key Changes from Original Code
 
 1. **Prize Calculation Updates:**
    - Remove all percentage-based calculations from UI
@@ -463,6 +506,7 @@ A: Yes! Skill-based competitions are legal in most US states. Check your local l
    - The math exists in code but is completely hidden from users
 
 3. **Internal Calculations (KEEP IN CODE, HIDE FROM UI):**
+
 ```javascript
 // This stays in backend for calculations:
 const TIER_MARGINS = {
@@ -480,13 +524,15 @@ const TIER_DISPLAY = {
 }
 ```
 
-4. **UI/UX Changes:**
+1. **UI/UX Changes:**
+
    - Remove ALL mentions of fees or percentages from user-facing components
    - Add "NO FEES" badges/messaging throughout
    - Show guaranteed prize amounts prominently
    - Update all marketing copy to emphasize fee-free structure
 
-5. **Consolation Prize Updates:**
+1. **Consolation Prize Updates:**
+
    - **CRITICAL: Only award consolation to speed competition losers on WINNING squares**
    - ALL consolation prizes are for $25 tier boards only
    - Award free trivia questions based on losing tier:
@@ -504,7 +550,8 @@ const TIER_DISPLAY = {
      4. Award consolation ONLY if NOT already a consolation square
      5. Players on non-winning squares get nothing
 
-6. **Constants to Update:**
+1. **Constants to Update:**
+
 ```javascript
 // Instead of:
 TIER_25: { amount: 25, payoutPercentage: 0.77 }
@@ -528,13 +575,15 @@ square: {
 }
 ```
 
-7. **Key Marketing Messages to Implement:**
+1. **Key Marketing Messages to Implement:**
+
    - "NO FEES - Guaranteed Prizes!"
    - "Play for $X in prizes" (not percentages)
    - "Choose instant payout or full amount"
    - "The only fee-free sports squares platform"
 
-8. **Winner Calculation Logic (IMPORTANT):**
+1. **Winner Calculation Logic (IMPORTANT):**
+
    ```javascript
    // Square (1,4) wins if:
    // - Away: X1, Home: X4 (last digits 1,4)
@@ -551,7 +600,8 @@ square: {
    }
    ```
 
-9. **Consolation Logic (CRITICAL):**
+1. **Consolation Logic (CRITICAL):**
+
    ```javascript
    function awardConsolation(losingPlayer, winningSquare) {
      // Check if this was already a consolation square
@@ -578,7 +628,8 @@ square: {
    }
    ```
 
-10. **Payout Flow Updates:**
+1. **Payout Flow Updates:**
+
     - Show both options clearly at winner notification
     - Frame instant as "express service" not "fee"
     - Emphasize full amount available with standard option
