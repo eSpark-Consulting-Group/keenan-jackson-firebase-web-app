@@ -351,7 +351,7 @@ export default function AdminUsers() {
                   <span>{user.hasTelegram ? "Yes" : "No"}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Current Tiers</span>
+                  <span className="text-gray-600">Current Boards</span>
                   <span>{user.currentTiers?.join(", ") || "None"}</span>
                 </div>
               </div>

@@ -921,30 +921,44 @@ export default function Profile() {
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-600">Wins</p>
+                    <p className="text-sm text-gray-600">Contest Wins:</p>
                     <p className="text-2xl font-bold text-green-600">
                       {stats?.totalWins || 0}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-600">Win Rate</p>
+                    <p className="text-sm text-gray-600">Board Championships:</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {stats?.totalWins || 0}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-600">Win Rate: </p>
                     <p className="text-2xl font-bold text-blue-600">
                       {getWinRate()}%
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-600">Total Winnings</p>
+                    <p className="text-sm text-gray-600">Total Won:</p>
                     <p className="text-2xl font-bold text-green-600">
                       {formatCurrency(stats?.totalPrizeAmount || 0)}
                     </p>
                   </div>
 
                   <div className="border-t pt-4">
-                    <p className="text-sm text-gray-600">Average Answer Time</p>
+                    <p className="text-sm text-gray-600">Average Speed:</p>
                     <p className="text-2xl font-bold">
-                      {stats?.averageAnswerTime?.toFixed(1) || "0.0"}s
+                      {stats?.averageAnswerTime?.toFixed(2) || "0.00"}s
+                    </p>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <p className="text-sm text-gray-600">Fastest Time:</p>
+                    <p className="text-2xl font-bold">
+                      {stats?.fastestAnswerTime?.toFixed(2) || "0.00"}s
                     </p>
                   </div>
 

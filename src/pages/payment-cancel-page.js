@@ -17,7 +17,7 @@ export default function PaymentCancel() {
       icon: CreditCard,
       title: "Changed Your Mind?",
       description: "No worries! You can always come back when you're ready.",
-      action: "Browse Tiers",
+      action: "Browse Boards",
       link: "/games",
     },
     {
@@ -152,7 +152,7 @@ export default function PaymentCancel() {
             FEES promise is real!"
           </blockquote>
           <cite className="text-gray-600 not-italic">
-            - Michael T., $100 Tier Player
+            - Michael T., $100 Board Player
           </cite>
         </motion.div>
 

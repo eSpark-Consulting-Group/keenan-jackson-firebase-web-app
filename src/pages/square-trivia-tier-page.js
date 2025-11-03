@@ -34,7 +34,7 @@ export default function Tier() {
         // 1. Get all boards
         const boardsSnap = await getDocs(collection(db, "boards"));
 
-        // 2. Extract tiers where this user has played
+        // 2. Extract boards where this user has played
         const playedTiers = new Set();
 
         boardsSnap.forEach((boardDoc) => {
@@ -58,7 +58,7 @@ export default function Tier() {
 
         setUserTierAccess(Array.from(playedTiers));
       } catch (err) {
-        console.error("Error loading played tiers:", err);
+        console.error("Error loading played boards:", err);
       }
     };
 

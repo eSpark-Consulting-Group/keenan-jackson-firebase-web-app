@@ -18,7 +18,7 @@
   --color-error: #ef4444;
   --color-info: #3b82f6;
 
-  /* Tier Colors */
+  /* Board Colors */
   --tier-25: #10b981;
   --tier-50: #3b82f6;
   --tier-100: #7c3aed;
@@ -358,7 +358,7 @@ select {
   color: white;
 }
 
-/* Tier Badge Styles */
+/* Board Badge Styles */
 .tier-badge-25 {
   background-color: var(--tier-25);
   color: white;

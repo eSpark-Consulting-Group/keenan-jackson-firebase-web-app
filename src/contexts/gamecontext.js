@@ -101,7 +101,7 @@ export function GameProvider({ children }) {
     };
   }, [user]);
 
-  // Get games by tier
+  // Get games by board
   const getGamesByTier = (tier) => {
     return activeGames.filter(game => game.tier === tier);
   };
@@ -248,7 +248,7 @@ export function GameProvider({ children }) {
     }
   };
 
-  // Purchase donation tier
+  // Purchase donation board
   const purchaseTier = async (tier) => {
     if (!user) {
       toast.error('Please login to purchase');
@@ -269,13 +269,13 @@ export function GameProvider({ children }) {
         throw new Error(result.error || 'Failed to create checkout session');
       }
     } catch (error) {
-      console.error('Purchase tier error:', error);
+      console.error('Purchase board error:', error);
       toast.error(error.message);
       return null;
     }
   };
 
-  // Get available tiers for user
+  // Get available board for user
   const getAvailableTiers = () => {
     const allTiers = [
       { 
@@ -283,7 +283,7 @@ export function GameProvider({ children }) {
         amount: 25, 
         prizePerQuarter: 200,
         totalPrizes: 800,
-        displayName: '$25 Tier - Win $200/Quarter!',
+        displayName: '$25 Board - Win $200/Quarter!',
         color: 'green',
         available: true
       },
@@ -292,7 +292,7 @@ export function GameProvider({ children }) {
         amount: 50, 
         prizePerQuarter: 450,
         totalPrizes: 1800,
-        displayName: '$50 Tier - Win $450/Quarter!',
+        displayName: '$50 Board - Win $450/Quarter!',
         color: 'blue',
         available: true
       },
@@ -301,7 +301,7 @@ export function GameProvider({ children }) {
         amount: 100, 
         prizePerQuarter: 900,
         totalPrizes: 3600,
-        displayName: '$100 Tier - Win $900/Quarter!',
+        displayName: '$100 Board - Win $900/Quarter!',
         color: 'yellow',
         available: true
       },
@@ -310,7 +310,7 @@ export function GameProvider({ children }) {
         amount: 250, 
         prizePerQuarter: 2250,
         totalPrizes: 9000,
-        displayName: '$250 Tier - Win $2,250/Quarter!',
+        displayName: '$250 Board - Win $2,250/Quarter!',
         color: 'purple',
         available: activeGames.some(g => g.gameType === 'playoff')
       },
@@ -319,7 +319,7 @@ export function GameProvider({ children }) {
         amount: 500, 
         prizePerQuarter: 4500,
         totalPrizes: 18000,
-        displayName: '$500 Tier - Win $4,500/Quarter!',
+        displayName: '$500 Board - Win $4,500/Quarter!',
         color: 'orange',
         available: activeGames.some(g => g.gameType === 'playoff')
       },
@@ -328,7 +328,7 @@ export function GameProvider({ children }) {
         amount: 1000, 
         prizePerQuarter: 9000,
         totalPrizes: 36000,
-        displayName: '$1000 Tier - Win $9,000/Quarter!',
+        displayName: '$1000 Board - Win $9,000/Quarter!',
         color: 'red',
         available: activeGames.some(g => g.gameType === 'championship')
       }

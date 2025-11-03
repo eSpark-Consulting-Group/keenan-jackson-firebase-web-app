@@ -61,9 +61,9 @@ export default function LandingPage() {
     {
       number: 1,
       icon: <DollarSign className="w-8 h-8" />,
-      title: "Choose Your Tier",
+      title: "Choose Your Board",
       description:
-        "Select from 6 tiers starting at just $25. Higher tiers mean bigger prizes!",
+        "Select from 6 boards starting at just $25. Higher boards mean bigger prizes!",
     },
     {
       number: 2,
@@ -100,9 +100,9 @@ export default function LandingPage() {
       name: "Starter",
       amount: 25,
       prizePerQuarter: 200,
-      totalPrize: 800,
+      totalPrize: 1000,
       features: [
-        "$900 Total Prize Pool",
+        "$1000 Total Contest Prizes per Game",
         "Available All Games",
         "1 Consolation Question",
         "Perfect for Beginners",
@@ -113,10 +113,10 @@ export default function LandingPage() {
       name: "Most Popular",
       amount: 100,
       prizePerQuarter: 900,
-      totalPrize: 3600,
+      totalPrize: 4500,
       features: [
-        "$3,600 Total Prize Pool",
-        "Available All Games",
+        "$4,500 Total Contest Prizes per Game",
+        "Big wins at an accessible entry point ",
         "1 Consolation Question",
         "Best Value for Players",
       ],
@@ -126,12 +126,12 @@ export default function LandingPage() {
       name: "High Roller",
       amount: 500,
       prizePerQuarter: 4500,
-      totalPrize: 18000,
+      totalPrize: 22500,
       features: [
-        "$18,000 Total Prize Pool",
+        "$22,500 Total Contest Prizes",
         "Playoffs & Championships",
-        "2 Consolation Questions",
-        "Serious Players Only",
+        "2 consolation trivia questions ",
+        "For serious competitors ",
       ],
       popular: false,
     },
@@ -160,7 +160,7 @@ export default function LandingPage() {
       icon: <Trophy className="w-8 h-8" />,
       title: "Consolation Prizes",
       description:
-        "Lost a speed competition? Get free trivia questions for future games! Higher tiers get more chances. We reward participation and keep you in the game.",
+        "Lost a speed competition? Get free trivia questions for future games! Higher boards get more chances. We reward participation and keep you in the game.",
     },
     {
       icon: <Zap className="w-8 h-8" />,
@@ -200,7 +200,7 @@ export default function LandingPage() {
     {
       question: "What happens if I lose on a winning square?",
       answer:
-        "If your square wins but you had the slower answer time, you get consolation prizes! You'll receive free trivia questions (1-4 depending on your tier) that you can use to claim squares on $25 tier boards. It's our way of keeping you in the game!",
+        "If your square wins but you had the slower answer time, you get consolation prizes! You'll receive free trivia questions (1-4 depending on your board) that you can use to claim squares on $25 board. It's our way of keeping you in the game!",
     },
     {
       question: "When and how do I get paid?",
@@ -302,9 +302,9 @@ export default function LandingPage() {
                 <div className="grid grid-cols-3 gap-4 pt-4 border-t">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-emerald-500">
-                      $900
+                      $1,000
                     </div>
-                    <div className="text-sm text-gray-600">Prize Pool</div>
+                    <div className="text-sm text-gray-600">Contest Prizes</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-emerald-500">
@@ -362,7 +362,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Tiers Section */}
+      {/* Boards Section */}
       <section
         className="py-20 bg-gradient-to-br from-emerald-50 to-blue-50"
         id="pricing"
@@ -370,7 +370,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Choose Your Playing Tier
+              Choose Your Playing Board
             </h2>
             <p className="text-xl text-gray-600">
               Guaranteed prizes every quarter - NO FEES on playing or winning!
@@ -437,7 +437,7 @@ export default function LandingPage() {
               to={tiersData}
               className="text-emerald-600 hover:text-emerald-700 font-semibold"
             >
-              View all 6 tiers →
+              View all 6 boards →
             </Link>
           </div>
         </div>

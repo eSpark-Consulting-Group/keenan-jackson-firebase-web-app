@@ -142,7 +142,7 @@ export default function Register() {
   };
 
   const benefits = [
-    "Play in 6 different prize tiers",
+    "Play in 6 different prize boards",
     "Win guaranteed prizes with NO FEES",
     "Compete based on skill, not luck",
     "Get consolation prizes when you lose",

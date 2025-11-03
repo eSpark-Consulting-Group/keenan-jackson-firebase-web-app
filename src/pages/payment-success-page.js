@@ -74,7 +74,7 @@ export default function PaymentSuccess() {
             amount: tier?.amount || 0,
             accessGranted: true,
           });
-          toast.success(`Payment successful! Tier: ${res.tier}`);
+          toast.success(`Payment successful! Board: ${res.tier}`);
           runConfetti();
           refreshUserData();
         } else {
@@ -154,7 +154,7 @@ export default function PaymentSuccess() {
           </p>
         </motion.div>
 
-        {/* Tier Details */}
+        {/* Board Details */}
         {paymentDetails?.tier && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -173,12 +173,12 @@ export default function PaymentSuccess() {
               <div className="text-3xl font-bold text-gray-900 mb-2">
                 ${paymentDetails.tier.prizePerQuarter}
               </div>
-              <p className="text-gray-600">Prize per quarter</p>
+              <p className="text-gray-600">Prize per Quarter</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
               <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">Total Prize Pool</p>
+                <p className="text-sm text-gray-600 mb-1">Total Contest Prizes</p>
                 <p className="text-lg font-semibold text-gray-900">
                   ${paymentDetails.tier.totalPrize}
                 </p>

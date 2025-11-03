@@ -66,9 +66,9 @@ export default function GameBoard() {
       const boardData = { id: boardDoc.id, ...boardDoc.data() };
       setBoard(boardData);
 
-      // Check if user has access to this tier
+      // Check if user has access to this board
       if (!userData?.currentTiers?.includes(boardData.tierId)) {
-        toast.error("You need access to this tier to view this board");
+        toast.error("You need access to this board to view this board");
         navigate("/games");
         return;
       }

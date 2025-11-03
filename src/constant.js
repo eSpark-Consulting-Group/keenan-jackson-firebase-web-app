@@ -115,10 +115,10 @@ export const TERMS_OF_SERVICE = [
     isCheckCircle: false,
     listItems: [
       {
-        text: "Players may enter by making a <b>donation</b> to access designated tiered boards",
+        text: "Players may enter by making a <b>donation</b> to access designated boards",
       },
       {
-        text: "Available tiers:",
+        text: "Available boards:",
         points: [
           "<b>Rookies:</b> $25",
           "<b>Starters:</b> $50",
@@ -165,7 +165,7 @@ export const TERMS_OF_SERVICE = [
       },
 
       {
-        text: "Maximum of <b>5 prize winners</b> per game board",
+        text: "Maximum of <b>5 contests per board</b> - Speed wins each one",
       },
       {
         text: "All winner determinations are <b>final</b> and based solely on trivia performance metrics",
@@ -175,7 +175,7 @@ export const TERMS_OF_SERVICE = [
   {
     heading: "5. Prizes",
     isCheckCircle: false,
-    subHeading: "Prize Structure by Tier:",
+    subHeading: "Prize Structure by Board:",
     listItems: [
       {
         text: "<b>Rookies ($25):</b> $200 per quarter",

@@ -575,7 +575,7 @@ export default function AdminReports() {
 
   const TierBreakdown = () => (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <h3 className="text-lg font-semibold mb-4">Revenue by Tier</h3>
+      <h3 className="text-lg font-semibold mb-4">Revenue by Board</h3>
       <div className="space-y-3">
         {Object.entries(revenueData.byTier).map(([tierId, amount]) => {
           const tier = TIERS[tierId.toUpperCase()];
@@ -827,7 +827,7 @@ export default function AdminReports() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Tier
+                        Board
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Revenue

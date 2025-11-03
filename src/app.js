@@ -30,6 +30,7 @@ import Games from "./pages/square-trivia-games-page";
 import GameBoard from "./pages/square-trivia-game-board";
 import Profile from "./pages/square-trivia-profile-page";
 import HowToPlay from "./pages/howtoplay-page";
+import GameResults from "./pages/game-results";
 import Legal from "./pages/legal-page";
 import FreeEntry from "./pages/freeentry-page";
 import PaymentSuccess from "./pages/payment-success-page";
@@ -52,6 +53,7 @@ import Payouts from "./pages/square-trivia-payouts-page";
 import Tier from "./pages/square-trivia-tier-page";
 import TeamsFanbase from "./pages/admin/teams-fanbase";
 import ReferralReports from "./pages/admin/referral-reports";
+import Leaderboard from "./pages/leaderboard";
 // import ReferalReports from "./pages/referal-reports";
 
 function App() {
@@ -214,6 +216,14 @@ function App() {
                 }
               />
               <Route
+                path="/game/:boardId/results"
+                element={
+                  <Layout>
+                    <GameResults />
+                  </Layout>
+                }
+              />
+              <Route
                 path="/profile"
                 element={
                   <ProtectedRoute>
@@ -351,6 +361,16 @@ function App() {
                   <AdminRoute>
                     <Layout>
                       <TeamsFanbase />
+                    </Layout>
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/leaderboard"
+                element={
+                  <AdminRoute>
+                    <Layout>
+                      <Leaderboard />
                     </Layout>
                   </AdminRoute>
                 }

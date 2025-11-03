@@ -18,22 +18,26 @@ import toast from "react-hot-toast";
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 
-// Tier configurations
+// Board configurations
 const TIERS = {
   tier_25: {
     id: "tier_25",
     amount: 25,
-    name: "$25 Tier",
+    name: "$25 Board",
+    title:'Starter Board',
     color: "from-green-500 to-emerald-600",
     bgColor: "bg-green-50",
     borderColor: "border-green-500",
     icon: Check,
     prizePerQuarter: 200,
-    totalPrize: 800,
+    totalPrize: 1000,
     payoutPercentage: 64,
     features: [
       "Entry for all 4 quarters",
-      "$200 prize per quarter",
+      "$200 Prize per Quarter",
+      "$200 Prize for Board Champion",
+      "Great for first-time players learning the system",
+      "1 consolation trivia question included  ",
       "50 squares available",
       "Skill-based competition",
     ],
@@ -42,18 +46,22 @@ const TIERS = {
   tier_50: {
     id: "tier_50",
     amount: 50,
-    name: "$50 Tier",
+    name: "$50 Board",
+    title:'Competitive Board',
     color: "from-blue-500 to-indigo-600",
     bgColor: "bg-blue-50",
     borderColor: "border-blue-500",
     icon: TrendingUp,
-    prizePerQuarter: 400,
-    totalPrize: 1600,
+    prizePerQuarter: 450,
+    totalPrize: 2250,
     payoutPercentage: 64,
     features: [
       "Entry for all 4 quarters",
-      "$400 prize per quarter",
+      "$450 Prize per Quarter",
+      "$450 Prize for Board Champion",
       "50 squares available",
+      "Perfect balance of risk and reward ",
+      "1 consolation trivia question included ",
       "Higher stakes competition",
     ],
     availability: ["regular", "playoff", "championship"],
@@ -61,18 +69,23 @@ const TIERS = {
   tier_100: {
     id: "tier_100",
     amount: 100,
-    name: "$100 Tier",
+    name: "$100 Board",
+    title:'Popular Board',
     color: "from-purple-500 to-pink-600",
     bgColor: "bg-purple-50",
     borderColor: "border-purple-500",
     icon: Trophy,
-    prizePerQuarter: 800,
-    totalPrize: 3200,
+    prizePerQuarter: 900,
+    totalPrize: 4500,
     payoutPercentage: 64,
     features: [
       "Entry for all 4 quarters",
-      "$800 prize per quarter",
+      "$900 Prize per Quarter",
+      "$900 Prize for Board Champion",
       "50 squares available",
+      "Most popular tier — big wins at an accessible entry point",
+
+      "1 consolation trivia question included ",
       "Premium competition",
     ],
     availability: ["regular", "playoff", "championship"],
@@ -80,19 +93,23 @@ const TIERS = {
   tier_250: {
     id: "tier_250",
     amount: 250,
-    name: "$250 Tier",
+    name: "$250 Board",
+    title:'High Stakes Board',
     color: "from-orange-500 to-red-600",
     bgColor: "bg-orange-50",
     borderColor: "border-orange-500",
     icon: Zap,
-    prizePerQuarter: 2000,
-    totalPrize: 8000,
+    prizePerQuarter: 2250,
+    totalPrize: 11250,
     payoutPercentage: 72,
     features: [
       "Entry for all 4 quarters",
-      "$2,000 prize per quarter",
+      "$2,250 Prize per Quarter",
+      "$2,250 Prize for Board Champion",
       "50 squares available",
       "Elite competition",
+      "Strong payouts for mid- to high-level players",
+      "2 consolation trivia questions included ",
       "Playoff games only",
     ],
     availability: ["playoff", "championship"],
@@ -100,19 +117,23 @@ const TIERS = {
   tier_500: {
     id: "tier_500",
     amount: 500,
-    name: "$500 Tier",
+    name: "$500 Board",
+    title:'Elite Board',
     color: "from-indigo-500 to-purple-700",
     bgColor: "bg-indigo-50",
     borderColor: "border-indigo-500",
     icon: Star,
-    prizePerQuarter: 4000,
-    totalPrize: 16000,
+    prizePerQuarter: 4500,
+    totalPrize: 22500,
     payoutPercentage: 72,
     features: [
       "Entry for all 4 quarters",
-      "$4,000 prize per quarter",
+      "$4,500 Prize per Quarter",
+      "$4,500 Prize for Board Champion",
       "50 squares available",
       "High roller competition",
+      "For serious competitors chasing large wins",
+      "2 consolation trivia questions included ",
       "Playoff games only",
     ],
     availability: ["playoff", "championship"],
@@ -120,19 +141,23 @@ const TIERS = {
   tier_1000: {
     id: "tier_1000",
     amount: 1000,
-    name: "$1000 Tier",
+    name: "$1000 Board",
+    title:'Championship Board',
     color: "from-yellow-500 to-yellow-700",
     bgColor: "bg-yellow-50",
     borderColor: "border-yellow-500",
     icon: Crown,
-    prizePerQuarter: 8000,
-    totalPrize: 32000,
+    prizePerQuarter: 9000,
+    totalPrize: 45000,
     payoutPercentage: 72,
     features: [
       "Entry for all 4 quarters",
-      "$8,000 prize per quarter",
+      "$9,000 Prize per Quarter",
+      "$9,000 Prize for Board Champion",
       "50 squares available",
       "Championship exclusive",
+      "Highest tier with massive guaranteed payouts ",
+      "3 consolation trivia questions included ",
       "Ultimate competition",
     ],
     availability: ["championship"],
@@ -152,7 +177,7 @@ export default function TierSelection({
   const { showNotification } = useNotification();
   const navigate = useNavigate();
 
-  // Get available tiers based on game type
+  // Get available board based on game type
   const availableTiers = Object.values(TIERS).filter((tier) =>
     tier.availability.includes(gameType)
   );
@@ -238,7 +263,7 @@ export default function TierSelection({
     }
   };
 
-  // Get squares available for each tier
+  // Get squares available for each board
   const getSquaresAvailable = (tierId) => {
     const tierBoard = boardData[tierId] || {};
     const claimedSquares = Object.keys(tierBoard).length;
@@ -257,20 +282,20 @@ export default function TierSelection({
     <div className="max-w-7xl mx-auto px-4 py-8 ">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">
-          Select Your Entry Tier
+          Square Trivia Boards
         </h2>
         <p className="text-lg text-gray-600">
-          Choose your competition level - prizes are guaranteed!
+          5 Winners Every Game – 1 Board Champion + 4 Quarter Winner
+          <br />
+          Win by knowledge and speed. No fees. Guaranteed payouts.
         </p>
         <div className="mt-4 flex items-center justify-center text-sm text-gray-500">
           <AlertCircle className="h-4 w-4 mr-1" />
-          <span>
-            NO FEES on entries or winnings • Instant payouts available
-          </span>
+          <span>NO FEES on winnings • Instant payouts available</span>
         </div>
       </div>
 
-      {/* Tier Grid */}
+      {/* Board Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {availableTiers.map((tier) => {
           const Icon = tier.icon;
@@ -287,7 +312,7 @@ export default function TierSelection({
               `}
               onClick={() => !isSoldOut && handleTierSelection(tier)}
             >
-              {/* Popular badge for $50 tier */}
+              {/* Popular badge for $50 board */}
               {tier.id === "tier_50" && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                   <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
@@ -315,7 +340,7 @@ export default function TierSelection({
                       <Icon className="h-6 w-6 text-white" />
                     </div>
                     <h3 className="ml-3 text-xl font-bold text-gray-900">
-                      {tier.name}
+                      {tier.title}
                     </h3>
                   </div>
                   {isSelected && (
@@ -337,7 +362,7 @@ export default function TierSelection({
                 <div className="bg-gray-50 rounded-lg p-4 mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-gray-600">
-                      Prize per quarter:
+                      Prize per Quarter:
                     </span>
                     <span className="text-lg font-semibold text-gray-900">
                       ${tier.prizePerQuarter.toLocaleString()}
@@ -387,7 +412,7 @@ export default function TierSelection({
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-lg md:relative md:shadow-none md:border-0 md:p-0">
           <div className="max-w-3xl mx-auto flex flex-col sm:flex-row gap-4 items-center justify-between">
             <div className="text-center sm:text-left">
-              <p className="text-sm text-gray-600">Selected tier:</p>
+              <p className="text-sm text-gray-600">Selected board:</p>
               <p className="text-lg font-semibold text-gray-900">
                 {selectedTier.name} - ${selectedTier.amount}
               </p>
@@ -397,7 +422,7 @@ export default function TierSelection({
                 onClick={() => setSelectedTier(null)}
                 className="px-6 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                Change Tier
+                Change Board
               </button>
               <button
                 onClick={processPayment}
@@ -426,7 +451,7 @@ export default function TierSelection({
         <ul className="space-y-2 text-sm text-gray-600">
           <li className="flex items-start">
             <span className="font-semibold mr-2">1.</span>
-            Select your entry tier based on your budget and desired prize level
+            Choose Your entry board based on your budget and desired prize level
           </li>
           <li className="flex items-start">
             <span className="font-semibold mr-2">2.</span>
@@ -443,8 +468,8 @@ export default function TierSelection({
         </ul>
         <p className="mt-4 text-xs text-gray-500">
           * {TIERS.tier_25.payoutPercentage}% of entries go to prizes for
-          $25-$100 tiers,
-          {TIERS.tier_250.payoutPercentage}% for higher tiers. Instant payouts
+          $25-$100 boards,
+          {TIERS.tier_250.payoutPercentage}% for higher boards. Instant payouts
           available with 96% payout or wait 2-3 days for 100%.
         </p>
       </div>

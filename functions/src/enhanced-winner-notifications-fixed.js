@@ -437,7 +437,7 @@ class EmailService {
       <div class="prize-box">
         <div style="color: #6b7280; font-size: 18px;">You won:</div>
         <div class="prize-amount">$${prizeAmount.toFixed(2)}</div>
-        <div class="prize-info">From ${tier} prize pool (${payoutPercentageDisplay} of total pot)</div>
+        <div class="prize-info">From ${tier} contest prizes (${payoutPercentageDisplay} of total pot)</div>
       </div>
       
       <div class="payout-options">

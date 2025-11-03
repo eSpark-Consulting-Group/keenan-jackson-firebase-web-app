@@ -33,7 +33,7 @@
 
 ### 2. **Tiered Access System**
 
-Six donation tiers with guaranteed prize pools - NO FEES:
+Six donation tiers with guaranteed contest prizess - NO FEES:
 
 | Tier | Entry | Prize Per Quarter | Total Prizes | Available In |
 |------|-------|-------------------|--------------|--------------|
@@ -197,13 +197,13 @@ Six donation tiers with guaranteed prize pools - NO FEES:
 **Example $25 Tier Board:**
 - Entry: $25 per square
 - Guaranteed prizes: $200 per quarter
-- Total prize pool: $800 (4 quarters)
+- Total contest prizes: $800 (4 quarters)
 - Clear, simple, no math needed!
 
 **Example $100 Tier Board:**
 - Entry: $100 per square
 - Guaranteed prizes: $900 per quarter
-- Total prize pool: $3,600
+- Total contest prizes: $3,600
 - Users love the transparency!
 
 **Payout Options:**

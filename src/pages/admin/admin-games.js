@@ -108,7 +108,7 @@ export default function AdminGames() {
         );
         const boardsSnap = await getDocs(boardsQ);
 
-        // 3. Group boards by game + tier
+        // 3. Group boards by game + board
         const boardCountsMap = {};
         boardsSnap.forEach((bdoc) => {
           const { gameId, tierId } = bdoc.data();
@@ -135,7 +135,7 @@ export default function AdminGames() {
     e.preventDefault();
 
     if (gameForm.selectedTiers.length === 0) {
-      toast.error("Please select at least one tier");
+      toast.error("Please select at least one board");
       return;
     }
 
@@ -738,7 +738,7 @@ export default function AdminGames() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Select Tiers
+                        Select Boards
                       </label>
                       <div className="space-y-2">
                         {Object.values(TIERS).map((tier) => (

@@ -1,4 +1,4 @@
-# 🧠 Square Trivia — Social Media Automation System
+# 🧠 Square Trivia - Social Media Automation System
 
 This document describes the **Firebase Cloud Functions** responsible for **automated social media posts**, updates, and engagement triggers for **Square Trivia**.
 
@@ -17,7 +17,7 @@ Square Trivia’s social media automation system is designed to keep players eng
 
 These Cloud Functions integrate directly with **Firestore** data, generating posts based on **game results**, **user achievements**, and **upcoming game activity**.
 
-They run via **scheduled Pub/Sub triggers** — meaning posts are published **automatically based on time or game state**, without manual input.
+They run via **scheduled Pub/Sub triggers** - meaning posts are published **automatically based on time or game state**, without manual input.
 
 ---
 
@@ -93,7 +93,7 @@ Rewards consistency, motivates repeat play, and drives user recognition.
 Promotes the “No Fees” policy for the weekend.
 
 **Logic:**  
-Runs `NoFeesPost()` — a simple promotional template.
+Runs `NoFeesPost()` - a simple promotional template.
 
 **Why:**  
 Encourages weekend gameplay and highlights value-driven messaging.
@@ -243,7 +243,7 @@ Automates public celebration for every win, builds excitement, and reinforces tr
 **Schedule:** Every **5 minutes**
 
 **Purpose:**  
-Monitors **board activity** to detect fast-filling, low participation, or upcoming game alerts — and trigger relevant social updates.
+Monitors **board activity** to detect fast-filling, low participation, or upcoming game alerts - and trigger relevant social updates.
 
 **Checks include:**
 
@@ -257,7 +257,7 @@ Monitors **board activity** to detect fast-filling, low participation, or upcomi
 | Premium tiers 70–99%          | Tier status update        | `TierStatusUpdatePost`      |
 
 **Why:**  
-Keeps momentum by reminding users of open squares, last-minute chances, and full board celebrations — all automatically.
+Keeps momentum by reminding users of open squares, last-minute chances, and full board celebrations - all automatically.
 
 ---
 
@@ -327,5 +327,5 @@ Each post type (`BoardFullAnnouncementPost`, `LastChancePost`, etc.) contains it
 ---
 
 **Author:** Square Trivia DevOps Team  
-**Maintained By:** Head Developer — Social & Engagement Automation  
+**Maintained By:** Head Developer - Social & Engagement Automation  
 **Last Updated:** October 2025
