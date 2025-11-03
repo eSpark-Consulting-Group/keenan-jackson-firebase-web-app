@@ -311,7 +311,7 @@ export default function AdminGames() {
         const payload = {
           sport: sportsForm.sport,
           teamName: sportsForm?.teamName,
-          gameType: sportsForm?.gameType, // ✅ include gameType
+          gameType: sportsForm?.gameType, // include gameType
           ...(sportsForm?.gameType === "regular" && {
             week: sportsForm?.week
               ? sportsForm?.week

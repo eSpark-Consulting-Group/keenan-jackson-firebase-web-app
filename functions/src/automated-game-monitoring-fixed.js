@@ -390,8 +390,8 @@ class ApiSportsService {
       teams: parsedTeams,
       startTime,
       lastUpdate: new Date().toISOString(),
-      stage: game?.stage || null, // ✅ pass through
-      week: game?.week || null, // ✅ number for regular, string for playoffs/championship
+      stage: game?.stage || null, // pass through
+      week: game?.week || null, // number for regular, string for playoffs/championship
     };
   }
 

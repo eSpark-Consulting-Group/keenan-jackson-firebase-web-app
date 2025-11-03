@@ -312,7 +312,7 @@ exports.claimSquare = functions.https.onCall(async (data, context) => {
       currentQuarter,
       answerTime: answerTime / 1000, // Convert to seconds
       // claimedAt: admin.firestore.FieldValue.serverTimestamp(),
-      claimedAt: new Date(), // ✅ becomes a Firestore Timestamp
+      claimedAt: new Date(), // becomes a Firestore Timestamp
     };
 
     squareData.claims = [...(squareData.claims || []), newClaim];
@@ -800,7 +800,7 @@ async function cleanupOldClaims(boardId, board, currentQuarter, game) {
       status: "pending_payout",
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       isTelegramSend: false,
-      isFastest: true, // ✅ mark fastest winners
+      isFastest: true, // mark fastest winners
     };
 
     await db.collection("winners").add(winnerDoc);

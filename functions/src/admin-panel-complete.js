@@ -163,7 +163,7 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
     sport,
     teamName,
     week,
-    gameType = "regular", // ✅ new
+    gameType = "regular", // new
     year = new Date().getFullYear(),
   } = data;
 
@@ -260,7 +260,7 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
           return {
             game: {
               id: event.id,
-              stage: gameType, // ✅ reflect requested type
+              stage: gameType, // reflect requested type
               week:
                 gameType === "regular"
                   ? `Week ${response.data.week.number}`

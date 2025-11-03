@@ -23,8 +23,8 @@ const Leaderboard = () => {
             totalWon: data.totalWinnings || 0,
             contestWins: data.totalWins || 0,
             championships: data.championships || 0,
-            avgSpeed: data.avgSpeed || null, // ✅ average response speed (seconds/ms)
-            fastestWinSpeed: data.fastestWinSpeed || null, // ✅ fastest win record
+            avgSpeed: data.avgSpeed || null, // average response speed (seconds/ms)
+            fastestWinSpeed: data.fastestWinSpeed || null, // fastest win record
           });
         });
 
@@ -140,7 +140,7 @@ const Leaderboard = () => {
                         {formatNumber(user.championships)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900 text-right">
-                        {formatSpeed(user.avgSpeed)}
+                        {formatSpeed(user.averageAnswerTime)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900 text-right">
                         {formatSpeed(user.fastestWinSpeed)}
