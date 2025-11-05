@@ -787,27 +787,28 @@ export default function Payouts() {
                   {/* RIGHT SIDE ACTIONS */}
                   <div className="ml-6 flex flex-col items-end gap-2">
                     {!payout.confirmationDetails && (
-                    <button
-                      onClick={() => handleInstantPayout(payout)}
-                      disabled={
-                        payout.payoutType === "instant" ||
-                        payout.status !== "pending_payout"
-                      }
-                      className={`flex items-center px-4 py-2 rounded-xl shadow transition-colors ${
-                        payout.payoutType === "instant"
-                          ? "bg-gray-300 cursor-not-allowed text-gray-600"
-                          : payout.status !== "pending_payout"
+                      <button
+                        onClick={() => handleInstantPayout(payout)}
+                        disabled={
+                          payout.payoutType === "instant" ||
+                          payout.status !== "pending_payout"
+                        }
+                        className={`flex items-center px-4 py-2 rounded-xl shadow transition-colors ${
+                          payout.payoutType === "instant"
                             ? "bg-gray-300 cursor-not-allowed text-gray-600"
-                            : "bg-purple-600 text-white hover:bg-purple-700"
-                      }`}
-                    >
-                      <Zap className="h-4 w-4 mr-2" />
-                      {payout.payoutType === "instant"
-                        ? "Already Requested for Payout"
-                        : payout.status !== "pending_payout"
-                          ? "Get Instant Not Available Now"
-                          : "Get Instant Paid"}
-                    </button>)}
+                            : payout.status !== "pending_payout"
+                              ? "bg-gray-300 cursor-not-allowed text-gray-600"
+                              : "bg-purple-600 text-white hover:bg-purple-700"
+                        }`}
+                      >
+                        <Zap className="h-4 w-4 mr-2" />
+                        {payout.payoutType === "instant"
+                          ? "Already Requested for Payout"
+                          : payout.status !== "pending_payout"
+                            ? "Get Instant Not Available Now"
+                            : "Get Instant Paid"}
+                      </button>
+                    )}
                     {payout.confirmationDetails && (
                       <button
                         onClick={() => {
@@ -1053,6 +1054,7 @@ export default function Payouts() {
                           }`}
                         >
                           <input
+                            title="Enter your payout method"
                             type="radio"
                             name="payoutMethod"
                             value={method.id}

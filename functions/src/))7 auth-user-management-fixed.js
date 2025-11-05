@@ -882,6 +882,7 @@ export function LoginForm({ onSuccess }) {
       <div>
         <label className="block text-sm font-medium text-gray-700">Email</label>
         <input
+          title="Enter your email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -895,6 +896,7 @@ export function LoginForm({ onSuccess }) {
           Password
         </label>
         <input
+          title="Enter your password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -971,6 +973,7 @@ export function RegistrationForm({ onSuccess }) {
           Email *
         </label>
         <input
+          title="Enter your email"
           type="email"
           name="email"
           value={formData.email}
@@ -985,6 +988,7 @@ export function RegistrationForm({ onSuccess }) {
           Password *
         </label>
         <input
+          title="Enter your password"
           type="password"
           name="password"
           value={formData.password}
@@ -1003,6 +1007,7 @@ export function RegistrationForm({ onSuccess }) {
           Confirm Password *
         </label>
         <input
+          title="Confirm your password"
           type="password"
           name="confirmPassword"
           value={formData.confirmPassword}
@@ -1020,6 +1025,7 @@ export function RegistrationForm({ onSuccess }) {
           </span>
         </label>
         <input
+          title="Enter your telegram username"
           type="text"
           name="telegramUsername"
           value={formData.telegramUsername}
@@ -1046,6 +1052,7 @@ export function RegistrationForm({ onSuccess }) {
           Phone Number
         </label>
         <input
+          title="Enter your phone number"
           type="tel"
           name="phone"
           value={formData.phone}
@@ -1063,6 +1070,7 @@ export function RegistrationForm({ onSuccess }) {
           Referral Code
         </label>
         <input
+          title="Enter referral code"
           type="text"
           name="referralCode"
           value={formData.referralCode}

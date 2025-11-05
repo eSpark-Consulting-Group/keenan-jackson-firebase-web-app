@@ -490,6 +490,7 @@ export default function AdminPayouts() {
             <input
               type="text"
               placeholder="Search by email, name, or ID..."
+              title="Search payouts by user email, display name, payout ID, type, or status"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -598,6 +599,7 @@ export default function AdminPayouts() {
                   <th className="px-6 py-3 text-left">
                     <input
                       type="checkbox"
+                      title="Select All Payouts for Bulk Actions"
                       checked={
                         selectedPayouts.length === filteredPayouts.length &&
                         filteredPayouts.length > 0
@@ -647,6 +649,7 @@ export default function AdminPayouts() {
                       <td className="px-6 py-4">
                         <input
                           type="checkbox"
+                          title="Select Payout for Bulk Actions"
                           checked={selectedPayouts.includes(payout.id)}
                           onChange={(e) => {
                             if (e.target.checked) {

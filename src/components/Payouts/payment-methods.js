@@ -137,54 +137,54 @@ export const PAYMENT_METHODS = {
     processingTime: "5-7 business days",
     fee: "No fee",
     fields: [
-     {
-      name: "name",
-      label: "Full Name",
-      type: "text",
-      required: true,
+      {
+        name: "name",
+        label: "Full Name",
+        type: "text",
+        required: true,
         autoComplete: "full-name",
-      placeholder: "e.g. John Doe",
-    },
-    {
-      name: "addressLine1",
-      label: "Address Line 1",
-      type: "text",
-      required: true,
-      autoComplete: "address-line1",
-      placeholder: "Street address, P.O. box, company name",
-    },
-    {
-      name: "addressLine2",
-      label: "Address Line 2",
-      type: "text",
-      required: false,
-      autoComplete: "address-line2",
-      placeholder: "Apartment, suite, unit, building (optional)",
-    },
-    {
-      name: "city",
-      label: "City",
-      type: "text",
-      required: true,
-      autoComplete: "address-level2",
-      placeholder: "e.g. New York",
-    },
-    {
-      name: "state",
-      label: "State/Province/Region",
-      type: "text",
-      required: true,
-      autoComplete: "address-level1",
-      placeholder: "e.g. California",
-    },
-    {
-      name: "postalCode",
-      label: "ZIP / Postal Code",
-      type: "text",
-      required: true,
-      autoComplete: "postal-code",
-      placeholder: "e.g. 10001",
-    },
+        placeholder: "e.g. John Doe",
+      },
+      {
+        name: "addressLine1",
+        label: "Address Line 1",
+        type: "text",
+        required: true,
+        autoComplete: "address-line1",
+        placeholder: "Street address, P.O. box, company name",
+      },
+      {
+        name: "addressLine2",
+        label: "Address Line 2",
+        type: "text",
+        required: false,
+        autoComplete: "address-line2",
+        placeholder: "Apartment, suite, unit, building (optional)",
+      },
+      {
+        name: "city",
+        label: "City",
+        type: "text",
+        required: true,
+        autoComplete: "address-level2",
+        placeholder: "e.g. New York",
+      },
+      {
+        name: "state",
+        label: "State/Province/Region",
+        type: "text",
+        required: true,
+        autoComplete: "address-level1",
+        placeholder: "e.g. California",
+      },
+      {
+        name: "postalCode",
+        label: "ZIP / Postal Code",
+        type: "text",
+        required: true,
+        autoComplete: "postal-code",
+        placeholder: "e.g. 10001",
+      },
     ],
   },
   crypto: {
@@ -585,6 +585,7 @@ export default function PaymentMethods({
                             }`}
                           >
                             <input
+                              title="Select payment method"
                               type="radio"
                               name="paymentType"
                               autoComplete="payment-method"
@@ -654,12 +655,14 @@ export default function PaymentMethods({
                           <option value="">Select {field?.label}</option>
                           {field?.options.map((option) => (
                             <option key={option} value={option}>
-                              {option?.charAt(0)?.toUpperCase() + option?.slice(1)}
+                              {option?.charAt(0)?.toUpperCase() +
+                                option?.slice(1)}
                             </option>
                           ))}
                         </select>
                       ) : (
                         <input
+                          title="Enter your payout details"
                           type={field?.type}
                           value={formData[field.name] || ""}
                           onChange={(e) =>
@@ -668,7 +671,7 @@ export default function PaymentMethods({
                               [field.name]: e.target.value,
                             })
                           }
-                          autoComplete={field?.autoComplete || 'off'}
+                          autoComplete={field?.autoComplete || "off"}
                           placeholder={field?.placeholder || ""}
                           pattern={field?.pattern || undefined}
                           maxLength={field?.maxLength}

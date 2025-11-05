@@ -17,6 +17,7 @@ export default function RestrictedAlert() {
         fading ? "opacity-0" : "opacity-100"
       }`}
       role="alert"
+      title="Square Trivia paid contests are not available in Arizona (AZ), Tennessee (TN), Maryland (MD), and Louisiana (LA)."
     >
       <span className="block sm:inline">
         Square Trivia paid contests are not available in AZ, TN, MD, or LA.

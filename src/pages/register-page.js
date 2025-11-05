@@ -117,8 +117,8 @@ export default function Register() {
     // 🚫 Check restriction before proceeding
     if (isRestricted) {
       toast.error("You are not eligible to register or enter paid contests.");
-      setLoading(false); 
-      navigate("/restricted"); 
+      setLoading(false);
+      navigate("/restricted");
       return;
     }
 
@@ -225,6 +225,7 @@ export default function Register() {
                     <Mail className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
+                    title="Enter your email address"
                     id="email"
                     name="email"
                     type="email"
@@ -232,6 +233,7 @@ export default function Register() {
                     required
                     value={formData.email}
                     onChange={handleChange}
+                    title="Enter your email address"
                     className={`
                       appearance-none block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 
                       focus:outline-none focus:ring-blue-500 focus:border-blue-500
@@ -258,12 +260,14 @@ export default function Register() {
                     <Lock className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
+                    title="Enter your password"
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
                     autoComplete="new-password"
                     required
                     value={formData.password}
+                    title="Create a strong password"
                     onChange={handleChange}
                     className={`
                       appearance-none block w-full pl-10 pr-10 py-2 border rounded-md shadow-sm placeholder-gray-400 
@@ -302,6 +306,7 @@ export default function Register() {
                     <Lock className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
+                    title="Re-enter your password"
                     id="confirmPassword"
                     name="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
@@ -309,6 +314,7 @@ export default function Register() {
                     required
                     value={formData.confirmPassword}
                     onChange={handleChange}
+                    title="Re-enter your password"
                     className={`
                       appearance-none block w-full pl-10 pr-10 py-2 border rounded-md shadow-sm placeholder-gray-400 
                       focus:outline-none focus:ring-blue-500 focus:border-blue-500
@@ -356,6 +362,7 @@ export default function Register() {
                     type="text"
                     value={formData.telegramUsername}
                     onChange={handleChange}
+                    title="Enter your Telegram username (without @)"
                     className={`
                       appearance-none block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 
                       focus:outline-none focus:ring-blue-500 focus:border-blue-500
@@ -389,6 +396,7 @@ export default function Register() {
                     type="tel"
                     value={formData.phone}
                     onChange={handleChange}
+                    title="Enter your phone number with country code"
                     className={`
                       appearance-none block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 
                       focus:outline-none focus:ring-blue-500 focus:border-blue-500
@@ -420,6 +428,7 @@ export default function Register() {
                     type="text"
                     value={formData.referralCode}
                     onChange={handleChange}
+                    title="Enter referral code if you have one"
                     className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="ABC123"
                   />
@@ -430,6 +439,7 @@ export default function Register() {
               <div>
                 <div className="flex items-start">
                   <input
+                    title="accept terms and conditions"
                     id="acceptTerms"
                     name="acceptTerms"
                     type="checkbox"
@@ -440,6 +450,7 @@ export default function Register() {
                   <label
                     htmlFor="acceptTerms"
                     className="ml-2 block text-sm text-gray-900"
+                    title="You must agree to the Terms of Service and Privacy Policy"
                   >
                     I agree to the{" "}
                     <Link

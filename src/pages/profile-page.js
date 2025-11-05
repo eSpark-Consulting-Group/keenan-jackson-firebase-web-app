@@ -509,6 +509,7 @@ export default function Profile() {
                   <div className="flex items-center">
                     <Mail className="h-5 w-5 text-gray-400 mr-2" />
                     <input
+                      title="Enter your email"
                       type="email"
                       value={user?.email || ""}
                       disabled
@@ -528,6 +529,7 @@ export default function Profile() {
                   <div className="flex items-center">
                     <User className="h-5 w-5 text-gray-400 mr-2" />
                     <input
+                      title="Enter your display name"
                       type="text"
                       name="displayName"
                       value={formData.displayName}
@@ -554,6 +556,7 @@ export default function Profile() {
                   <div className="flex items-center">
                     <Phone className="h-5 w-5 text-gray-400 mr-2" />
                     <input
+                      title="Enter your phone number"
                       type="tel"
                       name="phone"
                       value={formData.phone}
@@ -586,6 +589,7 @@ export default function Profile() {
                     <AtSign className="h-5 w-5 text-gray-400 mr-2" />
                     {userData?.hasTelegram ? (
                       <input
+                        title="your telegram username"
                         type="text"
                         value={userData.telegramUsername}
                         disabled
@@ -594,6 +598,7 @@ export default function Profile() {
                     ) : (
                       <>
                         <input
+                          title="Enter your telegram username"
                           type="text"
                           name="telegramUsername"
                           value={formData.telegramUsername}
@@ -809,6 +814,7 @@ export default function Profile() {
                     </div>
                   </div>
                   <input
+                    title="Enter your email"
                     type="checkbox"
                     name="notifications.email"
                     checked={formData.notifications.email}
@@ -830,6 +836,7 @@ export default function Profile() {
                       </div>
                     </div>
                     <input
+                      title="Enter your telegram preference"
                       type="checkbox"
                       name="notifications.telegram"
                       checked={formData.notifications.telegram}
@@ -849,6 +856,7 @@ export default function Profile() {
                     </div>
                   </div>
                   <input
+                    title="Enter your sms preference"
                     type="checkbox"
                     disabled
                     className="h-5 w-5 text-gray-300 rounded"
@@ -928,7 +936,9 @@ export default function Profile() {
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-600">Board Championships:</p>
+                    <p className="text-sm text-gray-600">
+                      Board Championships:
+                    </p>
                     <p className="text-2xl font-bold text-green-600">
                       {stats?.totalWins || 0}
                     </p>

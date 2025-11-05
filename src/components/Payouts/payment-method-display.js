@@ -184,6 +184,7 @@ export function PaymentMethodsList({ methods, defaultMethodId, onSelect, selecte
         >
           {onSelect && (
             <input
+              title="Select payment method"
               type="radio"
               name="paymentMethod"
               value={method.id}

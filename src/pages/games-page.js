@@ -361,6 +361,7 @@ export default function Games() {
               </label>
               <div className="relative">
                 <input
+                  title="search teams"
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -393,58 +394,59 @@ export default function Games() {
                   {date}
                 </h2>
 
-<EligibilityGate>
-                <div className="grid gap-4">
-                  {filteredDateGames.map((game) => {
-                    return (
-                      <motion.div
-                        key={game.id}
-                        whileHover={{ scale: 1.01 }}
-                        className="bg-white rounded-lg shadow-md overflow-hidden"
-                      >
-                        <div className="p-6">
-                          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                            {/* Game Info */}
-                            <div className="mb-4 lg:mb-0">
-                              <div className="flex items-center mb-2">
-                                <span className="text-sm font-medium bg-gray-100 text-gray-700 px-3 py-1 rounded-full mr-3">
-                                  {game.sport}
-                                </span>
-                                <span className="text-sm text-gray-500 flex items-center">
-                                  <Clock className="h-4 w-4 mr-1" />
-                                  {getTimeUntilGame(game.gameDate)}
-                                </span>
+                <EligibilityGate>
+                  <div className="grid gap-4">
+                    {filteredDateGames.map((game) => {
+                      return (
+                        <motion.div
+                          key={game.id}
+                          whileHover={{ scale: 1.01 }}
+                          className="bg-white rounded-lg shadow-md overflow-hidden"
+                        >
+                          <div className="p-6">
+                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                              {/* Game Info */}
+                              <div className="mb-4 lg:mb-0">
+                                <div className="flex items-center mb-2">
+                                  <span className="text-sm font-medium bg-gray-100 text-gray-700 px-3 py-1 rounded-full mr-3">
+                                    {game.sport}
+                                  </span>
+                                  <span className="text-sm text-gray-500 flex items-center">
+                                    <Clock className="h-4 w-4 mr-1" />
+                                    {getTimeUntilGame(game.gameDate)}
+                                  </span>
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                                  {game?.teams?.away || "TBA"} @{" "}
+                                  {game.teams?.home || "TBA"}
+                                </h3>
+                                <p className="text-sm text-gray-600">
+                                  {new Date(
+                                    game.gameDate?.toDate?.() || game.gameDate
+                                  ).toLocaleString()}
+                                </p>
                               </div>
-                              <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                                {game?.teams?.away || "TBA"} @{" "}
-                                {game.teams?.home || "TBA"}
-                              </h3>
-                              <p className="text-sm text-gray-600">
-                                {new Date(
-                                  game.gameDate?.toDate?.() || game.gameDate
-                                ).toLocaleString()}
-                              </p>
-                            </div>
 
-                            {/* Boards */}
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                              {game.boards.map((board) => {
-                                const tier = TIERS[board.tierId.toUpperCase()];
-                                const isUserTier =
-                                  userData?.currentTiers?.includes(
-                                    board.tierId
+                              {/* Boards */}
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                {game.boards.map((board) => {
+                                  const tier =
+                                    TIERS[board.tierId.toUpperCase()];
+                                  const isUserTier =
+                                    userData?.currentTiers?.includes(
+                                      board.tierId
+                                    );
+                                  const hasAccess = userTierAccess.includes(
+                                    board.id
                                   );
-                                const hasAccess = userTierAccess.includes(
-                                  board.id
-                                );
-                                const quarters = ["q1", "q2", "q3", "q4"];
-                                const isComplete = quarters.every(
-                                  (q) => board?.[q]?.processed === true
-                                );
-                                return (
-                                  <div
-                                    key={board.id}
-                                    className={`
+                                  const quarters = ["q1", "q2", "q3", "q4"];
+                                  const isComplete = quarters.every(
+                                    (q) => board?.[q]?.processed === true
+                                  );
+                                  return (
+                                    <div
+                                      key={board.id}
+                                      className={`
                                       relative p-4 rounded-lg border-2 text-center
                                       ${
                                         isUserTier
@@ -452,75 +454,75 @@ export default function Games() {
                                           : "border-gray-200 bg-gray-50"
                                       }
                                     `}
-                                  >
-                                    {isUserTier && (
-                                      <div className="absolute -top-2 -right-2">
-                                        <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                                          Your Board
-                                        </span>
-                                      </div>
-                                    )}
-
-                                    <div
-                                      className={`text-sm font-semibold mb-1 ${tier.color} text-white px-2 py-1 rounded`}
                                     >
-                                      {tier.name}
-                                    </div>
+                                      {isUserTier && (
+                                        <div className="absolute -top-2 -right-2">
+                                          <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                                            Your Board
+                                          </span>
+                                        </div>
+                                      )}
 
-                                    <div className="text-lg font-bold text-gray-900">
-                                      {formatCurrency(tier.prizePerQuarter)}
-                                    </div>
-                                    <div className="text-xs text-gray-600 mb-2">
-                                      per quarter
-                                    </div>
+                                      <div
+                                        className={`text-sm font-semibold mb-1 ${tier.color} text-white px-2 py-1 rounded`}
+                                      >
+                                        {tier.name}
+                                      </div>
 
-                                    <div className="flex items-center justify-center text-xs text-gray-600 mb-3">
-                                      <Grid3X3 className="h-4 w-4 mr-1" />
-                                      <span>{board.filledSquares}/50</span>
-                                    </div>
+                                      <div className="text-lg font-bold text-gray-900">
+                                        {formatCurrency(tier.prizePerQuarter)}
+                                      </div>
+                                      <div className="text-xs text-gray-600 mb-2">
+                                        per quarter
+                                      </div>
 
-                                    {isUserTier ? (
-                                      <Link
-                                        to={`/game/${board.id}`}
-                                        className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
-                                      >
-                                        Play Now
-                                      </Link>
-                                    ) : hasAccess ? (
-                                      <Link
-                                        to={`/game/${board.id}?view=true`}
-                                        className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
-                                      >
-                                        View Board
-                                      </Link>
-                                    ) : isComplete ? (
-                                      <Link
-                                        to={`/game/${board.id}/results`}
-                                        className="block w-full bg-green-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-green-700 transition-colors hover:text-white"
-                                      >
-                                        <Check className="h-4 w-4 inline mr-1" />
-                                        View Results
-                                      </Link>
-                                    ) : (
-                                      <button
-                                        disabled
-                                        className="block w-full bg-gray-300 text-gray-500 py-2 px-3 rounded text-sm font-medium cursor-not-allowed"
-                                      >
-                                        <Lock className="h-4 w-4 inline mr-1" />
-                                        Locked
-                                      </button>
-                                    )}
-                                  </div>
-                                );
-                              })}
+                                      <div className="flex items-center justify-center text-xs text-gray-600 mb-3">
+                                        <Grid3X3 className="h-4 w-4 mr-1" />
+                                        <span>{board.filledSquares}/50</span>
+                                      </div>
+
+                                      {isUserTier ? (
+                                        <Link
+                                          to={`/game/${board.id}`}
+                                          className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
+                                        >
+                                          Play Now
+                                        </Link>
+                                      ) : hasAccess ? (
+                                        <Link
+                                          to={`/game/${board.id}?view=true`}
+                                          className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
+                                        >
+                                          View Board
+                                        </Link>
+                                      ) : isComplete ? (
+                                        <Link
+                                          to={`/game/${board.id}/results`}
+                                          className="block w-full bg-green-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-green-700 transition-colors hover:text-white"
+                                        >
+                                          <Check className="h-4 w-4 inline mr-1" />
+                                          View Results
+                                        </Link>
+                                      ) : (
+                                        <button
+                                          disabled
+                                          className="block w-full bg-gray-300 text-gray-500 py-2 px-3 rounded text-sm font-medium cursor-not-allowed"
+                                        >
+                                          <Lock className="h-4 w-4 inline mr-1" />
+                                          Locked
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-        </EligibilityGate>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </EligibilityGate>
               </motion.div>
             );
           })

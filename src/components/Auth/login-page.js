@@ -89,7 +89,7 @@ export default function Login() {
         {/* Header */}
         <div className="text-center">
           <Link to="/" className="inline-flex items-center justify-center mb-4">
-             <img src="../logo.svg" alt="Square Trivia" width="150px" />
+            <img src="../logo.svg" alt="Square Trivia" width="150px" />
           </Link>
           <h2 className="text-3xl font-bold text-gray-900">Welcome back!</h2>
           <p className="mt-2 text-sm text-gray-600">
@@ -138,6 +138,7 @@ export default function Login() {
                   <Mail className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
+                  title="Enter your email address"
                   id="email"
                   name="email"
                   type="email"
@@ -164,6 +165,7 @@ export default function Login() {
                   <Lock className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
+                  title="Enter your password"
                   id="password"
                   name="password"
                   type={showPassword ? "text" : "password"}
@@ -192,6 +194,7 @@ export default function Login() {
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
+                  title="Remember me"
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
