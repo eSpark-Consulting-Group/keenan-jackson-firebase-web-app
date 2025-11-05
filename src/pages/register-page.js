@@ -225,7 +225,6 @@ export default function Register() {
                     <Mail className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
-                    title="Enter your email address"
                     id="email"
                     name="email"
                     type="email"
@@ -260,7 +259,6 @@ export default function Register() {
                     <Lock className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
-                    title="Enter your password"
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
@@ -306,7 +304,6 @@ export default function Register() {
                     <Lock className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
-                    title="Re-enter your password"
                     id="confirmPassword"
                     name="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
