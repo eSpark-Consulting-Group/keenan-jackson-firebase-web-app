@@ -252,7 +252,7 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 
 - **No gambling license required** (skill-based)
 - Winners determined by ability, not chance
-- Free entry option (AMOE) available
+- Free entry option (AMOE) available, except in Restricted States (AZ, TN, MD, or LA.)
 - Legal precedent: Similar to trivia competitions
 
 ### Tax Compliance
@@ -426,7 +426,7 @@ A: It depends on your tier:
 - And higher tiers have even bigger prizes!
 
 **Q: Can I play for free?**
-A: Yes! We offer a free mail-in entry option (AMOE) that provides the same access as paid players.
+A: Yes! We offer a free mail-in entry option (AMOE), except in Restricted States (AZ, TN, MD, or LA.) that provides the same access as paid players.
 
 **Q: How fast do I need to answer?**
 A: Average winning times are 2-5 seconds. Practice makes perfect!

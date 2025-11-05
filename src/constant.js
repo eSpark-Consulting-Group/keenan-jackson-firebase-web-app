@@ -440,7 +440,7 @@ export const skillCertification = [
     heading: "Alternative Method of Entry (AMOE)",
     isCheckCircle: false,
     subHeading:
-      "In compliance with skill-based competition regulations, Square Trivia offers a free alternative method of entry via mail-in request, ensuring no purchase is necessary to participate or win.",
+      "In compliance with skill-based competition regulations, Square Trivia offers a free alternative method of entry via mail-in request, except in Restricted States (AZ, TN, MD, or LA.) ensuring no purchase is necessary to participate or win.",
     footer: "",
   },
 ];
