@@ -263,7 +263,11 @@ export default function TriviaModal({
                     <p className="text-sm text-gray-600 mt-1">Time remaining</p>
                   </div>
                 )}
-
+                <div className="mb-6 text-center">
+                  <div className={`text-3xl font-bold text-gray-800`}>
+                    Speed Wins Always
+                  </div>
+                </div>
                 {/* Question */}
                 <div className="mb-8">
                   <div className="flex items-start mb-2">

@@ -30,7 +30,7 @@ export default function GameResults() {
     loadBoardData(activeBoardId);
     listenWinners(activeBoardId);
   }, [activeBoardId]);
-const temp = [];
+  const temp = [];
   // Load Board + Game Info
   const loadBoardData = async (id) => {
     try {
@@ -45,7 +45,9 @@ const temp = [];
       setBoard(boardData);
 
       if (boardData.gameId) {
-        const gameDoc = await getDoc(doc(db, collections.games, boardData.gameId));
+        const gameDoc = await getDoc(
+          doc(db, collections.games, boardData.gameId)
+        );
         if (gameDoc.exists()) {
           setGame({ id: gameDoc.id, ...gameDoc.data() });
         }
@@ -62,7 +64,6 @@ const temp = [];
     const q = query(collection(db, "winners"), where("boardId", "==", id));
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      
       for (const docSnap of snapshot.docs) {
         const winnerData = docSnap.data();
         const userId = winnerData.userId;
@@ -190,6 +191,9 @@ const temp = [];
           <h2 className="text-2xl font-semibold mb-4 flex items-center justify-center gap-2">
             <Trophy className="text-yellow-500 h-6 w-6" /> Contest Winners
           </h2>
+          <h3 className="text-2xl font-semibold mb-4 flex items-center justify-center gap-2 text-green-600">
+            Speed Wins Always
+          </h3>
 
           {winners.length > 0 ? (
             <div className="space-y-3">
@@ -199,12 +203,16 @@ const temp = [];
                   className="flex justify-between items-center border rounded-lg p-3 text-gray-800"
                 >
                   <span className="font-medium">
-                    {win.winningQuarter?.toUpperCase() || win.quarter?.toUpperCase()}:
+                    {win.winningQuarter?.toUpperCase() ||
+                      win.quarter?.toUpperCase()}
+                    :
                   </span>
-                  <span className="text-blue-700 font-semibold">@{win.displayName}</span>
+                  <span className="text-blue-700 font-semibold">
+                    @{win.displayName}
+                  </span>
                   <span>Square "{win.square}"</span>
                   {win.answerTime && (
-                    <span>{win.answerTime.toFixed(2)*1000}s</span>
+                    <span>{win.answerTime.toFixed(2) * 1000}s</span>
                   )}
                   <span className="font-bold text-green-700">
                     {formatCurrency(win.prizeAmount || tier.prizePerQuarter)}
@@ -213,7 +221,9 @@ const temp = [];
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-4">No winners found yet.</p>
+            <p className="text-gray-500 text-center py-4">
+              No winners found yet.
+            </p>
           )}
         </motion.div>
 
@@ -229,7 +239,7 @@ const temp = [];
             </h2>
             <p className="text-lg font-semibold text-gray-800 mb-1">
               @{champion.displayName} - Square "{champion.square}" -{" "}
-              {champion.answerTime?.toFixed(2)*1000}s -{" "}
+              {champion.answerTime?.toFixed(2) * 1000}s -{" "}
               {formatCurrency(tier.championPrize || 250)} BONUS
             </p>
             <p className="text-sm text-gray-700">

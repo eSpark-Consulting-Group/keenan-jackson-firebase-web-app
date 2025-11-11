@@ -92,7 +92,7 @@ export default function Layout({ children }) {
             {/* Logo and main nav */}
             <div className="flex items-center">
               <Link to="/" className="flex items-center min-w-0">
-                <img src="../logo.svg" alt="Square Trivia" width="150px" />
+                <img src="/logo.svg" alt="Square Trivia" width="150px" />
               </Link>
 
               {/* Desktop navigation */}
@@ -348,7 +348,7 @@ export default function Layout({ children }) {
                 to="/"
                 className="text-lg font-semibold mb-4 flex items-center gap-2"
               >
-                <img src="../logo.svg" alt="Square Trivia" width="220px" />
+                <img src="/logo.svg" alt="Square Trivia" width="220px" />
               </Link>
               <p className="text-gray-400 text-sm">
                 100% skill-based sports competition platform. Win money with

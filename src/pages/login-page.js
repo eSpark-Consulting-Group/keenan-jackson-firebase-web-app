@@ -91,7 +91,7 @@ export default function Login() {
         {/* Header */}
         <div className="text-center">
           <Link to="/" className="inline-flex items-center justify-center mb-4">
-            <img src="../logo.svg" alt="Square Trivia" width="150px" />
+            <img src="/logo.svg" alt="Square Trivia" width="150px" />
           </Link>
           <h2 className="text-3xl font-bold text-gray-900">Welcome back!</h2>
           <p className="mt-2 text-sm text-gray-600">

@@ -89,7 +89,7 @@ export default function Login() {
         {/* Header */}
         <div className="text-center">
           <Link to="/" className="inline-flex items-center justify-center mb-4">
-            <img src="../logo.svg" alt="Square Trivia" width="150px" />
+            <img src="/logo.svg" alt="Square Trivia" width="150px" />
           </Link>
           <h2 className="text-3xl font-bold text-gray-900">Welcome back!</h2>
           <p className="mt-2 text-sm text-gray-600">
@@ -282,7 +282,7 @@ export default function Login() {
           <div className="mt-6">
             <Link
               to="/register"
-              className="w-full flex justify-center items-center py-3 px-4 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 transition-colors duration-200"
+              className="w-full flex justify-center items-center py-3 px-4 border text-emerald-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 transition-colors duration-200"
             >
               Create a free account
               <ArrowRight className="ml-2 h-4 w-4" />

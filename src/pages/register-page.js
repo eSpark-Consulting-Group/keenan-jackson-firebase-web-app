@@ -173,7 +173,7 @@ export default function Register() {
         {/* Header */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center justify-center mb-4">
-            <img src="../logo.svg" alt="Square Trivia" width="150px" />
+            <img src="/logo.svg" alt="Square Trivia" width="150px" />
           </Link>
           <h2 className="text-3xl font-bold text-gray-900">
             Create your account

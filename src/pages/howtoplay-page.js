@@ -187,7 +187,7 @@ This way, you’re always earning another shot to win big.`,
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             The revolutionary skill-based sports squares game where your
-            knowledge and speed determine winners!
+            knowledge and speed determine winners! - Be the Fastest
           </p>
         </motion.div>
 
@@ -430,22 +430,29 @@ This way, you’re always earning another shot to win big.`,
             ))}
           </div>
         </motion.div>
-
-        {/* CTA */}
+          {/* CTA */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.7 }}
-          className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-8 md:p-12 text-center text-white"
+          className="bg-gradient-to-r from-blue-600 to-blue-600 rounded-lg p-8 md:p-12 text-center text-white"
         >
           <h2 className="text-3xl font-bold mb-4">
             Ready to Test Your Skills?
           </h2>
-          <p className="text-xl mb-8 text-blue-100">
+          <p className="text-xl mb-4 text-blue-100">
             Join thousands of players winning real money with their sports
             knowledge
           </p>
 
+          {/* Taglines */}
+          <div className="mb-8 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-3 text-blue-100 text-lg font-medium">
+            <span className="italic">Speed Wins Always</span>
+            <span className="italic">•</span>
+            <span className="italic">Be the Fastest</span>
+            <span className="italic">•</span>
+            <span className="italic">Board Champion = Fastest Overall</span>
+          </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/register"

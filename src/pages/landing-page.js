@@ -537,10 +537,13 @@ export default function LandingPage() {
           <h2 className="text-4xl font-bold mb-4">
             Ready to Turn Your Sports Knowledge into Cash?
           </h2>
-          <p className="text-xl mb-8 opacity-90">
-            Join thousands of sports fans winning with their trivia skills - NO
-            FEES, just pure competition!
-          </p>
+          <p
+            className="text-xl mb-8 opacity-90"
+            dangerouslySetInnerHTML={{
+              __html:
+                "Join thousands of sports fans winning with their trivia skills <br> NO FEES, just pure competition!",
+            }}
+          />
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
