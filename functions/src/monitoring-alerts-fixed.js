@@ -74,7 +74,7 @@ const PAYMENT_TIERS = {
 };
 
 // Instant payout fee - CONFIGURE DURING DEPLOYMENT
-const INSTANT_PAYOUT_FEE = 0.04; // 4%
+const INSTANT_PAYOUT_FEE = 0.08; // 8%
 
 const BATCH_PAYOUT_DAYS = ["tuesday", "friday"];
 
@@ -937,7 +937,7 @@ async function checkPayoutDistribution() {
       if (payout.instantPayoutFee) {
         totalInstantFees += payout.instantPayoutFee;
 
-        // Check if fee is correct (4%)
+        // Check if fee is correct (8%)
         const expectedFee = payout.originalAmount * INSTANT_PAYOUT_FEE;
         if (Math.abs(expectedFee - payout.instantPayoutFee) > 0.01) {
           incorrectFees++;

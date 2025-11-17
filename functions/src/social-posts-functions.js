@@ -840,7 +840,7 @@ Think you can beat it? Speed pays! ⚡
 async function NoFeesPost({ mediaToUpload, captionLink }) {
   const cta = getRandomCTA({ link: captionLink });
   const options = [
-    { icon: "⚡", title: "Express service", detail: "Get 96% today" },
+    { icon: "⚡", title: "Express service", detail: "Get 92% today" },
     { icon: "⏰", title: "Standard service", detail: "Get 100% in 2–3 days" },
   ]
     .map((o) => `${o.icon} ${o.title}: ${o.detail}`)
@@ -855,7 +855,7 @@ Your choice, your money!
 
   const tweet = `
 💸 Win $200? Get $200 — NO FEES on Square Trivia!  
-⚡ Express: Get 96% today  
+⚡ Express: Get 92% today  
 ⏰ Standard: Get 100% in 2–3 days  
 Your choice. Your money!
 `;

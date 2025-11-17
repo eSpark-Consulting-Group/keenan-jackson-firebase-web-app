@@ -1,6 +1,6 @@
 // Artifact #8: Donation & Payment System
 // Complete payment processing with Stripe, free entry, and tier management
-// Updated with new payment structure: 77%/80% payouts and 4% instant payout fee
+// Updated with new payment structure: 77%/80% payouts and 8% instant payout fee
 
 const functions = require("firebase-functions");
 
@@ -124,7 +124,7 @@ const DONATION_STATUS = {
 };
 
 // Payout constants
-const INSTANT_PAYOUT_FEE = 0.04; // 4% fee for instant payouts
+const INSTANT_PAYOUT_FEE = 0.08; // 8% fee for instant payouts
 const BATCH_PAYOUT_DAYS = ["tuesday", "friday"];
 
 // =====================================
@@ -747,7 +747,7 @@ async function revokeTelegramAccess(userId, tier) {
 
 /**
  * Process instant payout for winners
- * Deducts 4% fee and processes immediately via Stripe
+ * Deducts 8% fee and processes immediately via Stripe
  */
 async function processInstantPayout(winnerId, prizeAmount, tierInfo) {
   try {
@@ -1018,14 +1018,14 @@ async function sendInstantPayoutConfirmation(
       <div class="info-box">
         <h3>Payout Details:</h3>
         <p><strong>Original Prize:</strong> $${(payoutAmount + instantFee).toFixed(2)}</p>
-        <p><strong>Instant Processing Fee (4%):</strong> -$${instantFee.toFixed(2)}</p>
+        <p><strong>Instant Processing Fee (8%):</strong> -$${instantFee.toFixed(2)}</p>
         <hr style="border: 1px solid #eee;">
         <p><strong>Amount Sent:</strong> $${payoutAmount.toFixed(2)}</p>
         <p><strong>Arrival Time:</strong> Within minutes</p>
       </div>
       
       <div class="fee-box">
-        <p><strong>Why the fee?</strong> The 4% instant payout fee covers the cost of immediate transfer processing. 
+        <p><strong>Why the fee?</strong> The 8% instant payout fee covers the cost of immediate transfer processing. 
         You can always choose standard batch payouts (Tuesday/Friday) to receive the full prize amount with no fees.</p>
       </div>
       

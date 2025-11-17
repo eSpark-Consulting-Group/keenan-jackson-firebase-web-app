@@ -485,7 +485,7 @@ console.log("Eligibility Status:", isRestricted);
           * {TIERS.tier_25.payoutPercentage}% of entries go to prizes for
           $25-$100 boards,
           {TIERS.tier_250.payoutPercentage}% for higher boards. Instant payouts
-          available with 96% payout or wait 2-3 days for 100%.
+          available with 92% payout or wait 2-3 days for 100%.
         </p>
       </div>
     </div>

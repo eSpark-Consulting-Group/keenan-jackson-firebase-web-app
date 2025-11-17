@@ -15,7 +15,7 @@ const TIERS = {
     telegramGroupKey: "tier_25_group_id",
     maxSquaresPerUser: 3,
     availableIn: ["regular", "playoff", "championship"],
-    payoutPercentage: 0.64, // 64% to winners
+    payoutPercentage: 0.64, // 68% to winners
   },
   TIER_50: {
     id: "tier_50",
@@ -26,7 +26,7 @@ const TIERS = {
     telegramGroupKey: "tier_50_group_id",
     maxSquaresPerUser: 3,
     availableIn: ["regular", "playoff", "championship"],
-    payoutPercentage: 0.64, // 64% to winners
+    payoutPercentage: 0.64, // 68% to winners
   },
   TIER_100: {
     id: "tier_100",
@@ -37,7 +37,7 @@ const TIERS = {
     telegramGroupKey: "tier_100_group_id",
     maxSquaresPerUser: 3,
     availableIn: ["regular", "playoff", "championship"],
-    payoutPercentage: 0.64, // 64% to winners
+    payoutPercentage: 0.64, // 68% to winners
   },
   TIER_250: {
     id: "tier_250",
@@ -103,7 +103,7 @@ const GAME_CONFIG = {
   QUARTERS_PER_GAME: 4,
 
   // Instant payout configuration
-  INSTANT_PAYOUT_FEE: 0.04, // 4% fee for instant payouts
+  INSTANT_PAYOUT_FEE: 0.08, // 8% fee for instant payouts
 
   // Batch payout configuration
   BATCH_PAYOUT_DAYS: ["tuesday", "friday"], // Batch payout days

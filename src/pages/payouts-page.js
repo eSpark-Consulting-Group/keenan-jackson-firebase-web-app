@@ -971,8 +971,8 @@ export default function Payouts() {
                   (100% of prize)
                 </li>
                 <li>
-                  • Instant payouts available for pending winnings (96% of
-                  prize, 4% convenience fee)
+                  • Instant payouts available for pending winnings (92% of
+                  prize, 8% convenience fee)
                 </li>
                 <li>
                   • Payouts sent via your preferred method (ACH, PayPal, or
@@ -1021,15 +1021,15 @@ export default function Payouts() {
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Instant Fee (4%):</span>
+                    <span className="text-gray-600">Instant Fee (8%):</span>
                     <span className="text-red-600">
-                      -{formatCurrency(selectedPayout.prizeAmount * 0.04)}
+                      -{formatCurrency(selectedPayout.prizeAmount * 0.08)}
                     </span>
                   </div>
                   <div className="border-t pt-2 flex justify-between">
                     <span className="font-semibold">You'll Receive:</span>
                     <span className="font-bold text-lg text-green-600">
-                      {formatCurrency(selectedPayout.prizeAmount * 0.96)}
+                      {formatCurrency(selectedPayout.prizeAmount * 0.92)}
                     </span>
                   </div>
                 </div>

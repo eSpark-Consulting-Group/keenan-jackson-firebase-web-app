@@ -224,7 +224,7 @@ export const TERMS_OF_SERVICE = [
         text: "<b>Standard Payout:</b> Issued within 1–2 business days at no charge",
       },
       {
-        text: "<b>Instant Payout Option:</b> Available immediately with a 4% convenience fee",
+        text: "<b>Instant Payout Option:</b> Available immediately with a 8% convenience fee",
       },
       {
         text: "Payments processed via <b>secure financial partners</b> (Stripe, Relay, Mercury)",

@@ -50,7 +50,7 @@ const TIER_AVAILABILITY = {
 };
 
 // Payment processing constants
-const INSTANT_PAYOUT_FEE = 0.04; // 4% fee for instant payouts
+const INSTANT_PAYOUT_FEE = 0.08; // 8% fee for instant payouts
 const BATCH_PAYOUT_DAYS = ["tuesday", "friday"];
 
 // API Sports configuration - Add your API keys during deployment

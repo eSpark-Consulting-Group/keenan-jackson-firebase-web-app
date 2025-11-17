@@ -32,7 +32,7 @@ const {
 
 // Payment structure constants
 // These will eventually come from constants-configuration.js
-const INSTANT_PAYOUT_FEE = 0.04; // 4% fee for instant payouts
+const INSTANT_PAYOUT_FEE = 0.08; // 8% fee for instant payouts
 const BATCH_PAYOUT_DAYS = ['tuesday', 'friday'];
 const BATCH_PAYOUT_SCHEDULE = {
   tuesday: {
@@ -200,8 +200,8 @@ class EmailService {
       winnerTime, loserTime, hasLoser 
     } = data;
     
-    // Calculate instant payout option (4% fee)
-    const instantPayoutFee = prizeAmount * 0.04;
+    // Calculate instant payout option (8% fee)
+    const instantPayoutFee = prizeAmount * 0.08;
     const instantPayoutAmount = prizeAmount - instantPayoutFee;
     
     // Get payout percentage for tier
@@ -447,7 +447,7 @@ class EmailService {
           <h4>⚡ Instant Payout</h4>
           <div class="payout-amount-display">$${instantPayoutAmount.toFixed(2)}</div>
           <div class="payout-timing">Get paid TODAY!</div>
-          <div class="payout-fee">4% processing fee = $${instantPayoutFee.toFixed(2)} deducted</div>
+          <div class="payout-fee">8% processing fee = $${instantPayoutFee.toFixed(2)} deducted</div>
         </div>
         
         <div class="payout-option">
@@ -980,7 +980,7 @@ class EmailService {
       <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
         <h3 style="margin-top: 0;">Payment Details:</h3>
         <p><strong>Original Prize:</strong> $${amount.toFixed(2)}</p>
-        <p><strong>Instant Fee (4%):</strong> -$${fee.toFixed(2)}</p>
+        <p><strong>Instant Fee (8%):</strong> -$${fee.toFixed(2)}</p>
         <p><strong>You Receive:</strong> $${netAmount.toFixed(2)}</p>
         <p><strong>Transaction ID:</strong> ${transactionId}</p>
         <p><strong>Status:</strong> Completed ✅</p>
@@ -1085,7 +1085,7 @@ class EmailService {
     const { prizeAmount, winnerId, payoutChoiceToken } = data;
     
     // Calculate instant payout option
-    const instantPayoutFee = prizeAmount * 0.04;
+    const instantPayoutFee = prizeAmount * 0.08;
     const instantPayoutAmount = prizeAmount - instantPayoutFee;
     
     return `
@@ -1140,7 +1140,7 @@ class EmailService {
         
         <div style="margin: 15px 0; padding: 15px; background-color: #fef3c7; border-radius: 8px;">
           <strong>⚡ Instant Payout:</strong> Get $${instantPayoutAmount.toFixed(2)} today!
-          <br><span style="font-size: 14px; color: #666;">(4% fee = $${instantPayoutFee.toFixed(2)})</span>
+          <br><span style="font-size: 14px; color: #666;">(8% fee = $${instantPayoutFee.toFixed(2)})</span>
         </div>
         
         <div style="margin: 15px 0; padding: 15px; background-color: #dcfce7; border-radius: 8px;">
@@ -1234,7 +1234,7 @@ class TelegramService {
     } = data;
     
     // Calculate instant payout option
-    const instantPayoutFee = prizeAmount * 0.04;
+    const instantPayoutFee = prizeAmount * 0.08;
     const instantPayoutAmount = prizeAmount - instantPayoutFee;
     
     let message = `
@@ -1270,7 +1270,7 @@ No competition needed!
 
     message += `
 💸 *Choose Your Payout:*
-⚡ *Instant:* $${instantPayoutAmount.toFixed(2)} today (4% fee)
+⚡ *Instant:* $${instantPayoutAmount.toFixed(2)} today (8% fee)
 📅 *Standard:* $${prizeAmount.toFixed(2)} in 2-3 days (no fee)
 
 Visit: squaretrivia.com/winners/payout-choice/${winnerId}?token=${payoutChoiceToken}
@@ -1479,7 +1479,7 @@ class SMSService {
     const { game, prizeAmount, winnerTime, hasLoser } = data;
     
     const skillInfo = hasLoser ? ` Times revealed: ${winnerTime}s (fastest!)` : '';
-    const message = `🎉 Square Trivia: You won $${prizeAmount.toFixed(2)} on ${game}!${skillInfo} Choose instant payout (4% fee) or standard (no fee). Check your email for details.`;
+    const message = `🎉 Square Trivia: You won $${prizeAmount.toFixed(2)} on ${game}!${skillInfo} Choose instant payout (8% fee) or standard (no fee). Check your email for details.`;
 
     try {
       await this.sendSMS(phone, message);

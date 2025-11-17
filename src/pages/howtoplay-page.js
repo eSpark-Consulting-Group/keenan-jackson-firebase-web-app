@@ -102,7 +102,7 @@ export default function HowToPlay() {
       icon: DollarSign,
       title: "NO FEES",
       description:
-        "Guaranteed prize amounts with no hidden fees. Only optional 4% for instant payout.",
+        "Guaranteed prize amounts with no hidden fees. Only optional 8% for instant payout.",
     },
     {
       icon: Trophy,
@@ -114,7 +114,7 @@ export default function HowToPlay() {
       icon: Zap,
       title: "Instant Payouts",
       description:
-        "Choose instant payout (96%) or wait 2-3 days for full amount (100%)",
+        "Choose instant payout (92%) or wait 2-3 days for full amount (100%)",
     },
   ];
 

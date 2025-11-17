@@ -27,7 +27,7 @@ Square Trivia is a skill-based sports competition platform where players earn sq
 - 🏈 **Multiple Sports** - NFL, NBA, NCAA support
 - 💰 **Guaranteed Prizes** - Fixed prize amounts, no calculations
 - 🚫 **NO FEES** - No fees on entry or winning
-- ⚡ **Instant Payouts** - Optional same-day payouts (96% instant or 100% in 2-3 days)
+- ⚡ **Instant Payouts** - Optional same-day payouts (92% instant or 100% in 2-3 days)
 
 ### Game Mechanics
 

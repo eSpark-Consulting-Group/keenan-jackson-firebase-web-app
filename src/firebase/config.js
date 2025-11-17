@@ -158,7 +158,7 @@ export const GAME_CONFIG = {
 };
 
 // Instant payout configuration
-export const INSTANT_PAYOUT_FEE = 0.04; // 4%
+export const INSTANT_PAYOUT_FEE = 0.08; // 8%
 
 // Helper to get board by ID
 export const getTierById = (tierId) => {

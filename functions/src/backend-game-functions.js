@@ -1317,7 +1317,7 @@ exports.processPayout = functions.https.onCall(async (data, context) => {
     const winner = winnerDoc.data();
     const payoutAmount =
       method === "instant"
-        ? winner.prizeAmount * 0.96 // 4% fee
+        ? winner.prizeAmount * 0.92 // 8% fee
         : winner.prizeAmount; // 100% for batch
 
     // Process via Stripe, PayPal, Venmo, etc.

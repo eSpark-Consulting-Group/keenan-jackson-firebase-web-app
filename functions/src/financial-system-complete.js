@@ -41,7 +41,7 @@ const PAYOUT_STATUS = {
   PAID_INSTANT: "paid_instant",
 };
 
-const INSTANT_PAYOUT_FEE = 0.04; // 4% fee for instant payouts
+const INSTANT_PAYOUT_FEE = 0.08; // 8% fee for instant payouts
 
 const RECONCILIATION_STATUS = {
   PENDING: "pending",
@@ -112,7 +112,7 @@ exports.processInstantPayout = functions.https.onCall(async (data, context) => {
       );
     }
 
-    // Calculate instant payout amount (original prize minus 4% fee)
+    // Calculate instant payout amount (original prize minus 8% fee)
     const instantPayoutFee = winner.prizeAmount * INSTANT_PAYOUT_FEE;
     const payoutAmount = winner.prizeAmount - instantPayoutFee;
 
@@ -1502,7 +1502,7 @@ async function sendInstantPayoutConfirmation(
       <div class="breakdown">
         <h3 style="margin-top: 0;">Payout Breakdown:</h3>
         <p>Original Prize: $${originalAmount.toFixed(2)}</p>
-        <p>Instant Payout Fee (4%): -$${instantFee.toFixed(2)}</p>
+        <p>Instant Payout Fee (8%): -$${instantFee.toFixed(2)}</p>
         <p><strong>Amount Sent: $${payoutAmount.toFixed(2)}</strong></p>
       </div>
       

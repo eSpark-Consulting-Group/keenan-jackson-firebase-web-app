@@ -259,7 +259,7 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 **Prize Distribution:**
 
 - Guaranteed fixed prizes each quarter (no calculations needed!)
-- Instant payout: Get 96% of prize immediately
+- Instant payout: Get 92% of prize immediately
 - Standard payout: Full prize amount in 2-3 days
 - NO FEES on entry or prizes - only optional instant payout fee
 
@@ -304,14 +304,14 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 4. **Claim Square** → Choose position (if available)
 5. **Wait for Game** → Watch live scores
 6. **Get Notified** → Instant notification if you win
-7. **Choose Payout** → Instant (96%) or standard (100%)
+7. **Choose Payout** → Instant (92%) or standard (100%)
 
 ### Winning Flow
 
 1. **Win Notification** → Email/Telegram alert with prize amount
 2. **View Details** → See your winning time vs opponent
 3. **Payout Choice** →
-   - Instant: Get 96% immediately
+   - Instant: Get 92% immediately
    - Standard: Get 100% in 2-3 days
 4. **Receive Funds** → Via chosen method
 5. **Tax Forms** → W-9 if over $600 annually
@@ -363,8 +363,8 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
    - "NO FEES" marketing advantage
 
 2. **Instant Payout Service:**
-   - 4% convenience fee (optional)
-   - Players choose: wait for full amount or get 96% instantly
+   - 8% convenience fee (optional)
+   - Players choose: wait for full amount or get 92% instantly
    - Positioned as premium service, not a fee
 
 3. **Future Revenue:** (Planned)
@@ -390,7 +390,7 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 
 **Payout Options:**
 
-1. **Instant:** 96% of prize (4% service fee)
+1. **Instant:** 92% of prize (8% service fee)
    - Example: $200 win = $192 instant
 2. **Standard:** 100% of prize (2-3 days)
    - Example: $200 win = $200 full amount
@@ -580,7 +580,7 @@ Six donation tiers with guaranteed contest prizess - NO FEES:
 A: Winners are determined by skill (trivia speed), not random chance. It's like a timed quiz competition with prizes.
 
 **Q: Are there any fees?**
-A: NO! There are no fees to play or win. Prizes are guaranteed fixed amounts. The only optional fee is 4% if you choose instant payout instead of waiting 2-3 days for the full amount.
+A: NO! There are no fees to play or win. Prizes are guaranteed fixed amounts. The only optional fee is 8% if you choose instant payout instead of waiting 2-3 days for the full amount.
 
 **Q: How much can I win?**
 A: It depends on your tier:
@@ -622,7 +622,7 @@ A: Your square wins if its numbers match the last digits of the score in ANY ord
 A: Your square wins if its numbers match the last digits of the score in ANY order. For example, square (2,7) wins with scores like 12-17, 17-12, 22-7, 7-32, etc. Each square has two ways to win!
 
 **Q: When do I get paid?**
-A: Choose instant (same day, 4% fee) or standard (2-3 days, no fee).
+A: Choose instant (same day, 8% fee) or standard (2-3 days, no fee).
 
 **Q: Is this legal?**
 A: Yes! Skill-based competitions are legal in most US states. Check your local laws.

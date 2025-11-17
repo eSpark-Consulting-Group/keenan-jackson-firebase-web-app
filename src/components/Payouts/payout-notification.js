@@ -127,7 +127,7 @@ export default function PayoutNotification() {
             </div>
 
             <p className="text-xs text-gray-500 mt-3 text-center">
-              Standard payout in 2-3 days or get instant with 4% fee
+              Standard payout in 2-3 days or get instant with 8% fee
             </p>
           </div>
         </div>

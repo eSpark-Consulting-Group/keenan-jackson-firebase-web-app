@@ -184,7 +184,7 @@ export default function PayoutsWidget() {
       {/* Info Text */}
       {stats.totalPending > 0 && (
         <p className="text-xs text-gray-500 mt-4">
-          Standard payouts process in 2-3 days. Instant payouts available with 4% fee.
+          Standard payouts process in 2-3 days. Instant payouts available with 8% fee.
         </p>
       )}
     </motion.div>
