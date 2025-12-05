@@ -10,7 +10,7 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
-import TierSelection from "../components/game/tierselection";
+import TierSelection from "../components/game/tier-selection";
 
 export default function Tier() {
   const {  userData } = useAuth();

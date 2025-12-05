@@ -17,6 +17,7 @@ const {
   TeamRivalryPost,
   MultiGameUpdatePost,
 } = require("./social-posts-functions");
+const { generateImage } = require("./backend-game-functions");
 
 // admin.initializeApp();
 const db = admin.firestore();
@@ -74,7 +75,7 @@ const PAYMENT_TIERS = {
 };
 
 // Instant payout fee - CONFIGURE DURING DEPLOYMENT
-const INSTANT_PAYOUT_FEE = 0.04; // 4%
+const INSTANT_PAYOUT_FEE = 0.08; // 8%
 
 const BATCH_PAYOUT_DAYS = ["tuesday", "friday"];
 
@@ -937,7 +938,7 @@ async function checkPayoutDistribution() {
       if (payout.instantPayoutFee) {
         totalInstantFees += payout.instantPayoutFee;
 
-        // Check if fee is correct (4%)
+        // Check if fee is correct (8%)
         const expectedFee = payout.originalAmount * INSTANT_PAYOUT_FEE;
         if (Math.abs(expectedFee - payout.instantPayoutFee) > 0.01) {
           incorrectFees++;
@@ -1533,7 +1534,6 @@ exports.dailyRecapTrigger = functions.pubsub
   .timeZone("America/Denver")
   .onRun(async () => {
     const now = new Date();
-
     // Convert current time to America/Denver timezone
     const denverNow = new Date(
       now.toLocaleString("en-US", { timeZone: "America/Denver" })
@@ -1578,14 +1578,47 @@ exports.dailyRecapTrigger = functions.pubsub
       a.prizeAmount > b.prizeAmount ? a : b
     );
     const biggestWin = biggest.prizeAmount || 0;
+    // 1. Generate dynamic image
+    const formValues = {
+      totalPaid: Math.round(totalPrizes).toString(), // ensures it's a whole number string
+      gameCount: winnerCount / 5, // stays numeric unless you need string
+      winnerCount: winnerCount,
+      fastTime: fastestTime, // unchanged
+      fastName: fastestUser, // unchanged
+      bigPrice: biggestWin,
+    };
 
+    const selectedTemplate = "dailySummary";
+    const nowDate = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+    ].join("/");
+    const payload = {
+      templateID: selectedTemplate,
+      data: formValues,
+      savePath: `savedimages/${nowDate}/${selectedTemplate}.jpg`,
+    };
+    let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
+
+    try {
+      const imageResult = await generateImage(payload);
+
+      if (imageResult && imageResult.response === "success") {
+        imageUrl = imageResult.path; // use generated image if successful
+      } else {
+        console.warn("Image generation failed:", imageResult);
+      }
+    } catch (err) {
+      console.error("Image generation error:", err);
+    }
     await DailyRecapPost({
       totalPrizes,
       winnerCount,
       fastestTime,
       fastestUser,
       biggestWin,
-      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+      mediaToUpload: imageUrl,
       captionLink: "https://squaretrivia.com",
     });
 
@@ -1600,6 +1633,16 @@ exports.weeklyRecapTrigger = functions.pubsub
   .onRun(async () => {
     const now = new Date();
 
+    function getWeekNumber(date = new Date()) {
+      const target = new Date(date.valueOf());
+      const dayNumber = (date.getDay() + 6) % 7;
+      target.setDate(target.getDate() - dayNumber + 3);
+      const firstThursday = new Date(target.getFullYear(), 0, 4);
+      const diff = target - firstThursday;
+      return 1 + Math.round(diff / 604800000); // ms in a week
+    }
+
+    const weekNumber = getWeekNumber();
     // Convert current UTC time → Denver local time
     const denverNow = new Date(
       now.toLocaleString("en-US", { timeZone: "America/Denver" })
@@ -1636,6 +1679,23 @@ exports.weeklyRecapTrigger = functions.pubsub
     }
 
     const winners = snapshot.docs.map((doc) => doc.data());
+    const totalPrizes = winners.reduce(
+      (sum, w) => sum + (w.prizeAmount || 0),
+      0
+    );
+    const winnerCount = winners.length;
+
+    const fastest = winners.reduce((a, b) =>
+      a.answerTime < b.answerTime ? a : b
+    );
+    const fastestTime = fastest.answerTime?.toFixed(2) || "0.00";
+    const fastestUser = fastest.user?.displayName || "Anonymous";
+
+    const biggest = winners.reduce((a, b) =>
+      a.prizeAmount > b.prizeAmount ? a : b
+    );
+    const biggestWin = biggest.prizeAmount || 0;
+
     console.log(`✅ Found ${winners.length} weekly winners.`);
 
     // 🧠 Aggregate stats per userId
@@ -1684,6 +1744,35 @@ exports.weeklyRecapTrigger = functions.pubsub
       console.log("⚠️ No valid weekly champions found.");
       return null;
     }
+    // 1. Generate dynamic image
+    const formValues = {
+      totalPaid: Math.round(totalPrizes).toString(), // ensures it's a whole number string
+      gameCount: winnerCount / 5, // stays numeric unless you need string
+      winnerCount: winnerCount,
+      fastTime: fastestTime, // unchanged
+      fastName: fastestUser, // unchanged
+      bigPrice: biggestWin,
+    };
+
+    const selectedTemplate = "weeklySummary";
+    const payload = {
+      templateID: selectedTemplate,
+      data: formValues,
+      savePath: `savedimages/weekly/${weekNumber}/${selectedTemplate}.jpg`,
+    };
+    let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
+
+    try {
+      const imageResult = await generateImage(payload);
+
+      if (imageResult && imageResult.response === "success") {
+        imageUrl = imageResult.path; // use generated image if successful
+      } else {
+        console.warn("Image generation failed:", imageResult);
+      }
+    } catch (err) {
+      console.error("Image generation error:", err);
+    }
     // 📣 Publish the post
     await WeeklyChampionPost({
       winner1: w1?.name || "—",
@@ -1695,7 +1784,7 @@ exports.weeklyRecapTrigger = functions.pubsub
       winner3: w3?.name || "—",
       amount3: w3?.total || 0,
       wins3: w3?.wins || 0,
-      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+      mediaToUpload: imageUrl,
       captionLink: "https://squaretrivia.com",
     });
 
@@ -1712,9 +1801,29 @@ exports.noFeesTrigger = functions.pubsub
   .timeZone("America/Denver")
   .onRun(async () => {
     console.log("🚀 Running NoFeesPost trigger...");
+    // 1. Generate dynamic image
+    const formValues = {};
+    const selectedTemplate = "noFeesReminder"; //to be created
+    const payload = {
+      templateID: selectedTemplate,
+      data: formValues,
+      savePath: `savedimages/extra/${selectedTemplate}.jpg`,
+    };
+    let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
 
+    try {
+      const imageResult = await generateImage(payload);
+
+      if (imageResult && imageResult.response === "success") {
+        imageUrl = imageResult.path; // use generated image if successful
+      } else {
+        console.warn("Image generation failed:", imageResult);
+      }
+    } catch (err) {
+      console.error("Image generation error:", err);
+    }
     await NoFeesPost({
-      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+      mediaToUpload: imageUrl,
       captionLink: "https://squaretrivia.com",
     });
 
@@ -1755,12 +1864,32 @@ exports.skillCelebrationTrigger = functions.pubsub
     const recentWinner = notable.user?.displayName || "Anonymous";
     const time = notable.answerTime.toFixed(2);
     const prize = notable.prizeAmount || 0;
+    // 1. Generate dynamic image
+    const formValues = {};
+    const selectedTemplate = "skillCelebration"; //to be created
+    const payload = {
+      templateID: selectedTemplate,
+      data: formValues,
+      savePath: `savedimages/extra/${selectedTemplate}.jpg`,
+    };
+    let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
 
+    try {
+      const imageResult = await generateImage(payload);
+
+      if (imageResult && imageResult.response === "success") {
+        imageUrl = imageResult.path; // use generated image if successful
+      } else {
+        console.warn("Image generation failed:", imageResult);
+      }
+    } catch (err) {
+      console.error("Image generation error:", err);
+    }
     await SkillCelebration({
       recentWinner,
       time,
       prize,
-      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+      mediaToUpload: imageUrl,
       captionLink: "https://squaretrivia.com",
     });
 
@@ -1815,10 +1944,31 @@ exports.platformMilestoneTrigger = functions.pubsub
     }
 
     console.log(`🎉 Milestone crossed: $${crossed}`);
+    // 1. Generate dynamic image
+    const formValues = {};
+    const selectedTemplate = "milestoneCelebration"; //to be created
+    const payload = {
+      templateID: selectedTemplate,
+      data: formValues,
+      savePath: `savedimages/extra/${selectedTemplate}.jpg`,
+    };
+    let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
+
+    try {
+      const imageResult = await generateImage(payload);
+
+      if (imageResult && imageResult.response === "success") {
+        imageUrl = imageResult.path; // use generated image if successful
+      } else {
+        console.warn("Image generation failed:", imageResult);
+      }
+    } catch (err) {
+      console.error("Image generation error:", err);
+    }
     await PlatformMilestonePost({
       amount: crossed.toLocaleString(),
       totalWinners,
-      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+      mediaToUpload: imageUrl,
       captionLink: "https://squaretrivia.com",
     });
 
@@ -1909,12 +2059,32 @@ exports.recordBreakerTrigger = functions.pubsub
     }
 
     console.log("🏁 New record detected — posting...");
+    // 1. Generate dynamic image
+    const formValues = {};
+    const selectedTemplate = "recordBreaker"; //to be created
+    const payload = {
+      templateID: selectedTemplate,
+      data: formValues,
+      savePath: `savedimages/extra/${selectedTemplate}.jpg`,
+    };
+    let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
 
+    try {
+      const imageResult = await generateImage(payload);
+
+      if (imageResult && imageResult.response === "success") {
+        imageUrl = imageResult.path; // use generated image if successful
+      } else {
+        console.warn("Image generation failed:", imageResult);
+      }
+    } catch (err) {
+      console.error("Image generation error:", err);
+    }
     await RecordBreakerPost({
       winner,
       time: currentFastestTime.toFixed(3),
       oldTime: lastFastestTime ? lastFastestTime.toFixed(3) : "—",
-      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+      mediaToUpload: imageUrl,
       captionLink: "https://squaretrivia.com",
     });
 
@@ -1974,10 +2144,29 @@ exports.referralLeaderboardTrigger = functions.pubsub
       })
       .sort((a, b) => b.referrals - a.referrals)
       .slice(0, 5);
+    // 1. Generate dynamic image
+    const selectedTemplate = "referalPost";
+    const payload = {
+      templateID: selectedTemplate,
+      data: null,
+      savePath: `savedimages/${selectedTemplate}.jpg`,
+    };
+    let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
 
+    try {
+      const imageResult = await generateImage(payload);
+
+      if (imageResult && imageResult.response === "success") {
+        imageUrl = imageResult.path; // use generated image if successful
+      } else {
+        console.warn("Image generation failed:", imageResult);
+      }
+    } catch (err) {
+      console.error("Image generation error:", err);
+    }
     await ReferralLeaderboard({
       winners: leaderboard,
-      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+      mediaToUpload: imageUrl,
       captionLink: "https://squaretrivia.com/referrals",
     });
 
@@ -2022,13 +2211,33 @@ exports.teamRivalryTrigger = functions.pubsub
       if (team === matchup.teamA) teamAWins++;
       if (team === matchup.teamB) teamBWins++;
     });
+    // 1. Generate dynamic image
+    const formValues = {};
+    const selectedTemplate = "teamRivalry"; //to be created
+    const payload = {
+      templateID: selectedTemplate,
+      data: formValues,
+      savePath: `savedimages/extra/${selectedTemplate}.jpg`,
+    };
+    let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
 
+    try {
+      const imageResult = await generateImage(payload);
+
+      if (imageResult && imageResult.response === "success") {
+        imageUrl = imageResult.path; // use generated image if successful
+      } else {
+        console.warn("Image generation failed:", imageResult);
+      }
+    } catch (err) {
+      console.error("Image generation error:", err);
+    }
     await TeamRivalryPost({
       teamA: matchup.teamA,
       teamB: matchup.teamB,
       teamAWins,
       teamBWins,
-      mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+      mediaToUpload: imageUrl,
       captionLink: "https://squaretrivia.com",
     });
 
@@ -2121,14 +2330,28 @@ exports.multiGameUpdateTrigger = functions.pubsub
       // Step 6: Trigger Post
       console.log("📣 [Step 6] Triggering MultiGameUpdatePost with payload:", {
         gameCount: games.length,
-        mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+        mediaToUpload:
+          imageResult?.path || "https://squaretrivia.com/apple-touch-icon.png",
         captionLink: "https://squaretrivia.com",
         day: dayName,
       });
+      // 1. Generate dynamic image
+      const formValues = {};
+      const selectedTemplate = "multiGameUpdate"; // to be created
+      const imageResult = await generateImage({
+        templateID: selectedTemplate,
+        data: formValues,
+        savePath: `savedimages/extra/${selectedTemplate}.jpg`,
+      });
 
+      if (!imageResult || imageResult.response !== "success") {
+        console.error("Image generation failed:", imageResult);
+        return;
+      }
       await MultiGameUpdatePost({
         games,
-        mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+        mediaToUpload:
+          imageResult?.path || "https://squaretrivia.com/apple-touch-icon.png",
         captionLink: "https://squaretrivia.com",
         day: dayName,
       });

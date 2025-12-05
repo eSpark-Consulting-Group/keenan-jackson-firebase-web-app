@@ -787,27 +787,28 @@ export default function Payouts() {
                   {/* RIGHT SIDE ACTIONS */}
                   <div className="ml-6 flex flex-col items-end gap-2">
                     {!payout.confirmationDetails && (
-                    <button
-                      onClick={() => handleInstantPayout(payout)}
-                      disabled={
-                        payout.payoutType === "instant" ||
-                        payout.status !== "pending_payout"
-                      }
-                      className={`flex items-center px-4 py-2 rounded-xl shadow transition-colors ${
-                        payout.payoutType === "instant"
-                          ? "bg-gray-300 cursor-not-allowed text-gray-600"
-                          : payout.status !== "pending_payout"
+                      <button
+                        onClick={() => handleInstantPayout(payout)}
+                        disabled={
+                          payout.payoutType === "instant" ||
+                          payout.status !== "pending_payout"
+                        }
+                        className={`flex items-center px-4 py-2 rounded-xl shadow transition-colors ${
+                          payout.payoutType === "instant"
                             ? "bg-gray-300 cursor-not-allowed text-gray-600"
-                            : "bg-purple-600 text-white hover:bg-purple-700"
-                      }`}
-                    >
-                      <Zap className="h-4 w-4 mr-2" />
-                      {payout.payoutType === "instant"
-                        ? "Already Requested for Payout"
-                        : payout.status !== "pending_payout"
-                          ? "Get Instant Not Available Now"
-                          : "Get Instant Paid"}
-                    </button>)}
+                            : payout.status !== "pending_payout"
+                              ? "bg-gray-300 cursor-not-allowed text-gray-600"
+                              : "bg-purple-600 text-white hover:bg-purple-700"
+                        }`}
+                      >
+                        <Zap className="h-4 w-4 mr-2" />
+                        {payout.payoutType === "instant"
+                          ? "Already Requested for Payout"
+                          : payout.status !== "pending_payout"
+                            ? "Get Instant Not Available Now"
+                            : "Get Instant Paid"}
+                      </button>
+                    )}
                     {payout.confirmationDetails && (
                       <button
                         onClick={() => {
@@ -970,8 +971,8 @@ export default function Payouts() {
                   (100% of prize)
                 </li>
                 <li>
-                  • Instant payouts available for pending winnings (96% of
-                  prize, 4% convenience fee)
+                  • Instant payouts available for pending winnings (92% of
+                  prize, 8% convenience fee)
                 </li>
                 <li>
                   • Payouts sent via your preferred method (ACH, PayPal, or
@@ -1020,15 +1021,15 @@ export default function Payouts() {
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Instant Fee (4%):</span>
+                    <span className="text-gray-600">Instant Fee (8%):</span>
                     <span className="text-red-600">
-                      -{formatCurrency(selectedPayout.prizeAmount * 0.04)}
+                      -{formatCurrency(selectedPayout.prizeAmount * 0.08)}
                     </span>
                   </div>
                   <div className="border-t pt-2 flex justify-between">
                     <span className="font-semibold">You'll Receive:</span>
                     <span className="font-bold text-lg text-green-600">
-                      {formatCurrency(selectedPayout.prizeAmount * 0.96)}
+                      {formatCurrency(selectedPayout.prizeAmount * 0.92)}
                     </span>
                   </div>
                 </div>
@@ -1053,6 +1054,7 @@ export default function Payouts() {
                           }`}
                         >
                           <input
+                            title="Enter your payout method"
                             type="radio"
                             name="payoutMethod"
                             value={method.id}
@@ -1207,6 +1209,48 @@ export default function Payouts() {
           </div>
         </div>
       )}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.7 }}
+          className="bg-gradient-to-r from-blue-600 to-blue-600 rounded-lg p-8 md:p-12 text-center text-white"
+        >
+          <h2 className="text-3xl font-bold mb-4">
+            Ready to Test Your Skills?
+          </h2>
+          <p className="text-xl mb-4 text-blue-100">
+            Join thousands of players winning real money with their sports
+            knowledge
+          </p>
+
+          {/* Taglines */}
+          <div className="mb-8 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-3 text-blue-100 text-lg font-medium">
+            <span className="italic">Speed Wins Always</span>
+            <span className="italic">•</span>
+            <span className="italic">Be the Fastest</span>
+            <span className="italic">•</span>
+            <span className="italic">Board Champion = Fastest Overall</span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              to="/register"
+              className="inline-flex items-center px-8 py-4 text-lg font-medium text-blue-600 bg-white rounded-lg hover:bg-gray-100 transform hover:scale-105 transition-all duration-200"
+            >
+              Start Playing Now
+              <ChevronRight className="ml-2 h-5 w-5" />
+            </Link>
+
+            <Link
+              to="/games"
+              className="inline-flex items-center px-8 py-4 text-lg font-medium text-white bg-blue-800 bg-opacity-50 rounded-lg hover:bg-opacity-70 transition-all duration-200 hover:text-white"
+            >
+              View Active Games
+            </Link>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }

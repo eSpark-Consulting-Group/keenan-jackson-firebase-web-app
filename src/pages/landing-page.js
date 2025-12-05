@@ -91,7 +91,7 @@ export default function LandingPage() {
       icon: <Trophy className="w-8 h-8" />,
       title: "Get Paid Fast",
       description:
-        "Choose instant payout (96%) or wait 2-3 days for 100%. No hidden fees!",
+        "Choose instant payout (92%) or wait 2-3 days for 100%. No hidden fees!",
     },
   ];
 
@@ -148,7 +148,7 @@ export default function LandingPage() {
       icon: <DollarSign className="w-8 h-8" />,
       title: "NO FEES Guaranteed",
       description:
-        "We mean it - no fees on entry or prizes! You pay exactly what you see, and win exactly what's advertised. The only optional fee is 4% for instant payouts.",
+        "We mean it - no fees on entry or prizes! You pay exactly what you see, and win exactly what's advertised. The only optional fee is 8% for instant payouts.",
     },
     {
       icon: <Clock className="w-8 h-8" />,
@@ -166,7 +166,7 @@ export default function LandingPage() {
       icon: <Zap className="w-8 h-8" />,
       title: "Instant Payouts",
       description:
-        "Won big? Get 96% of your prize immediately with our express payout option, or wait 2-3 days for the full 100%. Your choice, your money!",
+        "Won big? Get 92% of your prize immediately with our express payout option, or wait 2-3 days for the full 100%. Your choice, your money!",
     },
     {
       icon: <Users className="w-8 h-8" />,
@@ -185,7 +185,7 @@ export default function LandingPage() {
     {
       question: "Are there really NO FEES?",
       answer:
-        "Yes! There are absolutely no fees to play or win. The entry amount you see is exactly what you pay, and the prize amount shown is exactly what you win. The only optional fee is 4% if you choose instant payout instead of waiting 2-3 days for the full amount.",
+        "Yes! There are absolutely no fees to play or win. The entry amount you see is exactly what you pay, and the prize amount shown is exactly what you win. The only optional fee is 8% if you choose instant payout instead of waiting 2-3 days for the full amount.",
     },
     {
       question: "How fast do I need to answer trivia questions?",
@@ -205,7 +205,7 @@ export default function LandingPage() {
     {
       question: "When and how do I get paid?",
       answer:
-        "You have two options: Choose instant payout to get 96% of your prize the same day (4% express service fee), or wait 2-3 days to receive the full 100% amount. Payments are processed via your preferred method - we support multiple payout options!",
+        "You have two options: Choose instant payout to get 92% of your prize the same day (8% express service fee), or wait 2-3 days to receive the full 100% amount. Payments are processed via your preferred method - we support multiple payout options!",
     },
   ];
 
@@ -537,10 +537,13 @@ export default function LandingPage() {
           <h2 className="text-4xl font-bold mb-4">
             Ready to Turn Your Sports Knowledge into Cash?
           </h2>
-          <p className="text-xl mb-8 opacity-90">
-            Join thousands of sports fans winning with their trivia skills - NO
-            FEES, just pure competition!
-          </p>
+          <p
+            className="text-xl mb-8 opacity-90"
+            dangerouslySetInnerHTML={{
+              __html:
+                "Join thousands of sports fans winning with their trivia skills <br> NO FEES, just pure competition!",
+            }}
+          />
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

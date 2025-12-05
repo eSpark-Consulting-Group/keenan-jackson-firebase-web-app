@@ -3,6 +3,9 @@
 
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const sharp = require("sharp");
+const fs = require("fs").promises;
+const path = require("path");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { TIERS } = require("./constants-configuration-fixed");
 const {
@@ -16,16 +19,22 @@ const {
   StandardWinPost,
   PhotoFinishPost,
   NewBoardAlertPost,
+  tierAmounts,
 } = require("./social-posts-functions");
+const { getShortCode, getFirstWord } = require("./utils");
+
 // const { query, collection, where } = require("firebase/firestore");
 
 // Initialize admin if not already done
 if (!admin.apps.length) {
-  admin.initializeApp();
+  admin.initializeApp({
+    storageBucket: process.env.STORAGE_BUCKET_NAME || "YOUR-PROJECT-ID.appspot.com"
+  });
 }
 
 const db = admin.firestore();
 require("dotenv").config();
+const bucket = admin.storage().bucket();
 
 const TELEGRAM_BOT_TOKEN = "7718801037:AAEV4HynXs0vdMTDFcVtVphzFU1PpaLooAQ";
 
@@ -130,7 +139,70 @@ exports.createGame = functions.https.onCall(async (data, context) => {
           hour12: true,
           timeZone: "UTC",
         });
+        const boards = enabledTiers.slice(0, 3).map((tier) => {
+          const tierNumber = tier.split("_")[1];
+          const amount = tierAmounts[tier];
 
+          return {
+            tier: `tier${tierNumber}`,
+            amount: amount,
+          };
+        });
+        const formatNthDate = (date) => {
+          const d = new Date(date).getDate();
+          const suffix =
+            d % 10 === 1 && d !== 11
+              ? "st"
+              : d % 10 === 2 && d !== 12
+                ? "nd"
+                : d % 10 === 3 && d !== 13
+                  ? "rd"
+                  : "th";
+
+          return `${String(d).padStart(2, "0")}${suffix}`;
+        };
+
+        const formatDayName = (date) => {
+          return new Date(date).toLocaleDateString("en-US", {
+            weekday: "long",
+          });
+        };
+
+        const formatTimeAMPM = (date) => {
+          return new Date(date).toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          });
+        };
+        const formValues = {
+          nthDate: formatNthDate(startDate), // "01st", "02nd", etc.
+          whichDay: formatDayName(startDate), // "Monday", "Tuesday", etc.
+          TimeAMPM: formatTimeAMPM(startDate), // "06:00 PM"
+          boards,
+          // Auto-fill b1, b2, b3 + prices
+          bP1: boards[0]?.amount || "",
+          b1: boards[0]?.tier || "",
+          bP2: boards[1]?.amount || "",
+          b2: boards[1]?.tier || "",
+          bP3: boards[2]?.amount || "",
+          b3: boards[2]?.tier || "",
+          time,
+          HTeam: getShortCode(teams?.home) || "TBD",
+          ATeam: getShortCode(teams?.away) || "TBD",
+        };
+        const selectedTemplate = "newBoardLive13";
+        const payload = {
+          templateID: selectedTemplate,
+          data: formValues,
+          savePath: `savedimages/${gameRef.id}/${selectedTemplate}.jpg`,
+        };
+        const imageResult = await generateImage(payload);
+
+        if (!imageResult || imageResult.response !== "success") {
+          console.error("Image generation failed:", imageResult);
+          return;
+        }
         // Post New Board Alert
         await NewBoardAlertPost({
           team1: teams?.home || "",
@@ -138,7 +210,9 @@ exports.createGame = functions.https.onCall(async (data, context) => {
           day,
           time,
           enabledTiers,
-          mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+          mediaToUpload:
+            imageResult?.path ||
+            "https://squaretrivia.com/apple-touch-icon.png",
           captionLink: "https://squaretrivia.com",
         });
 
@@ -312,7 +386,7 @@ exports.claimSquare = functions.https.onCall(async (data, context) => {
       currentQuarter,
       answerTime: answerTime / 1000, // Convert to seconds
       // claimedAt: admin.firestore.FieldValue.serverTimestamp(),
-      claimedAt: new Date(), // ✅ becomes a Firestore Timestamp
+      claimedAt: new Date(), // becomes a Firestore Timestamp
     };
 
     squareData.claims = [...(squareData.claims || []), newClaim];
@@ -475,7 +549,7 @@ exports.determineWinners = functions.pubsub
             console.log("➡️ Checking position", { gameId, position });
             const square = board.squares?.[position];
             console.log("Square data", { gameId, position, square });
-            
+
             if (!square?.claims?.length) continue;
 
             // 🧮 Determine winner (solo or fastest)
@@ -602,24 +676,27 @@ exports.determineWinners = functions.pubsub
                 const updatedClaims = square.claims.filter(
                   (c) => c.userId !== loser.userId
                 );
-                await db.collection("boards").doc(boardId).update({
-                  [`squares.${position}.claims`]: updatedClaims,
-                  claimedSquares: admin.firestore.FieldValue.increment(-1),
-                });
+                await db
+                  .collection("boards")
+                  .doc(boardId)
+                  .update({
+                    [`squares.${position}.claims`]: updatedClaims,
+                    claimedSquares: admin.firestore.FieldValue.increment(-1),
+                  });
               });
             }
           }
         }
 
         if (actions.length > 0) {
-           console.log("✅ Winner/loser actions found", {
+          console.log("✅ Winner/loser actions found", {
             gameId,
             quarterToProcess,
             actionsCount: actions.length,
           });
 
           await Promise.all(actions.map((fn) => fn()));
-console.log("🔖 Marking quarter as processed", {
+          console.log("🔖 Marking quarter as processed", {
             gameId,
             quarterToProcess,
             winningPositions,
@@ -800,7 +877,7 @@ async function cleanupOldClaims(boardId, board, currentQuarter, game) {
       status: "pending_payout",
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       isTelegramSend: false,
-      isFastest: true, // ✅ mark fastest winners
+      isFastest: true, // mark fastest winners
     };
 
     await db.collection("winners").add(winnerDoc);
@@ -908,7 +985,8 @@ async function processWinner(winnerData) {
   const userSnap = await db.collection("users").doc(userId).get();
   if (!userSnap.exists) throw new Error(`User ${userId} not found`);
   const userData = userSnap.data();
-  const displayName = userData.displayName || userData.email || "Unknown Player";
+  const displayName =
+    userData.displayName || userData.email || "Unknown Player";
 
   let displayLooserName = "";
   if (!isSoloWin && looserUserId) {
@@ -960,23 +1038,56 @@ async function processWinner(winnerData) {
   });
 
   // ✅ Update user’s totals
-  await db.collection("users").doc(userId).update({
-    totalWins: admin.firestore.FieldValue.increment(1),
-    totalWinnings: admin.firestore.FieldValue.increment(prizeAmount),
-  });
+  await db
+    .collection("users")
+    .doc(userId)
+    .update({
+      totalWins: admin.firestore.FieldValue.increment(1),
+      totalWinnings: admin.firestore.FieldValue.increment(prizeAmount),
+    });
 
   // ✅ Update game quarter data
-  await db.collection("games").doc(gameId).update({
-    [`quarterScores.${quarter}.winnerUserId`]: userId,
-  });
+  await db
+    .collection("games")
+    .doc(gameId)
+    .update({
+      [`quarterScores.${quarter}.winnerUserId`]: userId,
+    });
 
   // ✅ Post to Telegram / Social
-  const mediaToUpload = "https://squaretrivia.com/apple-touch-icon.png";
+
   const captionLink = "https://squaretrivia.com";
   const tierValue = Number(tierId.split("_")[1]);
   const isBigWin = tierValue >= 100;
 
   if (isBigWin) {
+    const formValues = {
+      wPrice: prizeAmount,
+      winner: getFirstWord(displayName),
+      HTeam: getShortCode(team1) || "TBD",
+      ATeam: getShortCode(team2) || "TBD",
+      sq: position,
+      winTime: answerTime,
+    };
+    const selectedTemplate = "bigWin";
+    const payload = {
+      templateID: selectedTemplate,
+      data: formValues,
+      savePath: `savedimages/${gameId}/${boardId}/${selectedTemplate}.jpg`,
+    };
+let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
+
+try {
+  const imageResult = await generateImage(payload);
+
+  if (imageResult && imageResult.response === "success") {
+    imageUrl = imageResult.path; // use generated image if successful
+  } else {
+    console.warn("Image generation failed:", imageResult);
+  }
+} catch (err) {
+  console.error("Image generation error:", err);
+}
     BigWinPost({
       winner: displayName,
       prize: prizeAmount,
@@ -984,10 +1095,37 @@ async function processWinner(winnerData) {
       team1,
       team2,
       square: position,
-      mediaToUpload,
+      mediaToUpload: imageUrl,
       captionLink,
     });
   } else {
+    const formValues = {
+      wPrice: prizeAmount,
+      winner: getFirstWord(displayName),
+      HTeam: getShortCode(team1) || "TBD",
+      ATeam: getShortCode(team2) || "TBD",
+      sq: position,
+      time: answerTime,
+    };
+    const selectedTemplate = "winner";
+    const payload = {
+      templateID: selectedTemplate,
+      data: formValues,
+      savePath: `savedimages/${gameId}/${boardId}/${selectedTemplate}.jpg`,
+    };
+let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
+
+try {
+  const imageResult = await generateImage(payload);
+
+  if (imageResult && imageResult.response === "success") {
+    imageUrl = imageResult.path; // use generated image if successful
+  } else {
+    console.warn("Image generation failed:", imageResult);
+  }
+} catch (err) {
+  console.error("Image generation error:", err);
+}
     StandardWinPost({
       winner: displayName,
       prize: prizeAmount,
@@ -995,19 +1133,47 @@ async function processWinner(winnerData) {
       team1,
       team2,
       square: position,
-      mediaToUpload,
+      mediaToUpload: imageUrl,
       captionLink,
     });
   }
 
   if (isPhotoFinish) {
+    const formValues = {
+      wPrice: prizeAmount,
+      winner: getFirstWord(displayName),
+      HTeam: getShortCode(team1) || "TBD",
+      ATeam: getShortCode(team2) || "TBD",
+      lTime: opponentTime,
+      wTime: answerTime,
+      diff: Math.round((opponentTime - answerTime) * 1000) / 1000,
+    };
+    const selectedTemplate = "photoFinish";
+    const payload = {
+      templateID: selectedTemplate,
+      data: formValues,
+      savePath: `savedimages/${gameId}/${boardId}/${selectedTemplate}.jpg`,
+    };
+let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
+
+try {
+  const imageResult = await generateImage(payload);
+
+  if (imageResult && imageResult.response === "success") {
+    imageUrl = imageResult.path; // use generated image if successful
+  } else {
+    console.warn("Image generation failed:", imageResult);
+  }
+} catch (err) {
+  console.error("Image generation error:", err);
+}
     PhotoFinishPost({
-      winner: displayName,
-      loser: displayLooserName,
+      winner: getFirstWord(displayName),
+      loser: getFirstWord(displayLooserName),
       diff: Math.round((opponentTime - answerTime) * 1000) / 1000,
       winTime: answerTime,
       loseTime: opponentTime,
-      mediaToUpload,
+      mediaToUpload: imageUrl,
       captionLink,
     });
   }
@@ -1317,7 +1483,7 @@ exports.processPayout = functions.https.onCall(async (data, context) => {
     const winner = winnerDoc.data();
     const payoutAmount =
       method === "instant"
-        ? winner.prizeAmount * 0.96 // 4% fee
+        ? winner.prizeAmount * 0.92 // 8% fee
         : winner.prizeAmount; // 100% for batch
 
     // Process via Stripe, PayPal, Venmo, etc.
@@ -1524,6 +1690,95 @@ async function processPaymentProvider(userId, amount, method) {
 async function sendTelegramMessage(chatId, message) {
   // Implementation needed - Telegram Bot API
 }
+exports.convertSvgToJpg = functions.https.onCall(async (payload, context) => {
+  try {
+    const { templateID, data, saveAt } = payload;
+
+    const templatePath = path.join(__dirname, "templates", `${templateID}.svg`);
+    let svgContent = await fs.readFile(templatePath, "utf-8");
+
+    svgContent = svgContent.replace(/{([^}]+)}/g, (m, key) => data[key] ?? "");
+
+    const jpgBuffer = await sharp(Buffer.from(svgContent))
+      .jpeg({ quality: 90 })
+      .toBuffer();
+
+    const file = bucket.file(saveAt);
+    await file.save(jpgBuffer, {
+      metadata: { contentType: "image/jpeg" },
+      public: true,
+    });
+
+    const url = `https://storage.googleapis.com/${bucket.name}/${saveAt}`;
+    return { response: "success", path: url };
+  } catch (err) {
+    console.error("convertSvgToJpg error:", err);
+    return { response: "failed", error: err.message };
+  }
+});
+
+// -------------------
+// Helper: Generate Image Programmatically
+// -------------------
+async function generateImage({ templateID, data, savePath }) {
+  try {
+    const templatePath = path.join(__dirname, "templates", `${templateID}.svg`);
+    let svgContent = await fs.readFile(templatePath, "utf-8");
+
+    svgContent = svgContent.replace(/{([^}]+)}/g, (match, key) => data[key] ?? "");
+
+    const jpgBuffer = await sharp(Buffer.from(svgContent))
+      .jpeg({ quality: 90 })
+      .toBuffer();
+
+    const file = bucket.file(savePath);
+    await file.save(jpgBuffer, {
+      metadata: { contentType: "image/jpeg" },
+      public: true,
+    });
+
+    const url = `https://storage.googleapis.com/${bucket.name}/${savePath}`;
+    return { response: "success", path: url };
+  } catch (err) {
+    console.error("generateImage error:", err);
+    return { response: "failed", error: err.message };
+  }
+}
+
+// -------------------
+// Optional: Push All Templates to Bucket
+// -------------------
+async function pushAllTemplatesToBucket() {
+  try {
+    const templatesDir = path.join(__dirname, "templates");
+    const files = await fs.readdir(templatesDir);
+
+    for (const fileName of files) {
+      if (!fileName.endsWith(".svg")) continue;
+
+      const templateID = fileName.replace(".svg", "");
+      const templatePath = path.join(templatesDir, fileName);
+      const svgContent = await fs.readFile(templatePath, "utf-8");
+
+      const jpgBuffer = await sharp(Buffer.from(svgContent))
+        .jpeg({ quality: 90 })
+        .toBuffer();
+
+      const savePath = `templates/${templateID}.jpg`;
+      const file = bucket.file(savePath);
+
+      await file.save(jpgBuffer, {
+        metadata: { contentType: "image/jpeg" },
+        public: true,
+      });
+
+      console.log(`Uploaded ${savePath} to bucket`);
+    }
+    console.log("All templates pushed to bucket successfully!");
+  } catch (err) {
+    console.error("pushAllTemplatesToBucket error:", err);
+  }
+}
 
 module.exports = {
   createGame: exports.createGame,
@@ -1535,4 +1790,7 @@ module.exports = {
   handleStripeWebhook: exports.handleStripeWebhook,
   processPayout: exports.processPayout,
   validateAnswer: exports.validateAnswer,
+  convertSvgToJpg: exports.convertSvgToJpg,
+  generateImage,
+  pushAllTemplatesToBucket,
 };

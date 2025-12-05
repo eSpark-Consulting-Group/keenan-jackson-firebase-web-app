@@ -103,7 +103,7 @@ const GAME_CONFIG = {
   QUARTERS_PER_GAME: 4,
 
   // Instant payout configuration
-  INSTANT_PAYOUT_FEE: 0.04, // 4% fee for instant payouts
+  INSTANT_PAYOUT_FEE: 0.08, // 8% fee for instant payouts
 
   // Batch payout configuration
   BATCH_PAYOUT_DAYS: ["tuesday", "friday"], // Batch payout days

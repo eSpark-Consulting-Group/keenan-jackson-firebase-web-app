@@ -120,6 +120,7 @@ export default function PaymentMethodSetup({
                   }`}
                 >
                   <input
+                  title="Select payment method"
                     type="radio"
                     name="paymentType"
                     value={type.id}

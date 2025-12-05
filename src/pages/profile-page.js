@@ -29,7 +29,7 @@ import {
 import { useAuth } from "../contexts/authcontext";
 import { collections, db, formatCurrency } from "../firebase/config";
 import toast from "react-hot-toast";
-import PayoutModal from "../components/Auth/payout-modal";
+import PayoutModal from "../components/auth/payout-modal";
 import {
   collection,
   doc,
@@ -41,7 +41,7 @@ import {
   where,
 } from "firebase/firestore";
 import PayoutMethods from "../components/Payouts/payment-methods";
-import { nbaTeams, nflTeams } from "../constant";
+import { nbaTeams, nflTeams, cfbTeams } from "../constant";
 import axios from "axios";
 
 export default function Profile() {
@@ -64,7 +64,7 @@ export default function Profile() {
   const [defaultPayoutMethod, setDefaultPayoutMethod] = useState(null);
   const [selectedPayoutMethod, setSelectedPayoutMethod] = useState(null);
   const [defaultMethod, setDefaultMethod] = useState(false);
-  const [cfbTeams, setCfbTeams] = useState([]);
+  // const [cfbTeams, setCfbTeams] = useState([]);
   const [cabTeams, setCabTeams] = useState([]);
   const [formData, setFormData] = useState({
     displayName: userData?.displayName || "",
@@ -188,7 +188,7 @@ export default function Profile() {
       }
     };
 
-    fetchTop25("football", "college-football", setCfbTeams);
+    // fetchTop25("football", "college-football", setCfbTeams);
     fetchTop25("basketball", "mens-college-basketball", setCabTeams);
   }, []);
 
@@ -509,6 +509,7 @@ export default function Profile() {
                   <div className="flex items-center">
                     <Mail className="h-5 w-5 text-gray-400 mr-2" />
                     <input
+                      title="Enter your email"
                       type="email"
                       value={user?.email || ""}
                       disabled
@@ -528,6 +529,7 @@ export default function Profile() {
                   <div className="flex items-center">
                     <User className="h-5 w-5 text-gray-400 mr-2" />
                     <input
+                      title="Enter your display name"
                       type="text"
                       name="displayName"
                       value={formData.displayName}
@@ -554,6 +556,7 @@ export default function Profile() {
                   <div className="flex items-center">
                     <Phone className="h-5 w-5 text-gray-400 mr-2" />
                     <input
+                      title="Enter your phone number"
                       type="tel"
                       name="phone"
                       value={formData.phone}
@@ -586,6 +589,7 @@ export default function Profile() {
                     <AtSign className="h-5 w-5 text-gray-400 mr-2" />
                     {userData?.hasTelegram ? (
                       <input
+                        title="your telegram username"
                         type="text"
                         value={userData.telegramUsername}
                         disabled
@@ -594,6 +598,7 @@ export default function Profile() {
                     ) : (
                       <>
                         <input
+                          title="Enter your telegram username"
                           type="text"
                           name="telegramUsername"
                           value={formData.telegramUsername}
@@ -628,16 +633,20 @@ export default function Profile() {
                       Connect Telegram
                     </a>
                   )}
-                  <div className="flex gap-x-3 items-center justify-between  mt-2">
+                  <div className="flex gap-x-3 items-center justify-between mt-2">
                     <label className="text-sm font-medium text-gray-700 mt-2 flex items-center justify-between">
                       Payouts Methods
                     </label>
                     <div
-                      onClick={() => setShowPayoutMethods(true)}
-                      className="flex items-center text-xs text-blue-600 mt-1 cursor-pointer"
+                      onClick={() => editing && setShowPayoutMethods(true)} // only works if editing is true
+                      className={`flex items-center text-sm mt-1 cursor-pointer ${
+                        editing
+                          ? "text-blue-600 hover:underline"
+                          : "text-gray-400 cursor-not-allowed"
+                      }`}
                     >
-                      <Plus />{" "}
-                      <span className={"text-sm"}> Add New Method</span>
+                      <Plus />
+                      <span className="ml-1">Add New Method</span>
                     </div>
                   </div>
                   {userData?.paymentMethods?.length > 0 &&
@@ -757,13 +766,11 @@ export default function Profile() {
                     value={teams?.CFB}
                   >
                     <option value="">-- Choose --</option>
-                    {Array.isArray(cfbTeams) &&
-                      cfbTeams?.length > 0 &&
-                      cfbTeams?.map((item, index) => (
-                        <option value={item?.name} key={index}>
-                          {item?.name}
-                        </option>
-                      ))}
+                    {cfbTeams?.map((item, index) => (
+                      <option value={item} key={index}>
+                        {item}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -809,6 +816,7 @@ export default function Profile() {
                     </div>
                   </div>
                   <input
+                    title="Enter your email"
                     type="checkbox"
                     name="notifications.email"
                     checked={formData.notifications.email}
@@ -830,6 +838,7 @@ export default function Profile() {
                       </div>
                     </div>
                     <input
+                      title="Enter your telegram preference"
                       type="checkbox"
                       name="notifications.telegram"
                       checked={formData.notifications.telegram}
@@ -848,11 +857,12 @@ export default function Profile() {
                       <p className="text-sm text-gray-500">Coming soon</p>
                     </div>
                   </div>
-                  <input
+                  {/* <input
+                    title="Enter your sms preference"
                     type="checkbox"
                     disabled
                     className="h-5 w-5 text-gray-300 rounded"
-                  />
+                  /> */}
                 </label>
               </div>
             </div>
@@ -888,7 +898,13 @@ export default function Profile() {
 
               <p className="text-sm text-gray-600">
                 Share your code with friends and you'll both receive benefits
-                when they sign up!
+                when they sign up!{" "}
+                <a
+                  href={`mailto:?subject=Join%20Square%20Trivia!&body=Hey!%0A%0AUse%20my%20referral%20code%20(${userData?.referralCode})%20to%20sign%20up%20on%20Square%20Trivia.%0A%0AClick%20here%20to%20register:%20https://squaretrivia.com/register?ref=${userData?.referralCode}%0A%0ALet's%20play%20and%20earn%20together!`}
+                  className="text-blue-600 underline mt-3 inline-block"
+                >
+                  Invite via Email
+                </a>
               </p>
             </div>
           </motion.div>
@@ -928,7 +944,9 @@ export default function Profile() {
                   </div>
 
                   <div>
-                    <p className="text-sm text-gray-600">Board Championships:</p>
+                    <p className="text-sm text-gray-600">
+                      Board Championships:
+                    </p>
                     <p className="text-2xl font-bold text-green-600">
                       {stats?.totalWins || 0}
                     </p>

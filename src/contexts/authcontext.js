@@ -119,6 +119,7 @@ export function AuthProvider({ children }) {
         totalWins: 0,
         totalPrizeAmount: 0,
         averageAnswerTime: 0,
+      fastestAnswerTime: 0,
         dailyTriviaAttempts: additionalData.telegramUsername ? 10 : 5,
         lastTriviaReset: serverTimestamp(),
         hasTelegram: !!additionalData.telegramUsername,
@@ -351,6 +352,7 @@ export function AuthProvider({ children }) {
         totalWins: winsSnapshot.size,
         totalPrizeAmount,
         averageAnswerTime: userData?.averageAnswerTime || 0,
+        fastestAnswerTime: userData?.fastestAnswerTime || 0,
       };
     } catch (error) {
       console.error("Get user stats error:", error);

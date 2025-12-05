@@ -22,19 +22,22 @@ Square Trivia is a skill-based sports competition platform where players earn sq
 ## ✨ Features
 
 ### Core Gameplay
+
 - 🎮 **Skill-Based Competition** - Winners determined by trivia answer speed
 - 🏈 **Multiple Sports** - NFL, NBA, NCAA support
 - 💰 **Guaranteed Prizes** - Fixed prize amounts, no calculations
 - 🚫 **NO FEES** - No fees on entry or winning
-- ⚡ **Instant Payouts** - Optional same-day payouts (96% instant or 100% in 2-3 days)
+- ⚡ **Instant Payouts** - Optional same-day payouts (92% instant or 100% in 2-3 days)
 
 ### Game Mechanics
+
 - 📊 **50-Square Boards** - 10×5 grid, 2 players max per square
 - ❓ **Dynamic Trivia** - Questions scale with tier difficulty
 - 🏆 **Consolation System** - Free chances for speed competition losers
 - 📱 **Telegram Integration** - Instant notifications and community
 
 ### Technical Features
+
 - 🔐 **Secure Authentication** - Firebase Auth with email/password
 - 💳 **Stripe Integration** - PCI-compliant payment processing
 - 📊 **Real-time Updates** - Live score tracking via API-Sports
@@ -44,6 +47,7 @@ Square Trivia is a skill-based sports competition platform where players earn sq
 ## 🛠️ Installation
 
 ### Prerequisites
+
 - Node.js 16+ and npm/yarn
 - Firebase CLI (`npm install -g firebase-tools`)
 - Git
@@ -51,22 +55,27 @@ Square Trivia is a skill-based sports competition platform where players earn sq
 ### Setup Steps
 
 1. **Clone the repository**
+
    ```bash
    git clone [repository-url]
    cd square-trivia-frontend
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Configure environment variables**
+
    ```bash
    cp .env.example .env
    ```
+
    Then edit `.env` with your credentials:
-   ```
+
+   ``` env
    REACT_APP_FIREBASE_API_KEY=your-api-key
    REACT_APP_FIREBASE_AUTH_DOMAIN=your-auth-domain
    REACT_APP_FIREBASE_PROJECT_ID=your-project-id
@@ -78,14 +87,16 @@ Square Trivia is a skill-based sports competition platform where players earn sq
    ```
 
 4. **Run development server**
+
    ```bash
    npm start
    ```
+
    Open [http://localhost:3000](http://localhost:3000) to view the app.
 
 ## 📁 Project Structure
 
-```
+```txt
 square-trivia-frontend/
 ├── public/              # Static files
 ├── src/
@@ -113,6 +124,7 @@ square-trivia-frontend/
 ## 🔧 Configuration
 
 ### Firebase Setup
+
 1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
 2. Enable Authentication (Email/Password)
 3. Create Firestore database
@@ -120,12 +132,14 @@ square-trivia-frontend/
 5. Configure security rules
 
 ### Stripe Setup
+
 1. Create Stripe account at [stripe.com](https://stripe.com)
 2. Get publishable key from Dashboard
 3. Set up webhook endpoints
 4. Configure payout settings
 
 ### API-Sports Setup
+
 1. Get API key from [api-sports.io](https://api-sports.io)
 2. Enable American Football API
 3. Configure rate limits
@@ -157,7 +171,7 @@ This project is proprietary software. All rights reserved.
 
 ## 📞 Support
 
-- Email: support@squaretrivia.com
+- Email: [support@squaretrivia.com](mailto:support@squaretrivia.com)
 - Telegram: @SquareTriviaSupport
 - Documentation: [docs.squaretrivia.com](https://docs.squaretrivia.com)
 

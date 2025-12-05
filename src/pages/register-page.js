@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/authcontext";
 import toast from "react-hot-toast";
-import RestrictedAlert from "../components/RestrictedAlert";
+import RestrictedAlert from "../components/restricted-alert";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -117,8 +117,8 @@ export default function Register() {
     // 🚫 Check restriction before proceeding
     if (isRestricted) {
       toast.error("You are not eligible to register or enter paid contests.");
-      setLoading(false); 
-      navigate("/restricted"); 
+      setLoading(false);
+      navigate("/restricted");
       return;
     }
 
@@ -173,7 +173,7 @@ export default function Register() {
         {/* Header */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center justify-center mb-4">
-            <img src="../logo.svg" alt="Square Trivia" width="150px" />
+            <img src="/logo.svg" alt="Square Trivia" width="150px" />
           </Link>
           <h2 className="text-3xl font-bold text-gray-900">
             Create your account
@@ -232,6 +232,7 @@ export default function Register() {
                     required
                     value={formData.email}
                     onChange={handleChange}
+                    title="Enter your email address"
                     className={`
                       appearance-none block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 
                       focus:outline-none focus:ring-blue-500 focus:border-blue-500
@@ -264,6 +265,7 @@ export default function Register() {
                     autoComplete="new-password"
                     required
                     value={formData.password}
+                    title="Create a strong password"
                     onChange={handleChange}
                     className={`
                       appearance-none block w-full pl-10 pr-10 py-2 border rounded-md shadow-sm placeholder-gray-400 
@@ -309,6 +311,7 @@ export default function Register() {
                     required
                     value={formData.confirmPassword}
                     onChange={handleChange}
+                    title="Re-enter your password"
                     className={`
                       appearance-none block w-full pl-10 pr-10 py-2 border rounded-md shadow-sm placeholder-gray-400 
                       focus:outline-none focus:ring-blue-500 focus:border-blue-500
@@ -356,6 +359,7 @@ export default function Register() {
                     type="text"
                     value={formData.telegramUsername}
                     onChange={handleChange}
+                    title="Enter your Telegram username (without @)"
                     className={`
                       appearance-none block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 
                       focus:outline-none focus:ring-blue-500 focus:border-blue-500
@@ -389,6 +393,7 @@ export default function Register() {
                     type="tel"
                     value={formData.phone}
                     onChange={handleChange}
+                    title="Enter your phone number with country code"
                     className={`
                       appearance-none block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 
                       focus:outline-none focus:ring-blue-500 focus:border-blue-500
@@ -420,6 +425,7 @@ export default function Register() {
                     type="text"
                     value={formData.referralCode}
                     onChange={handleChange}
+                    title="Enter referral code if you have one"
                     className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="ABC123"
                   />
@@ -430,6 +436,7 @@ export default function Register() {
               <div>
                 <div className="flex items-start">
                   <input
+                    title="accept terms and conditions"
                     id="acceptTerms"
                     name="acceptTerms"
                     type="checkbox"
@@ -440,6 +447,7 @@ export default function Register() {
                   <label
                     htmlFor="acceptTerms"
                     className="ml-2 block text-sm text-gray-900"
+                    title="You must agree to the Terms of Service and Privacy Policy"
                   >
                     I agree to the{" "}
                     <Link

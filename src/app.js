@@ -19,8 +19,8 @@ import { GameProvider } from "./contexts/gamecontext";
 
 // Layout Components
 import Layout from "./components/layout/layout";
-import ProtectedRoute from "./components/Auth/protected-route";
-import AdminRoute from "./components/Auth/admin-route";
+import ProtectedRoute from "./components/auth/protected-route";
+import AdminRoute from "./components/auth/admin-route";
 
 // Styles
 import "./styles/index.css";
@@ -59,10 +59,27 @@ import TeamsFanbase from "./pages/admin/admin-teams-fanbase";
 // Utility Functions
 import checkEligibility from "./utils/check-eligibility";
 
+// ---- PWA Registration ----
+const registerServiceWorker = () => {
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("/service-worker.js")
+        .then((reg) => console.log("✅ Service Worker registered:", reg))
+        .catch((err) => console.error("❌ SW registration failed:", err));
+    });
+  }
+};
+
 function App() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
+
+   useEffect(() => {
+    registerServiceWorker();
+  }, []);
+  
   useEffect(() => {
     const runEligibilityCheck = async () => {
       const data = await checkEligibility();
@@ -103,35 +120,35 @@ function App() {
 
   const routesConfig = [
     { path: "/", element: <LandingPage />, layout: true },
-    { path: "/home", element: <LandingPage />, layout: true },
-    { path: "/login", element: <Login />, layout: true },
-    { path: "/register", element: <Register />, layout: true },
-    { path: "/how-to-play", element: <HowToPlay />, layout: true },
-    { path: "/legal/:page", element: <Legal />, layout: true },
-    { path: "/free-entry", element: <FreeEntry />, layout: true },
     { path: "/dashboard", element: <Dashboard />, layout: true, protected: true },
-    { path: "/games", element: <Games />, layout: true, protected: true },
+    { path: "/free-entry", element: <FreeEntry />, layout: true },
     { path: "/game/:boardId", element: <GameBoard />, layout: true, protected: true },
     { path: "/game/:boardId/results", element: <GameResults />, layout: true },
-    { path: "/profile", element: <Profile />, layout: true, protected: true },
-    { path: "/tiers", element: <Tier />, layout: true, protected: true },
-    { path: "/payouts", element: <Payouts />, layout: true, protected: true },
-    { path: "/payment-success", element: <PaymentSuccess />, layout: true, protected: true },
-    { path: "/payment-cancel", element: <PaymentCancel />, layout: true, protected: true },
+    { path: "/games", element: <Games />, layout: true, protected: true },
+    { path: "/home", element: <LandingPage />, layout: true },
+    { path: "/how-to-play", element: <HowToPlay />, layout: true },
     { path: "/leaderboard", element: <Leaderboard />, layout: true, admin: true },
+    { path: "/legal/:page", element: <Legal />, layout: true },
+    { path: "/login", element: <Login />, layout: true },
+    { path: "/payment-cancel", element: <PaymentCancel />, layout: true, protected: true },
+    { path: "/payment-success", element: <PaymentSuccess />, layout: true, protected: true },
+    { path: "/payouts", element: <Payouts />, layout: true, protected: true },
+    { path: "/profile", element: <Profile />, layout: true, protected: true },
+    { path: "/register", element: <Register />, layout: true },
     { path: "/restricted", element: <BlockedPage />, layout: false },
+    { path: "/tiers", element: <Tier />, layout: true, protected: true },
 
     // Admin routes
     { path: "/admin", element: <AdminDashboard />, layout: true, admin: true },
     { path: "/admin/games", element: <AdminGames />, layout: true, admin: true },
-    { path: "/admin/users", element: <AdminUsers />, layout: true, admin: true },
-    { path: "/admin/users/:userId", element: <AdminUsersSingle />, layout: true, admin: true },
     { path: "/admin/payouts", element: <AdminPayouts />, layout: true, admin: true },
     { path: "/admin/payouts/:payoutId", element: <AdminPayoutsSingle />, layout: true, admin: true },
-    { path: "/admin/trivia", element: <AdminTrivia />, layout: true, admin: true },
+    { path: "/admin/referral-reports", element: <ReferralReports />, layout: true, admin: true },
     { path: "/admin/reports", element: <AdminReports />, layout: true, admin: true },
     { path: "/admin/teams-reports", element: <TeamsFanbase />, layout: true, admin: true },
-    { path: "/admin/referral-reports", element: <ReferralReports />, layout: true, admin: true },
+    { path: "/admin/trivia", element: <AdminTrivia />, layout: true, admin: true },
+    { path: "/admin/users", element: <AdminUsers />, layout: true, admin: true },
+    { path: "/admin/users/:userId", element: <AdminUsersSingle />, layout: true, admin: true },
   ];
 
   return (

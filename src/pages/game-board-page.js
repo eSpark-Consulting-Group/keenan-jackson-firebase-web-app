@@ -29,9 +29,9 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import TriviaModal from "../components/game/triviamodal";
-import SquareGrid from "../components/game/squaregrid";
-import GameScore from "../components/game/gamescore";
+import TriviaModal from "../components/game/trivia-modal";
+import SquareGrid from "../components/game/square-grid";
+import GameScore from "../components/game/game-score";
 import toast from "react-hot-toast";
 
 export default function GameBoard() {

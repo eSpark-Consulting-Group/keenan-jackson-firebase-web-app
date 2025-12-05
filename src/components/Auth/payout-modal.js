@@ -144,6 +144,7 @@ const PayoutModal = ({ isOpen, onClose }) => {
                       {field?.label}
                     </label>
                     <input
+                      title="Enter your payout details"
                       type={field?.type}
                       name={field?.name}
                       value={formData[field.name] || ""}

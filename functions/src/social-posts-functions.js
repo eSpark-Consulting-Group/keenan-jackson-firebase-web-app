@@ -7,6 +7,14 @@ const {
   tgPublish,
 } = require("./social-posts");
 
+const tierAmounts = {
+    tier_25: 200,
+    tier_50: 450,
+    tier_100: 900,
+    tier_250: 2250,
+    tier_500: 4500,
+    tier_1000: 9000,
+  };
 const { TwitterApi } = require("twitter-api-v2");
 
 require("dotenv").config();
@@ -60,40 +68,34 @@ async function postTweet(message) {
   }
 }
 
-async function postToAllPlatforms({ media, caption, link, tweet }) {
+async function postToAllPlatforms({ media, caption, link, tweet, facebook }) {
   const ext = media ? getFileExt(media) : null;
 
   try {
+    const fbCaption = facebook || caption; // use facebook caption if provided, else default to caption
+
     if (ext && ["jpg", "jpeg", "png"].includes(ext)) {
       // 📸 Image post
-      await fbPublish({ media, caption, type: "IMAGE" });
+      await fbPublish({ media, caption: fbCaption, type: "IMAGE" });
       await tgPublish({ media, caption, type: "IMAGE" });
-      await igPublish({
-        media,
-        caption,
-        type: "IMAGE",
-      });
-      await postTweet(tweet ? tweet : caption);
+      await igPublish({ media, caption, type: "IMAGE" });
+      await postTweet(tweet || caption);
     } else if (ext === "mp4") {
       // 🎥 Video post
-      await fbPublish({ media, caption, type: "VIDEO" });
+      await fbPublish({ media, caption: fbCaption, type: "VIDEO" });
       await tgPublish({ media, caption, type: "VIDEO" });
-      await igPublish({
-        media,
-        caption,
-        type: "VIDEO",
-      });
-      await postTweet(tweet ? tweet : caption);
+      await igPublish({ media, caption, type: "VIDEO" });
+      await postTweet(tweet || caption);
     } else if (link) {
       // 🔗 Link post
-      await fbPublish({ link, caption, type: "LINK" });
+      await fbPublish({ link, caption: fbCaption, type: "LINK" });
       await tgPublish({ caption: `${caption}\n\n${link}`, type: "LINK" });
-      await postTweet(tweet ? tweet : caption);
+      await postTweet(tweet || caption);
     } else if (!media && !link && caption) {
       // 📝 Text-only post
-      await fbPublish({ caption, type: "TEXT" });
+      await fbPublish({ caption: fbCaption, type: "TEXT" });
       await tgPublish({ caption, type: "TEXT" });
-      await postTweet(tweet ? tweet : caption);
+      await postTweet(tweet || caption);
     } else {
       throw new Error(
         `❌ Unsupported file type: .${ext || "unknown"}. Use JPG, PNG, or MP4.`
@@ -106,13 +108,11 @@ async function postToAllPlatforms({ media, caption, link, tweet }) {
       link,
     });
   } catch (error) {
-    logError(
-      "❌ Error posting to all platforms",
-      error.response?.data || error
-    );
+    logError("❌ Error posting to all platforms", error.response?.data || error);
     throw error;
   }
 }
+
 
 // Builds post text with CTA + hashTags
 function buildTemplate(body, cta) {
@@ -283,6 +283,8 @@ async function PhotoFinishPost({
   loseTime,
   mediaToUpload,
   captionLink,
+  round,
+  amountWon,
 }) {
   const cta = getRandomCTA({ link: captionLink });
   const body = `
@@ -296,10 +298,18 @@ Speed Wins. Always. 📸
   `;
 
   const tweet = `
-🏁 INSANE FINISH! ${winner} beats ${loser} by ${diff}s! 
-Winner: ${(winTime / 1000).toFixed(2)}  | Runner-up: ${(loseTime / 1000).toFixed(2)}s
-Speed Wins Always. 📸
+⚡ @${winner}: $${amountWon} in ${(winTime / 1000).toFixed(1)} seconds!
+
+Q${round} Contest Winner
+Square "${round}"
+
+Your knowledge. Your speed. Your money.
+
+SPEED WINS. ALWAYS.
+
+link: ${captionLink}
 `;
+
   return postToAllPlatforms({
     media: mediaToUpload,
     caption: buildTemplate(body, cta),
@@ -379,14 +389,6 @@ async function NewBoardAlertPost({
 }) {
   const cta = getRandomCTA({ link: captionLink });
 
-  const tierAmounts = {
-    tier_25: 200,
-    tier_50: 450,
-    tier_100: 900,
-    tier_250: 2250,
-    tier_500: 4500,
-    tier_1000: 9000,
-  };
 
   // 🧠 Generate all tier messages from enabledTiers
   const tierMessages = enabledTiers
@@ -840,7 +842,7 @@ Think you can beat it? Speed pays! ⚡
 async function NoFeesPost({ mediaToUpload, captionLink }) {
   const cta = getRandomCTA({ link: captionLink });
   const options = [
-    { icon: "⚡", title: "Express service", detail: "Get 96% today" },
+    { icon: "⚡", title: "Express service", detail: "Get 92% today" },
     { icon: "⏰", title: "Standard service", detail: "Get 100% in 2–3 days" },
   ]
     .map((o) => `${o.icon} ${o.title}: ${o.detail}`)
@@ -855,7 +857,7 @@ Your choice, your money!
 
   const tweet = `
 💸 Win $200? Get $200 — NO FEES on Square Trivia!  
-⚡ Express: Get 96% today  
+⚡ Express: Get 92% today  
 ⏰ Standard: Get 100% in 2–3 days  
 Your choice. Your money!
 `;
@@ -1114,4 +1116,5 @@ module.exports = {
   WinnerPostTwitter,
   WinnerPostInstagram,
   WinnerPostTelegram,
+  tierAmounts,
 };

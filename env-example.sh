@@ -53,3 +53,7 @@ X_CLIENT_SECRET=your x.com client secret
 
 X_CONSUMER_KEY=your x.com consumer key
 X_CONSUMER_SECRET=your x.com consumer secret
+
+REACT_APP_RESTRICTED_STATES="AZ,TN,MD,LA"
+REACT_APP_ALLOWED_COUNTRIES="PK,US"
+REACT_APP_RESTRICTION_HARDFAIL=false

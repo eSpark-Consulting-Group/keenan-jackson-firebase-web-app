@@ -24,7 +24,7 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
-import EligibilityGate from "../components/EligibilityGate";
+import EligibilityGate from "../components/eligibility-gate";
 
 export default function Games() {
   const { userData } = useAuth();
@@ -361,6 +361,7 @@ export default function Games() {
               </label>
               <div className="relative">
                 <input
+                  title="search teams"
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -393,58 +394,59 @@ export default function Games() {
                   {date}
                 </h2>
 
-<EligibilityGate>
-                <div className="grid gap-4">
-                  {filteredDateGames.map((game) => {
-                    return (
-                      <motion.div
-                        key={game.id}
-                        whileHover={{ scale: 1.01 }}
-                        className="bg-white rounded-lg shadow-md overflow-hidden"
-                      >
-                        <div className="p-6">
-                          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                            {/* Game Info */}
-                            <div className="mb-4 lg:mb-0">
-                              <div className="flex items-center mb-2">
-                                <span className="text-sm font-medium bg-gray-100 text-gray-700 px-3 py-1 rounded-full mr-3">
-                                  {game.sport}
-                                </span>
-                                <span className="text-sm text-gray-500 flex items-center">
-                                  <Clock className="h-4 w-4 mr-1" />
-                                  {getTimeUntilGame(game.gameDate)}
-                                </span>
+                <EligibilityGate>
+                  <div className="grid gap-4">
+                    {filteredDateGames.map((game) => {
+                      return (
+                        <motion.div
+                          key={game.id}
+                          whileHover={{ scale: 1.01 }}
+                          className="bg-white rounded-lg shadow-md overflow-hidden"
+                        >
+                          <div className="p-6">
+                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                              {/* Game Info */}
+                              <div className="mb-4 lg:mb-0">
+                                <div className="flex items-center mb-2">
+                                  <span className="text-sm font-medium bg-gray-100 text-gray-700 px-3 py-1 rounded-full mr-3">
+                                    {game.sport}
+                                  </span>
+                                  <span className="text-sm text-gray-500 flex items-center">
+                                    <Clock className="h-4 w-4 mr-1" />
+                                    {getTimeUntilGame(game.gameDate)}
+                                  </span>
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                                  {game?.teams?.away || "TBA"} @{" "}
+                                  {game.teams?.home || "TBA"}
+                                </h3>
+                                <p className="text-sm text-gray-600">
+                                  {new Date(
+                                    game.gameDate?.toDate?.() || game.gameDate
+                                  ).toLocaleString()}
+                                </p>
                               </div>
-                              <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                                {game?.teams?.away || "TBA"} @{" "}
-                                {game.teams?.home || "TBA"}
-                              </h3>
-                              <p className="text-sm text-gray-600">
-                                {new Date(
-                                  game.gameDate?.toDate?.() || game.gameDate
-                                ).toLocaleString()}
-                              </p>
-                            </div>
 
-                            {/* Boards */}
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                              {game.boards.map((board) => {
-                                const tier = TIERS[board.tierId.toUpperCase()];
-                                const isUserTier =
-                                  userData?.currentTiers?.includes(
-                                    board.tierId
+                              {/* Boards */}
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                {game.boards.map((board) => {
+                                  const tier =
+                                    TIERS[board.tierId.toUpperCase()];
+                                  const isUserTier =
+                                    userData?.currentTiers?.includes(
+                                      board.tierId
+                                    );
+                                  const hasAccess = userTierAccess.includes(
+                                    board.id
                                   );
-                                const hasAccess = userTierAccess.includes(
-                                  board.id
-                                );
-                                const quarters = ["q1", "q2", "q3", "q4"];
-                                const isComplete = quarters.every(
-                                  (q) => board?.[q]?.processed === true
-                                );
-                                return (
-                                  <div
-                                    key={board.id}
-                                    className={`
+                                  const quarters = ["q1", "q2", "q3", "q4"];
+                                  const isComplete = quarters.every(
+                                    (q) => board?.[q]?.processed === true
+                                  );
+                                  return (
+                                    <div
+                                      key={board.id}
+                                      className={`
                                       relative p-4 rounded-lg border-2 text-center
                                       ${
                                         isUserTier
@@ -452,75 +454,75 @@ export default function Games() {
                                           : "border-gray-200 bg-gray-50"
                                       }
                                     `}
-                                  >
-                                    {isUserTier && (
-                                      <div className="absolute -top-2 -right-2">
-                                        <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                                          Your Board
-                                        </span>
-                                      </div>
-                                    )}
-
-                                    <div
-                                      className={`text-sm font-semibold mb-1 ${tier.color} text-white px-2 py-1 rounded`}
                                     >
-                                      {tier.name}
-                                    </div>
+                                      {isUserTier && (
+                                        <div className="absolute -top-2 -right-2">
+                                          <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                                            Your Board
+                                          </span>
+                                        </div>
+                                      )}
 
-                                    <div className="text-lg font-bold text-gray-900">
-                                      {formatCurrency(tier.prizePerQuarter)}
-                                    </div>
-                                    <div className="text-xs text-gray-600 mb-2">
-                                      per quarter
-                                    </div>
+                                      <div
+                                        className={`text-sm font-semibold mb-1 ${tier.color} text-white px-2 py-1 rounded`}
+                                      >
+                                        {tier.name}
+                                      </div>
 
-                                    <div className="flex items-center justify-center text-xs text-gray-600 mb-3">
-                                      <Grid3X3 className="h-4 w-4 mr-1" />
-                                      <span>{board.filledSquares}/50</span>
-                                    </div>
+                                      <div className="text-lg font-bold text-gray-900">
+                                        {formatCurrency(tier.prizePerQuarter)}
+                                      </div>
+                                      <div className="text-xs text-gray-600 mb-2">
+                                        per quarter
+                                      </div>
 
-                                    {isUserTier ? (
-                                      <Link
-                                        to={`/game/${board.id}`}
-                                        className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
-                                      >
-                                        Play Now
-                                      </Link>
-                                    ) : hasAccess ? (
-                                      <Link
-                                        to={`/game/${board.id}?view=true`}
-                                        className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
-                                      >
-                                        View Board
-                                      </Link>
-                                    ) : isComplete ? (
-                                      <Link
-                                        to={`/game/${board.id}/results`}
-                                        className="block w-full bg-green-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-green-700 transition-colors hover:text-white"
-                                      >
-                                        <Check className="h-4 w-4 inline mr-1" />
-                                        View Results
-                                      </Link>
-                                    ) : (
-                                      <button
-                                        disabled
-                                        className="block w-full bg-gray-300 text-gray-500 py-2 px-3 rounded text-sm font-medium cursor-not-allowed"
-                                      >
-                                        <Lock className="h-4 w-4 inline mr-1" />
-                                        Locked
-                                      </button>
-                                    )}
-                                  </div>
-                                );
-                              })}
+                                      <div className="flex items-center justify-center text-xs text-gray-600 mb-3">
+                                        <Grid3X3 className="h-4 w-4 mr-1" />
+                                        <span>{board.filledSquares}/50</span>
+                                      </div>
+
+                                      {isUserTier ? (
+                                        <Link
+                                          to={`/game/${board.id}`}
+                                          className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
+                                        >
+                                          Play Now
+                                        </Link>
+                                      ) : hasAccess ? (
+                                        <Link
+                                          to={`/game/${board.id}?view=true`}
+                                          className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
+                                        >
+                                          View Board
+                                        </Link>
+                                      ) : isComplete ? (
+                                        <Link
+                                          to={`/game/${board.id}/results`}
+                                          className="block w-full bg-green-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-green-700 transition-colors hover:text-white"
+                                        >
+                                          <Check className="h-4 w-4 inline mr-1" />
+                                          View Results
+                                        </Link>
+                                      ) : (
+                                        <button
+                                          disabled
+                                          className="block w-full bg-gray-300 text-gray-500 py-2 px-3 rounded text-sm font-medium cursor-not-allowed"
+                                        >
+                                          <Lock className="h-4 w-4 inline mr-1" />
+                                          Locked
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-        </EligibilityGate>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </EligibilityGate>
               </motion.div>
             );
           })
@@ -551,6 +553,47 @@ export default function Games() {
             )}
           </motion.div>
         )}
+        {/* CTA */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.7 }}
+          className="bg-gradient-to-r from-blue-600 to-blue-600 rounded-lg p-8 md:p-12 text-center text-white"
+        >
+          <h2 className="text-3xl font-bold mb-4">
+            Ready to Test Your Skills?
+          </h2>
+          <p className="text-xl mb-4 text-blue-100">
+            Join thousands of players winning real money with their sports
+            knowledge
+          </p>
+
+          {/* Taglines */}
+          <div className="mb-8 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-3 text-blue-100 text-lg font-medium">
+            <span className="italic">Speed Wins Always</span>
+            <span className="italic">•</span>
+            <span className="italic">Be the Fastest</span>
+            <span className="italic">•</span>
+            <span className="italic">Board Champion = Fastest Overall</span>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              to="/register"
+              className="inline-flex items-center px-8 py-4 text-lg font-medium text-blue-600 bg-white rounded-lg hover:bg-gray-100 transform hover:scale-105 transition-all duration-200"
+            >
+              Start Playing Now
+              <ChevronRight className="ml-2 h-5 w-5" />
+            </Link>
+
+            <Link
+              to="/games"
+              className="inline-flex items-center px-8 py-4 text-lg font-medium text-white bg-blue-800 bg-opacity-50 rounded-lg hover:bg-opacity-70 transition-all duration-200 hover:text-white"
+            >
+              View Active Games
+            </Link>
+          </div>
+        </motion.div>
+
       </div>
     </div>
   );

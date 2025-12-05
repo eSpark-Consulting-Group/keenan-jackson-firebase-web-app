@@ -50,7 +50,7 @@ const TIER_AVAILABILITY = {
 };
 
 // Payment processing constants
-const INSTANT_PAYOUT_FEE = 0.04; // 4% fee for instant payouts
+const INSTANT_PAYOUT_FEE = 0.08; // 8% fee for instant payouts
 const BATCH_PAYOUT_DAYS = ["tuesday", "friday"];
 
 // API Sports configuration - Add your API keys during deployment
@@ -163,7 +163,7 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
     sport,
     teamName,
     week,
-    gameType = "regular", // ✅ new
+    gameType = "regular", // new
     year = new Date().getFullYear(),
   } = data;
 
@@ -260,7 +260,7 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
           return {
             game: {
               id: event.id,
-              stage: gameType, // ✅ reflect requested type
+              stage: gameType, // reflect requested type
               week:
                 gameType === "regular"
                   ? `Week ${response.data.week.number}`
@@ -367,8 +367,8 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
 
       return {
         apiSportsId: game.game.id?.toString(),
-        homeTeam: homeName,
-        awayTeam: awayName,
+        homeTeam: homeName || "TBD",
+        awayTeam: awayName || "TBD",
         homeLogo,
         awayLogo,
         startTime,

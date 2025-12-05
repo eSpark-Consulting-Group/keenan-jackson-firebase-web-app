@@ -9,7 +9,9 @@ This document outlines remaining features to implement, organized by priority. I
 ## 🚨 Priority 1 - Critical Features (Must Have for Launch)
 
 ### 1. Firebase Cloud Functions Implementation 🔴
-**Time: 16-20 hours**
+
+**Time:** 16-20 hours
+
 - [ ] Create all Cloud Functions in `/functions` directory
 - [ ] `processPayment` - Stripe checkout handling
 - [ ] `claimSquare` - Square claiming with validation
@@ -21,7 +23,9 @@ This document outlines remaining features to implement, organized by priority. I
 - [ ] `sendNotifications` - Telegram/Email alerts
 
 ### 2. Trivia Question System 🔴
-**Time: 8-10 hours**
+
+**Time:** 8-10 hours
+
 - [ ] Create trivia question database structure
 - [ ] Import 1000+ questions per sport
 - [ ] Implement difficulty scaling by tier
@@ -31,7 +35,9 @@ This document outlines remaining features to implement, organized by priority. I
 - [ ] Add anti-cheat measures
 
 ### 3. Payment Integration Completion 🟡
-**Time: 6-8 hours**
+
+**Time:** 6-8 hours
+
 - [ ] Complete Stripe checkout flow
 - [ ] Add webhook endpoint handling
 - [ ] Implement refund functionality
@@ -40,7 +46,9 @@ This document outlines remaining features to implement, organized by priority. I
 - [ ] Add tax form collection (W-9)
 
 ### 4. Real-time Score Updates 🔴
-**Time: 4-6 hours**
+
+**Time:** 4-6 hours
+
 - [ ] Integrate API-Sports properly
 - [ ] Create score polling mechanism
 - [ ] Update boards in real-time
@@ -52,7 +60,9 @@ This document outlines remaining features to implement, organized by priority. I
 ## 🔧 Priority 2 - Essential Features (Launch Week)
 
 ### 5. Notification System 🟡
-**Time: 6-8 hours**
+
+**Time:** 6-8 hours
+
 - [ ] Complete Telegram bot integration
 - [ ] Add channel management
 - [ ] Implement email notifications
@@ -61,7 +71,9 @@ This document outlines remaining features to implement, organized by priority. I
 - [ ] Build notification queue system
 
 ### 6. Admin Dashboard Functionality 🟡
-**Time: 8-10 hours**
+
+**Time:** 8-10 hours
+
 - [ ] Wire up all admin pages with real data
 - [ ] Add game creation workflow
 - [ ] Implement user management
@@ -70,7 +82,9 @@ This document outlines remaining features to implement, organized by priority. I
 - [ ] Build basic analytics/reports
 
 ### 7. Consolation Prize System 🔴
-**Time: 4-5 hours**
+
+**Time:** 4-5 hours
+
 - [ ] Implement consolation logic
 - [ ] Track consolation squares
 - [ ] Prevent infinite consolation
@@ -78,7 +92,9 @@ This document outlines remaining features to implement, organized by priority. I
 - [ ] Create consolation claiming flow
 
 ### 8. Security & Validation 🔴
-**Time: 6-8 hours**
+
+**Time:** 6-8 hours
+
 - [ ] Add Firestore security rules
 - [ ] Implement rate limiting
 - [ ] Add input validation everywhere
@@ -91,7 +107,9 @@ This document outlines remaining features to implement, organized by priority. I
 ## ⭐ Priority 3 - Enhancement Features (Post-Launch)
 
 ### 9. User Experience Improvements 🟡
-**Time: 10-12 hours**
+
+**Time:** 10-12 hours
+
 - [ ] Add loading states everywhere
 - [ ] Improve error handling/messages
 - [ ] Add animations and transitions
@@ -101,7 +119,9 @@ This document outlines remaining features to implement, organized by priority. I
 - [ ] Add keyboard shortcuts
 
 ### 10. Analytics & Tracking 🔴
-**Time: 4-6 hours**
+
+**Time:** 4-6 hours
+
 - [ ] Integrate Google Analytics
 - [ ] Add event tracking
 - [ ] Create conversion funnels
@@ -110,7 +130,9 @@ This document outlines remaining features to implement, organized by priority. I
 - [ ] Add user behavior tracking
 
 ### 11. Performance Optimization 🟡
-**Time: 6-8 hours**
+
+**Time:** 6-8 hours
+
 - [ ] Add code splitting
 - [ ] Implement lazy loading
 - [ ] Optimize bundle size
@@ -119,7 +141,9 @@ This document outlines remaining features to implement, organized by priority. I
 - [ ] Add offline support (PWA)
 
 ### 12. Testing Suite 🔴
-**Time: 8-10 hours**
+
+**Time:** 8-10 hours
+
 - [ ] Add unit tests for components
 - [ ] Create integration tests
 - [ ] Add E2E tests (Cypress)
@@ -132,7 +156,9 @@ This document outlines remaining features to implement, organized by priority. I
 ## 🌟 Priority 4 - Future Features (Month 2+)
 
 ### 13. Advanced Features
-**Time: 20-30 hours**
+
+**Time:** 20-30 hours
+
 - [ ] Referral system implementation
 - [ ] Achievement/badge system
 - [ ] Leaderboards
@@ -142,7 +168,9 @@ This document outlines remaining features to implement, organized by priority. I
 - [ ] Mobile app (React Native)
 
 ### 14. Additional Sports
-**Time: 10-15 hours per sport**
+
+**Time:** 10-15 hours per sport
+
 - [ ] Add NBA support
 - [ ] Add NCAA Football
 - [ ] Add NCAA Basketball
@@ -151,7 +179,9 @@ This document outlines remaining features to implement, organized by priority. I
 - [ ] Add Soccer
 
 ### 15. Marketing Tools
-**Time: 15-20 hours**
+
+**Time:** 15-20 hours
+
 - [ ] Email campaign system
 - [ ] Social media integration
 - [ ] Affiliate program
@@ -163,7 +193,8 @@ This document outlines remaining features to implement, organized by priority. I
 
 ## 📊 Implementation Status Summary
 
-### Core Systems Status:
+### Core Systems Status
+
 - ✅ **Frontend Structure**: Complete
 - ✅ **UI Components**: Complete (placeholders)
 - ✅ **Routing**: Complete
@@ -174,7 +205,8 @@ This document outlines remaining features to implement, organized by priority. I
 - 🔴 **Notifications**: Missing (skeleton only)
 - 🟡 **Admin Panel**: UI complete, needs wiring
 
-### What Works Now:
+### What Works Now
+
 - User registration and login
 - Basic navigation
 - Game board display
@@ -182,7 +214,8 @@ This document outlines remaining features to implement, organized by priority. I
 - Profile management
 - Responsive design
 
-### What Needs Work:
+### What Needs Work
+
 - All backend functionality
 - Payment processing
 - Trivia questions
@@ -208,24 +241,28 @@ This document outlines remaining features to implement, organized by priority. I
 ## 🚀 Recommended Development Order
 
 ### Week 1: Backend Foundation
+
 1. Set up Cloud Functions project
 2. Implement core game logic functions
 3. Create trivia system
 4. Complete payment integration
 
 ### Week 2: Integration & Testing
+
 1. Connect frontend to functions
 2. Add real-time features
 3. Implement notifications
 4. Complete admin features
 
 ### Week 3: Polish & Launch Prep
+
 1. Security audit
 2. Performance optimization
 3. Bug fixes
 4. Load testing
 
 ### Week 4: Launch
+
 1. Soft launch with beta users
 2. Monitor and fix issues
 3. Gradual rollout
@@ -235,19 +272,22 @@ This document outlines remaining features to implement, organized by priority. I
 
 ## 📝 Notes for Developer
 
-### Critical Missing Pieces:
+### Critical Missing Pieces
+
 1. **No Cloud Functions** - The entire backend is missing
 2. **No Trivia Questions** - Need to source/create question database
 3. **No Payment Processing** - Stripe integration incomplete
 4. **No Real Game Logic** - Winner determination not implemented
 
-### Placeholder Components:
+### Placeholder Components
+
 - All admin pages are UI-only
 - TierSelection needs payment integration
 - Notifications are visual-only
 - Some buttons don't have handlers
 
-### Database Schema Needed:
+### Database Schema Needed
+
 ```javascript
 // Firestore Collections
 - users
@@ -261,8 +301,9 @@ This document outlines remaining features to implement, organized by priority. I
 - notifications
 ```
 
-### Environment Variables Needed:
-```
+### Environment Variables Needed
+
+```env
 REACT_APP_FIREBASE_*
 REACT_APP_STRIPE_PUBLISHABLE_KEY
 STRIPE_SECRET_KEY (backend)
@@ -296,6 +337,7 @@ API_SPORTS_KEY (backend)
 - **Priority 4 (Future)**: 45-65 hours
 
 **Total for MVP Launch**: ~60-75 hours
+
 **Total for Full Platform**: ~130-175 hours
 
 Good luck with the implementation! 🚀

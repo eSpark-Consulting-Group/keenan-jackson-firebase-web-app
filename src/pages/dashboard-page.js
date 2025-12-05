@@ -24,7 +24,7 @@ import {
   doc,
 } from "firebase/firestore";
 import toast from "react-hot-toast";
-import EligibilityGate from "../components/EligibilityGate";
+import EligibilityGate from "../components/eligibility-gate";
 
 export default function Dashboard() {
   const { user, userData } = useAuth();
@@ -537,6 +537,47 @@ export default function Dashboard() {
             </div>
           </motion.div>
         )}
+      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.7 }}
+          className="bg-gradient-to-r from-blue-600 to-blue-600 rounded-lg p-8 md:p-12 text-center text-white"
+        >
+          <h2 className="text-3xl font-bold mb-4">
+            Ready to Test Your Skills?
+          </h2>
+          <p className="text-xl mb-4 text-blue-100">
+            Join thousands of players winning real money with their sports
+            knowledge
+          </p>
+
+          {/* Taglines */}
+          <div className="mb-8 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-3 text-blue-100 text-lg font-medium">
+            <span className="italic">Speed Wins Always</span>
+            <span className="italic">•</span>
+            <span className="italic">Be the Fastest</span>
+            <span className="italic">•</span>
+            <span className="italic">Board Champion = Fastest Overall</span>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              to="/register"
+              className="inline-flex items-center px-8 py-4 text-lg font-medium text-blue-600 bg-white rounded-lg hover:bg-gray-100 transform hover:scale-105 transition-all duration-200"
+            >
+              Start Playing Now
+              <ChevronRight className="ml-2 h-5 w-5" />
+            </Link>
+
+            <Link
+              to="/games"
+              className="inline-flex items-center px-8 py-4 text-lg font-medium text-white bg-blue-800 bg-opacity-50 rounded-lg hover:bg-opacity-70 transition-all duration-200 hover:text-white"
+            >
+              View Active Games
+            </Link>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

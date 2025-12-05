@@ -3,6 +3,7 @@
 ## 📋 Prerequisites
 
 Before deploying, ensure you have:
+
 - [ ] Firebase CLI installed (`npm install -g firebase-tools`)
 - [ ] Firebase project created
 - [ ] Stripe account with API keys
@@ -42,6 +43,7 @@ In Firebase Console, enable:
 ### 3. Configure Security Rules
 
 **Firestore Rules** (firestore.rules):
+
 ```javascript
 rules_version = '2';
 service cloud.firestore {
@@ -79,6 +81,7 @@ service cloud.firestore {
 ### 1. Local Development (.env)
 
 Create `.env` file in project root:
+
 ```bash
 # Firebase Configuration
 REACT_APP_FIREBASE_API_KEY=AIza...
@@ -101,6 +104,7 @@ REACT_APP_ENV=development
 ### 2. Production Environment Variables
 
 Set in Firebase:
+
 ```bash
 firebase functions:config:set \
   stripe.secret="sk_live_..." \
@@ -170,6 +174,7 @@ firebase deploy --only firestore:rules
    - `payment_intent.failed`
 4. Copy webhook signing secret
 5. Update Firebase config:
+
    ```bash
    firebase functions:config:set stripe.webhook_secret="whsec_..."
    ```
@@ -183,7 +188,8 @@ firebase deploy --only firestore:rules
 3. Enter: `squaretrivia.com` and `www.squaretrivia.com`
 4. Verify ownership (add TXT record)
 5. Add A records to your DNS:
-   ```
+
+   ```cmd
    A record: @ → Firebase IPs
    A record: www → Firebase IPs
    ```
@@ -207,6 +213,7 @@ Firebase automatically provisions SSL certificates. Wait 24-48 hours for propaga
 ## 🔍 Monitoring & Logs
 
 ### View Logs
+
 ```bash
 # Hosting logs
 firebase hosting:channel:list
@@ -219,6 +226,7 @@ firebase functions:log
 ```
 
 ### Performance Monitoring
+
 1. Enable Performance Monitoring in Firebase
 2. Add Performance SDK to React app
 3. Monitor key metrics:
@@ -229,6 +237,7 @@ firebase functions:log
 ## 🚨 Rollback Procedures
 
 ### Hosting Rollback
+
 ```bash
 # List releases
 firebase hosting:releases:list
@@ -238,6 +247,7 @@ firebase hosting:rollback
 ```
 
 ### Function Rollback
+
 - Deploy previous function version from Git
 - Or use Firebase Console → Functions → Version history
 
@@ -254,11 +264,13 @@ firebase hosting:rollback
 ## 📈 Scaling Considerations
 
 ### When to Scale
+
 - 1000+ concurrent users
 - Function execution > 30 seconds
 - Firestore reads > 50k/day
 
 ### Scaling Options
+
 1. **Firestore**: Enable offline persistence
 2. **Functions**: Increase memory/timeout
 3. **Hosting**: Use Firebase CDN
@@ -268,7 +280,8 @@ firebase hosting:rollback
 
 ### Common Issues
 
-**Build Fails**
+#### Build Fails
+
 ```bash
 # Clear cache
 rm -rf node_modules package-lock.json
@@ -276,7 +289,8 @@ npm install
 npm run build
 ```
 
-**Functions Not Deploying**
+#### Functions Not Deploying
+
 ```bash
 # Check Node version (needs 16+)
 node --version
@@ -285,12 +299,14 @@ node --version
 cd functions && npm update
 ```
 
-**Stripe Webhooks Failing**
+#### Stripe Webhooks Failing
+
 - Verify endpoint URL
 - Check webhook secret
 - Review Stripe logs
 
-**Telegram Not Working**
+#### Telegram Not Working
+
 - Verify bot token
 - Check channel IDs
 - Ensure bot is admin in channels
@@ -299,12 +315,13 @@ cd functions && npm update
 
 - **Firebase Support**: [support.google.com/firebase](https://support.google.com/firebase)
 - **Stripe Support**: [support.stripe.com](https://support.stripe.com)
-- **Developer Email**: dev@squaretrivia.com
+- **Developer Email**: [dev@squaretrivia.com](mailto:dev@squaretrivia.com)
 - **Emergency**: +1-XXX-XXX-XXXX
 
 ## 🎉 Launch Checklist
 
 ### Soft Launch (Beta)
+
 - [ ] Deploy to staging environment
 - [ ] Test with 10-20 beta users
 - [ ] Monitor for 48 hours
@@ -312,6 +329,7 @@ cd functions && npm update
 - [ ] Gather feedback
 
 ### Production Launch
+
 - [ ] Final security audit
 - [ ] Load testing complete
 - [ ] Backup procedures tested

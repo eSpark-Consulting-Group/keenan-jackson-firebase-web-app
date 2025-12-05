@@ -14,7 +14,6 @@ import {
   Brain,
   DollarSign,
   ChevronDown,
-  Settings,
   BarChart3,
   Users,
   CircleDollarSign,
@@ -93,7 +92,7 @@ export default function Layout({ children }) {
             {/* Logo and main nav */}
             <div className="flex items-center">
               <Link to="/" className="flex items-center min-w-0">
-                <img src="../logo.svg" alt="Square Trivia" width="150px" />
+                <img src="/logo.svg" alt="Square Trivia" width="150px" />
               </Link>
 
               {/* Desktop navigation */}
@@ -349,7 +348,7 @@ export default function Layout({ children }) {
                 to="/"
                 className="text-lg font-semibold mb-4 flex items-center gap-2"
               >
-                <img src="../logo.svg" alt="Square Trivia" width="220px" />
+                <img src="/logo.svg" alt="Square Trivia" width="220px" />
               </Link>
               <p className="text-gray-400 text-sm">
                 100% skill-based sports competition platform. Win money with
@@ -420,17 +419,25 @@ export default function Layout({ children }) {
             <div className="mt-2">
               <h3 className="text-lg font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-sm">
-                <li className="flex items-center text-gray-400">
-                  <Mail className="h-4 w-4 mr-2" />
-                  support@squaretrivia.com
+                <li className="flex items-center text-gray-400 hover:text-white">
+                  <Mail className="h-4 w-4 mr-2" aria-label="Email" />
+                  <a
+                    href="mailto:support@squaretrivia.com"
+                    className="hover:underline  text-gray-400 hover:text-white"
+                  >
+                    support@squaretrivia.com
+                  </a>
                 </li>
-                <li className="flex items-center text-gray-400">
-                  <Shield className="h-4 w-4 mr-2" />
-                  100% Legal & Secure
+                <li className="flex items-center text-gray-400 hover:text-white">
+                  <Shield className="h-4 w-4 mr-2" aria-label="Shield" />
+                    100% Legal & Secure
                 </li>
-                <li className="flex items-center text-gray-400">
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  NO FEES Guarantee
+                <li className="flex items-center text-gray-400 hover:text-white">
+                  <DollarSign
+                    className="h-4 w-4 mr-2"
+                    aria-label="Dollar sign"
+                  />
+                    NO FEES Guarantee
                 </li>
               </ul>
             </div>

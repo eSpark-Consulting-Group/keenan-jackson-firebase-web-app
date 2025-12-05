@@ -34,7 +34,7 @@ import {
 } from "firebase/firestore";
 import toast from "react-hot-toast";
 import { httpsCallable } from "firebase/functions";
-import UpdateScoreModal from "../../components/game/updatescoremodal";
+import UpdateScoreModal from "../../components/game/update-score-modal";
 
 export default function AdminGames() {
   const [loading, setLoading] = useState(false);
@@ -280,8 +280,8 @@ export default function AdminGames() {
       setGameForm({
         ...gameForm,
         sport: selectedGame?.sport,
-        homeTeam: selectedGame?.homeTeam,
-        awayTeam: selectedGame?.awayTeam,
+        homeTeam: selectedGame?.homeTeam || "TBD",
+        awayTeam: selectedGame?.awayTeam || "TBD",
         startTime: selectedGame?.startTime,
         apiGameId: selectedGame?.apiGameId,
         gameType: selectedGame?.gameType,
@@ -311,7 +311,7 @@ export default function AdminGames() {
         const payload = {
           sport: sportsForm.sport,
           teamName: sportsForm?.teamName,
-          gameType: sportsForm?.gameType, // ✅ include gameType
+          gameType: sportsForm?.gameType, // include gameType
           ...(sportsForm?.gameType === "regular" && {
             week: sportsForm?.week
               ? sportsForm?.week
@@ -323,8 +323,8 @@ export default function AdminGames() {
 
         const data = result.data?.games?.map((game) => ({
           sport: sportsForm?.sport,
-          homeTeam: game?.homeTeam,
-          awayTeam: game?.awayTeam,
+          homeTeam: game?.homeTeam || "TBD",
+          awayTeam: game?.awayTeam || "TBD",
           startTime: game?.startTime,
           apiGameId: game?.apiSportsId,
           gameType: sportsForm?.gameType,
@@ -406,6 +406,7 @@ export default function AdminGames() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
+              title="search by team name"
               type="text"
               placeholder="Search by team name..."
               value={searchTerm}
@@ -644,6 +645,7 @@ export default function AdminGames() {
                           Away Team
                         </label>
                         <input
+                          title="Enter away team name"
                           type="text"
                           value={gameForm.awayTeam}
                           onChange={(e) =>
@@ -662,6 +664,7 @@ export default function AdminGames() {
                           Home Team
                         </label>
                         <input
+                          title="Enter home team name"
                           type="text"
                           value={gameForm.homeTeam}
                           onChange={(e) =>
@@ -698,6 +701,7 @@ export default function AdminGames() {
                         Start Time
                       </label>
                       <input
+                        title="Select game start time"
                         type="datetime-local"
                         value={
                           gameForm.startTime
@@ -722,6 +726,7 @@ export default function AdminGames() {
                         API Game ID (optional)
                       </label>
                       <input
+                        title="Enter external API game ID"
                         type="text"
                         value={gameForm.apiGameId}
                         onChange={(e) =>
@@ -744,6 +749,7 @@ export default function AdminGames() {
                         {Object.values(TIERS).map((tier) => (
                           <label key={tier.id} className="flex items-center">
                             <input
+                              title="Select board tier"
                               type="checkbox"
                               value={tier.id}
                               checked={gameForm.selectedTiers.includes(tier.id)}
@@ -873,6 +879,7 @@ export default function AdminGames() {
                           Search Team
                         </label>
                         <input
+                          title="Enter team name"
                           type="text"
                           value={sportsForm.teamName}
                           onChange={(e) =>
@@ -892,6 +899,7 @@ export default function AdminGames() {
                           Week Number
                         </label>
                         <input
+                          title="Enter week number"
                           type="number"
                           value={sportsForm.week || ""}
                           disabled={

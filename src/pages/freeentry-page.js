@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   Mail,
   FileText,
@@ -12,9 +12,9 @@ import {
   Gift,
   ChevronRight,
   Copy,
-  Info
-} from 'lucide-react';
-import toast from 'react-hot-toast';
+  Info,
+} from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function FreeEntry() {
   const [copiedAddress, setCopiedAddress] = useState(false);
@@ -26,7 +26,7 @@ Dallas, TX 75201`;
   const handleCopyAddress = () => {
     navigator.clipboard.writeText(mailingAddress);
     setCopiedAddress(true);
-    toast.success('Address copied to clipboard!');
+    toast.success("Address copied to clipboard!");
     setTimeout(() => setCopiedAddress(false), 3000);
   };
 
@@ -34,46 +34,53 @@ Dallas, TX 75201`;
     {
       icon: FileText,
       title: "Handwritten Letter",
-      description: "Write your name, email, phone number, and desired board on a 3x5 index card"
+      description:
+        "Write your name, email, phone number, and desired board on a 3x5 index card",
     },
     {
       icon: Mail,
       title: "Self-Addressed Stamped Envelope",
-      description: "Include a #10 SASE with first-class postage for your entry confirmation"
+      description:
+        "Include a #10 SASE with first-class postage for your entry confirmation",
     },
     {
       icon: Clock,
       title: "Processing Time",
-      description: "Allow 5-7 business days for processing and email confirmation"
-    }
+      description:
+        "Allow 5-7 business days for processing and email confirmation",
+    },
   ];
 
   const steps = [
     "Get a 3x5 index card and a #10 envelope",
     "Write your full name, email address, and phone number on the card",
-    "Write your desired board (e.g., \"$25 Board\") on the card",
+    'Write your desired board (e.g., "$25 Board") on the card',
     "Put the index card in an envelope",
     "Include a self-addressed stamped envelope (SASE)",
-    "Mail to the address below"
+    "Mail to the address below",
   ];
 
   const faqs = [
     {
       question: "Why do you offer free entry?",
-      answer: "As a skill-based competition, we're required to offer a free alternative method of entry (AMOE) to ensure no purchase is necessary to play or win."
+      answer:
+        "As a skill-based competition, we're required to offer a free alternative method of entry (AMOE), except in Restricted States (AZ, TN, MD, or LA.)  to ensure no purchase is necessary to play or win.",
     },
     {
       question: "How many free entries can I request?",
-      answer: "One free entry per envelope. You may send multiple envelopes, but each must be mailed separately and contain all required materials."
+      answer:
+        "One free entry per envelope. You may send multiple envelopes, but each must be mailed separately and contain all required materials.",
     },
     {
       question: "What board access do I get?",
-      answer: "You'll receive access to the board you specify on your index card, with the same features and prize opportunities as paid players."
+      answer:
+        "You'll receive access to the board you specify on your index card, with the same features and prize opportunities as paid players.",
     },
     {
       question: "How long is my free entry valid?",
-      answer: "Free entries are valid for 30 days from the date of email confirmation."
-    }
+      answer:
+        "Free entries are valid for 30 days from the date of email confirmation.",
+    },
   ];
 
   return (
@@ -88,12 +95,13 @@ Dallas, TX 75201`;
           <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
             <Gift className="h-10 w-10 text-green-600" />
           </div>
-          
+
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Free Entry Option (AMOE)
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            No purchase necessary to play or win. Request your free entry by mail.
+            No purchase necessary to play or win. Request your free entry by
+            mail, except in Restricted States (AZ, TN, MD, or LA.)
           </p>
         </motion.div>
 
@@ -111,8 +119,9 @@ Dallas, TX 75201`;
                 Equal Opportunity to Win
               </h3>
               <p className="text-gray-700">
-                Free entry participants have the exact same features, square selection opportunities, 
-                and prize eligibility as those who donate. The only difference is the entry method.
+                Free entry participants have the exact same features, square
+                selection opportunities, and prize eligibility as those who
+                donate. The only difference is the entry method.
               </p>
             </div>
           </div>
@@ -128,7 +137,7 @@ Dallas, TX 75201`;
           <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
             What You'll Need
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {requirements.map((req, index) => (
               <motion.div
@@ -141,7 +150,9 @@ Dallas, TX 75201`;
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-100 rounded-full mb-4">
                   <req.icon className="h-6 w-6 text-gray-600" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">{req.title}</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">
+                  {req.title}
+                </h3>
                 <p className="text-gray-600 text-sm">{req.description}</p>
               </motion.div>
             ))}
@@ -159,7 +170,7 @@ Dallas, TX 75201`;
             <Send className="h-6 w-6 mr-2 text-blue-600" />
             How to Request Free Entry
           </h2>
-          
+
           <ol className="space-y-4">
             {steps.map((step, index) => (
               <li key={index} className="flex items-start">
@@ -173,9 +184,13 @@ Dallas, TX 75201`;
 
           {/* Mailing Address */}
           <div className="mt-8 p-6 bg-gray-50 rounded-lg">
-            <h3 className="font-semibold text-gray-900 mb-3">Mailing Address:</h3>
+            <h3 className="font-semibold text-gray-900 mb-3">
+              Mailing Address:
+            </h3>
             <div className="flex items-start justify-between">
-              <pre className="text-gray-700 font-mono text-sm">{mailingAddress}</pre>
+              <pre className="text-gray-700 font-mono text-sm">
+                {mailingAddress}
+              </pre>
               <button
                 onClick={handleCopyAddress}
                 className="ml-4 p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
@@ -205,19 +220,27 @@ Dallas, TX 75201`;
           <ul className="space-y-2 text-gray-700">
             <li className="flex items-start">
               <CheckCircle className="h-5 w-5 text-yellow-600 mr-2 flex-shrink-0 mt-0.5" />
-              <span>Entries missing any required materials will not be processed</span>
+              <span>
+                Entries missing any required materials will not be processed
+              </span>
             </li>
             <li className="flex items-start">
               <CheckCircle className="h-5 w-5 text-yellow-600 mr-2 flex-shrink-0 mt-0.5" />
-              <span>Photocopied or mechanically reproduced entries are not accepted</span>
+              <span>
+                Photocopied or mechanically reproduced entries are not accepted
+              </span>
             </li>
             <li className="flex items-start">
               <CheckCircle className="h-5 w-5 text-yellow-600 mr-2 flex-shrink-0 mt-0.5" />
-              <span>We are not responsible for lost, late, or misdirected mail</span>
+              <span>
+                We are not responsible for lost, late, or misdirected mail
+              </span>
             </li>
             <li className="flex items-start">
               <CheckCircle className="h-5 w-5 text-yellow-600 mr-2 flex-shrink-0 mt-0.5" />
-              <span>You'll receive email confirmation once your entry is processed</span>
+              <span>
+                You'll receive email confirmation once your entry is processed
+              </span>
             </li>
           </ul>
         </motion.div>
@@ -232,7 +255,7 @@ Dallas, TX 75201`;
           <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
             Frequently Asked Questions
           </h2>
-          
+
           <div className="space-y-4">
             {faqs.map((faq, index) => (
               <motion.div
@@ -245,9 +268,7 @@ Dallas, TX 75201`;
                 <h3 className="font-semibold text-gray-900 mb-2">
                   {faq.question}
                 </h3>
-                <p className="text-gray-700">
-                  {faq.answer}
-                </p>
+                <p className="text-gray-700">{faq.answer}</p>
               </motion.div>
             ))}
           </div>
@@ -260,13 +281,11 @@ Dallas, TX 75201`;
           transition={{ delay: 0.8 }}
           className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-8 text-center text-white"
         >
-          <h2 className="text-2xl font-bold mb-4">
-            Prefer Instant Access?
-          </h2>
+          <h2 className="text-2xl font-bold mb-4">Prefer Instant Access?</h2>
           <p className="text-lg mb-6 text-blue-100">
             Skip the wait and start playing immediately with a donation
           </p>
-          
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/register"
@@ -275,7 +294,7 @@ Dallas, TX 75201`;
               <CreditCard className="h-5 w-5 mr-2" />
               Donate & Play Now
             </Link>
-            
+
             <Link
               to="/how-to-play"
               className="inline-flex items-center px-8 py-3 text-lg font-medium text-white bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-all duration-200"

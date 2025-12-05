@@ -16,6 +16,8 @@ const {
   TierStatusUpdatePost,
   UpcomingGamePost,
 } = require("./social-posts-functions");
+const { generateImage } = require("./backend-game-functions");
+const { getShortCode } = require("./utils");
 
 const db = admin.firestore();
 require("dotenv").config();
@@ -194,8 +196,8 @@ async function handleGameCommand(chatId) {
     const message =
       `📅 Game Date: ${formattedDate}\n` +
       `🏟 Sports: ${game.sport}\n` +
-      `🏠 Home Team: ${game.teams.home}\n` +
-      `🛫 Away Team: ${game.teams.away}`;
+      `🏠 Home Team: ${game.teams.home || "TBD"}\n` +
+      `🛫 Away Team: ${game.teams.away || "TBD"}`;
 
     promises.push(sendTelegramNotification(chatId, message));
   });
@@ -359,8 +361,8 @@ async function handleSquaresCommand(chatId) {
               `⏱️ Answer Time: ${Number(claim.answerTime || 0).toFixed(3)}ms\n` +
               `📅 Claimed At: ${claimedAtFormatted}\n` +
               `🏟 Sports: ${boardData?.gameInfo?.sport}\n` +
-              `🏠 Home Team: ${boardData?.gameInfo?.teams?.home}\n` +
-              `🛫 Away Team: ${boardData?.gameInfo?.teams?.away}\n`
+              `🏠 Home Team: ${boardData?.gameInfo?.teams?.home || "TBD"}\n` +
+              `🛫 Away Team: ${boardData?.gameInfo?.teams?.away || "TBD"}\n`
           );
         }
       });
@@ -1092,12 +1094,40 @@ exports.checkBoardsFillingFast = functions.pubsub
           console.log(
             `🎯 [${gameId}] ${quarterLabel} - ${tierId} board FULL (${boardId})`
           );
+          // 1. Generate dynamic image
+          const formValues = {
+            HTeam: getShortCode(team1) || "TBD",
+            ATeam: getShortCode(team2) || "TBD",
+            time: game.startTime.toDate().toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            }),
+          };
+          const selectedTemplate = "boardFull";
+          const payload = {
+            templateID: selectedTemplate,
+            data: formValues,
+            savePath: `savedimages/${gameId}/${boardId}/${selectedTemplate}.jpg`,
+          };
+          let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
 
+          try {
+            const imageResult = await generateImage(payload);
+
+            if (imageResult && imageResult.response === "success") {
+              imageUrl = imageResult.path; // use generated image if successful
+            } else {
+              console.warn("Image generation failed:", imageResult);
+            }
+          } catch (err) {
+            console.error("Image generation error:", err);
+          }
           await BoardFullAnnouncementPost({
             team1,
             team2,
             totalPrize: board.prizeAmount,
-            mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+            mediaToUpload: imageUrl,
             captionLink: "https://squaretrivia.com",
           });
 
@@ -1118,13 +1148,41 @@ exports.checkBoardsFillingFast = functions.pubsub
               1
             )}% filled (fast fill alert)`
           );
+          // 1. Generate dynamic image
+          const formValues = {
+            HTeam: getShortCode(team1) || "TBD",
+            ATeam: getShortCode(team2) || "TBD",
+            time: game.startTime.toDate().toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            }),
+          };
+          const selectedTemplate = "board70Full";
+          const payload = {
+            templateID: selectedTemplate,
+            data: formValues,
+            savePath: `savedimages/${gameId}/${boardId}/${selectedTemplate}.jpg`,
+          };
+          let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
 
+          try {
+            const imageResult = await generateImage(payload);
+
+            if (imageResult && imageResult.response === "success") {
+              imageUrl = imageResult.path; // use generated image if successful
+            } else {
+              console.warn("Image generation failed:", imageResult);
+            }
+          } catch (err) {
+            console.error("Image generation error:", err);
+          }
           await BoardGoingFastPost({
             team1,
             team2,
             tier: tierId,
             totalClaims: { total: totalSquares, claimed: claimedSquares },
-            mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+            mediaToUpload: imageUrl,
             captionLink: "https://squaretrivia.com",
           });
 
@@ -1142,13 +1200,36 @@ exports.checkBoardsFillingFast = functions.pubsub
           );
 
           const spotsLeft = totalSquares - claimedSquares;
+          // 1. Generate dynamic image
+          const formValues = {
+            HTeam: getShortCode(team1) || "TBD",
+            ATeam: getShortCode(team2) || "TBD",
+          };
+          const selectedTemplate = "finalCall2Hrs";
+          const payload = {
+            templateID: selectedTemplate,
+            data: formValues,
+            savePath: `savedimages/${gameId}/${boardId}/${selectedTemplate}.jpg`,
+          };
+          let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
 
+          try {
+            const imageResult = await generateImage(payload);
+
+            if (imageResult && imageResult.response === "success") {
+              imageUrl = imageResult.path; // use generated image if successful
+            } else {
+              console.warn("Image generation failed:", imageResult);
+            }
+          } catch (err) {
+            console.error("Image generation error:", err);
+          }
           await LastChancePost({
             team1,
             team2,
             spotsLeft,
             highestTier: tierId,
-            mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+            mediaToUpload: imageUrl,
             captionLink: "https://squaretrivia.com",
           });
 
@@ -1169,12 +1250,34 @@ exports.checkBoardsFillingFast = functions.pubsub
               timeDiffHrs / 24
             )} days)`
           );
+          // 1. Generate dynamic image
+          const formValues = {};
+          const selectedTemplate = "2to3DaysOut"; // to be created
+          const payload = {
+            templateID: selectedTemplate,
+            data: formValues,
+            savePath: `savedimages/${gameId}/${boardId}/${selectedTemplate}.jpg`,
+          };
+          let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
 
+          try {
+            const imageResult = await generateImage(payload);
+
+            if (imageResult && imageResult.response === "success") {
+              imageUrl = imageResult.path; // use generated image if successful
+            } else {
+              console.warn("Image generation failed:", imageResult);
+            }
+          } catch (err) {
+            console.error("Image generation error:", err);
+          }
           try {
             await UpcomingGamePost({
               team1,
               team2,
-              mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+              mediaToUpload:
+                imageResult?.path ||
+                "https://squaretrivia.com/apple-touch-icon.png",
               captionLink: "https://squaretrivia.com",
             });
             await recordPost("upcomingGame");
@@ -1199,13 +1302,36 @@ exports.checkBoardsFillingFast = functions.pubsub
           );
 
           const squaresLeft = totalSquares - claimedSquares;
+          // 1. Generate dynamic image
+          const formValues = {
+            HTeam: getShortCode(team1) || "TBD",
+            ATeam: getShortCode(team2) || "TBD",
+          };
+          const selectedTemplate = "finalCall2Hrs";
+          const payload = {
+            templateID: selectedTemplate,
+            data: formValues,
+            savePath: `savedimages/${gameId}/${boardId}/${selectedTemplate}.jpg`,
+          };
+          let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
 
+          try {
+            const imageResult = await generateImage(payload);
+
+            if (imageResult && imageResult.response === "success") {
+              imageUrl = imageResult.path; // use generated image if successful
+            } else {
+              console.warn("Image generation failed:", imageResult);
+            }
+          } catch (err) {
+            console.error("Image generation error:", err);
+          }
           await FinalCallPost({
             team1,
             team2,
             timeLeft: `${Math.round(timeDiffHrs * 60)} minutes`,
             squaresLeft,
-            mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+            mediaToUpload: imageUrl,
             captionLink: "https://squaretrivia.com",
           });
 
@@ -1238,12 +1364,32 @@ exports.checkBoardsFillingFast = functions.pubsub
           });
 
           tiers.sort((a, b) => b.tier - a.tier);
+          // 1. Generate dynamic image
+          const formValues = {};
+          const selectedTemplate = "tirerStatusUpdate"; // to be created
+          const payload = {
+            templateID: selectedTemplate,
+            data: formValues,
+            savePath: `savedimages/${gameId}/${boardId}/${selectedTemplate}.jpg`,
+          };
+          let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
 
+          try {
+            const imageResult = await generateImage(payload);
+
+            if (imageResult && imageResult.response === "success") {
+              imageUrl = imageResult.path; // use generated image if successful
+            } else {
+              console.warn("Image generation failed:", imageResult);
+            }
+          } catch (err) {
+            console.error("Image generation error:", err);
+          }
           await TierStatusUpdatePost({
             team1,
             team2,
             tiers,
-            mediaToUpload: "https://squaretrivia.com/apple-touch-icon.png",
+            mediaToUpload: imageUrl,
             captionLink: "https://squaretrivia.com",
           });
 

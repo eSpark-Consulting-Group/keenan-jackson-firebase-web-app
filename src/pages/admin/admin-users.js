@@ -511,6 +511,7 @@ export default function AdminUsers() {
               type="text"
               placeholder="Search by email, name, or phone..."
               value={searchTerm}
+              title="Search users by email, name, or phone number"
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
@@ -655,6 +656,7 @@ export default function AdminUsers() {
                             <input
                               type="checkbox"
                               checked={user.isAdmin || false}
+                              title="Toggle Admin Status"
                               onChange={() => toggleAdmin(user, user.isAdmin)}
                               className="sr-only peer"
                             />
