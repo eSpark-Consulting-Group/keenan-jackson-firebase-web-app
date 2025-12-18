@@ -1,0 +1,1058 @@
+{
+	"info": {
+		"_postman_id": "17217232-d41da4c8-ced8-47a0-82f3-b176ad1476d9",
+		"name": "SquuareTrivia",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "New Folder",
+			"item": [
+				{
+					"name": "get user info",
+					"id": "17217232-f1a753b2-d4da-4111-933e-a1411605a8b3",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "graph.facebook.com/v23.0/me?fields=id,name&access_token=EAAb9SWLnlp8BPnJaEs2SavgaaDZA1JMj15V077tZAYNIBJ6ch2ZA98J6r30ZBSvOgnyiTkOcxrf4AhtZAXx66hoANcBtbItnVooUe51ZCb3MJ2AwuzWJVICGGZAbbM2yOSCJxHx5a5y2Vxlc7vvmQ4yX6WktPstiHwYexpAQdImysQFLL9dS2NMihDrVWkK5xkO6OouF9LBuRxrj6V70A4TZAqEwN49YchzHswZBTgVQi6jPPy2JEHkWBcjt26ipZAUA4ZD",
+							"host": [
+								"graph",
+								"facebook",
+								"com"
+							],
+							"path": [
+								"v23.0",
+								"me"
+							],
+							"query": [
+								{
+									"key": "fields",
+									"value": "id,name"
+								},
+								{
+									"key": "access_token",
+									"value": "EAAb9SWLnlp8BPnJaEs2SavgaaDZA1JMj15V077tZAYNIBJ6ch2ZA98J6r30ZBSvOgnyiTkOcxrf4AhtZAXx66hoANcBtbItnVooUe51ZCb3MJ2AwuzWJVICGGZAbbM2yOSCJxHx5a5y2Vxlc7vvmQ4yX6WktPstiHwYexpAQdImysQFLL9dS2NMihDrVWkK5xkO6OouF9LBuRxrj6V70A4TZAqEwN49YchzHswZBTgVQi6jPPy2JEHkWBcjt26ipZAUA4ZD"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get pages",
+					"id": "17217232-350d350b-8772-4ece-b80c-6682c75d112c",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "graph.facebook.com/v23.0/me/accounts?access_token=EAAb9SWLnlp8BPlDLJnaVzxQL5k9YTH7qReu6nbi4BTwAS58npucsSee5UyZB2xzRGsDIlZBeA9jKG7kN0QWvSdFlVaOFqzscyHVqHGvQn5Mv8gmgzqII5l0Ks11UM7Jy2D4jYkyCFTiIl6R505H3xrKzv05uit5Lyc7uRBZAuMH8AwbAbn9W5zjzdwyj77Fv7MeXSsAYi2P79p1",
+							"host": [
+								"graph",
+								"facebook",
+								"com"
+							],
+							"path": [
+								"v23.0",
+								"me",
+								"accounts"
+							],
+							"query": [
+								{
+									"key": "access_token",
+									"value": "EAAb9SWLnlp8BPlDLJnaVzxQL5k9YTH7qReu6nbi4BTwAS58npucsSee5UyZB2xzRGsDIlZBeA9jKG7kN0QWvSdFlVaOFqzscyHVqHGvQn5Mv8gmgzqII5l0Ks11UM7Jy2D4jYkyCFTiIl6R505H3xrKzv05uit5Lyc7uRBZAuMH8AwbAbn9W5zjzdwyj77Fv7MeXSsAYi2P79p1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get page posts",
+					"id": "17217232-0fb4a0f2-64f7-4af3-8952-b46dfef2d31a",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "graph.facebook.com/v23.0/103373862015603/feed/?access_token=EAAb9SWLnlp8BPnJaEs2SavgaaDZA1JMj15V077tZAYNIBJ6ch2ZA98J6r30ZBSvOgnyiTkOcxrf4AhtZAXx66hoANcBtbItnVooUe51ZCb3MJ2AwuzWJVICGGZAbbM2yOSCJxHx5a5y2Vxlc7vvmQ4yX6WktPstiHwYexpAQdImysQFLL9dS2NMihDrVWkK5xkO6OouF9LBuRxrj6V70A4TZAqEwN49YchzHswZBTgVQi6jPPy2JEHkWBcjt26ipZAUA4ZD",
+							"host": [
+								"graph",
+								"facebook",
+								"com"
+							],
+							"path": [
+								"v23.0",
+								"103373862015603",
+								"feed",
+								""
+							],
+							"query": [
+								{
+									"key": "access_token",
+									"value": "EAAb9SWLnlp8BPnJaEs2SavgaaDZA1JMj15V077tZAYNIBJ6ch2ZA98J6r30ZBSvOgnyiTkOcxrf4AhtZAXx66hoANcBtbItnVooUe51ZCb3MJ2AwuzWJVICGGZAbbM2yOSCJxHx5a5y2Vxlc7vvmQ4yX6WktPstiHwYexpAQdImysQFLL9dS2NMihDrVWkK5xkO6OouF9LBuRxrj6V70A4TZAqEwN49YchzHswZBTgVQi6jPPy2JEHkWBcjt26ipZAUA4ZD"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"id": "17217232-7dc4bcb0-3c41-4c74-ae77-af465538bcb1"
+		},
+		{
+			"name": "Tokens",
+			"item": [
+				{
+					"name": "Get Access Tokens of Pages You Manage",
+					"id": "17217232-eebd7f36-8b89-407f-8a4e-263191549b40",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "User-Agent",
+								"value": "Postman/FacebookCollection"
+							}
+						],
+						"url": {
+							"raw": "https://graph.facebook.com/{{api_version}}/me/accounts?fields=name,access_token,tasks&access_token={{user_access_token}}",
+							"protocol": "https",
+							"host": [
+								"graph",
+								"facebook",
+								"com"
+							],
+							"path": [
+								"{{api_version}}",
+								"me",
+								"accounts"
+							],
+							"query": [
+								{
+									"key": "fields",
+									"value": "name,access_token,tasks"
+								},
+								{
+									"key": "access_token",
+									"value": "{{user_access_token}}"
+								}
+							]
+						},
+						"description": "This request uses a **User Access Token** to get a list of all the pages managed by a User. Make sure to choose one page from the response list, copy the `ID` into the `page_id` variable and the `access_token` field into the `page_access_token` variable of the environment.\n\nThis new access token is a **Page Access Token**, which acts on behalf of a Page a user has permission to manage.\n\nMore available fields can be found [here](https://developers.facebook.com/docs/graph-api/reference/page/#fields)."
+					},
+					"response": [
+						{
+							"id": "17217232-b0668a7f-9c56-4c90-a5fd-9328f2542634",
+							"name": "Get Access Tokens of Pages You Manage",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "User-Agent",
+										"value": "Postman/FacebookCollection"
+									}
+								],
+								"url": {
+									"raw": "https://graph.facebook.com/{{api_version}}/me/accounts?fields=name,access_token,tasks&access_token={{user_access_token}}",
+									"protocol": "https",
+									"host": [
+										"graph",
+										"facebook",
+										"com"
+									],
+									"path": [
+										"{{api_version}}",
+										"me",
+										"accounts"
+									],
+									"query": [
+										{
+											"key": "fields",
+											"value": "name,access_token,tasks"
+										},
+										{
+											"key": "access_token",
+											"value": "{{user_access_token}}"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": null,
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"data\": [\n        {\n            \"name\": \"{page_name}\",\n            \"access_token\": \"{page_access_token}\",\n            \"id\": \"{page_id}\",\n            \"tasks\": [\n                \"PROFILE_PLUS_ADVERTISE\",\n                \"PROFILE_PLUS_ANALYZE\",\n                \"PROFILE_PLUS_CREATE_CONTENT\",\n                \"PROFILE_PLUS_FACEBOOK_ACCESS\",\n                \"PROFILE_PLUS_MESSAGING\",\n                \"PROFILE_PLUS_MODERATE\",\n                \"PROFILE_PLUS_FULL_CONTROL\",\n                \"PROFILE_PLUS_MANAGE\"\n            ]\n        }\n    ],\n    //...\n    \"paging\": {\n        \"cursors\": {\n            \"before\": \"{cursor}\",\n            \"after\": \"{cursor}\"\n        }\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Specific Page Access Token",
+					"id": "17217232-6f874cf0-60e7-4bb5-94f7-c63332299a70",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "User-Agent",
+								"value": "Postman/FacebookCollection"
+							}
+						],
+						"url": {
+							"raw": "https://graph.facebook.com/{{api_version}}/{{page_id}}?fields=name,access_token&access_token={{user_access_token}}",
+							"protocol": "https",
+							"host": [
+								"graph",
+								"facebook",
+								"com"
+							],
+							"path": [
+								"{{api_version}}",
+								"{{page_id}}"
+							],
+							"query": [
+								{
+									"key": "fields",
+									"value": "name,access_token"
+								},
+								{
+									"key": "access_token",
+									"value": "{{user_access_token}}"
+								}
+							]
+						},
+						"description": "If you already have the `page_id` available, you can query directly this endpoint to get the specific **Page Access Token** you need and avoid having to search for it on the list.\n\nMore available fields can be found [here](https://developers.facebook.com/docs/graph-api/reference/page/#fields)."
+					},
+					"response": [
+						{
+							"id": "17217232-6215f148-4acb-4cdb-80f9-adef64ffacc0",
+							"name": "Get Specific Page Access Token",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "User-Agent",
+										"value": "Postman/FacebookCollection"
+									}
+								],
+								"url": {
+									"raw": "https://graph.facebook.com/{{api_version}}/{{page_id}}?fields=name,access_token&access_token={{user_access_token}}",
+									"protocol": "https",
+									"host": [
+										"graph",
+										"facebook",
+										"com"
+									],
+									"path": [
+										"{{api_version}}",
+										"{{page_id}}"
+									],
+									"query": [
+										{
+											"key": "fields",
+											"value": "name,access_token"
+										},
+										{
+											"key": "access_token",
+											"value": "{{user_access_token}}"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": null,
+							"cookie": [],
+							"responseTime": null,
+							"body": "{\n    \"name\": \"{page_name}\",\n    \"access_token\": \"{page_access_token}\",\n    \"id\": \"{page_id}\"\n}"
+						}
+					]
+				}
+			],
+			"id": "17217232-76eb43e6-c9f0-4982-b29a-1d6e43268dc4",
+			"description": "An access token is a string that identifies a user, app or Page and is used by an app to make Graph API calls. This section will cover the basics of tokens used for the Pages API. Make sure the `Facebook` environment is active and the `user_access_token` variable has a value."
+		},
+		{
+			"name": "New Request",
+			"id": "17217232-75b9fe6c-136d-4386-8e7c-6346fef297f6",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "oauth1",
+					"oauth1": [
+						{
+							"key": "token",
+							"value": "{{acesstoken}}",
+							"type": "string"
+						},
+						{
+							"key": "tokenSecret",
+							"value": "{{totkensecret}}",
+							"type": "string"
+						},
+						{
+							"key": "consumerSecret",
+							"value": "{{accesskey}}",
+							"type": "string"
+						},
+						{
+							"key": "consumerKey",
+							"value": "{{consumerkey}}",
+							"type": "string"
+						},
+						{
+							"key": "signatureMethod",
+							"value": "HMAC-SHA1",
+							"type": "string"
+						},
+						{
+							"key": "version",
+							"value": "1.0",
+							"type": "string"
+						},
+						{
+							"key": "addParamsToHeader",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "addEmptyParamsToSign",
+							"value": false,
+							"type": "boolean"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"text\": \"Hello world from Postman 🚀\"\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://api.x.com/2/tweet",
+					"protocol": "https",
+					"host": [
+						"api",
+						"x",
+						"com"
+					],
+					"path": [
+						"2",
+						"tweet"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "create fb page post",
+			"id": "17217232-21316aed-31e6-4a01-b4d2-ac42e403b043",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"message\": \"Hello world, this is a test post from Postman!\",\r\n    \"access_token\":\"EAATHBvtWOkcBPqvKeBCo1PRjNIdd6uvF2DG0LuBVjjyxsZCeEioqmnHnNNF9nNRfFmTRlRE3gAedOwa1tLwtrZAaG0lGf1fRQTxIkvuXD5kmKD1OBU8GXQiKRsv9mFP0hZBKVjolB7DO5hiFLO5HsfqGVRRfuKdhiiuwpQ26rcWCfxZCtgMnQTQ00jOIkE2NPbVXMcHZC\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://graph.facebook.com/v21.0/{{fb_page_id}}/feed",
+					"protocol": "https",
+					"host": [
+						"graph",
+						"facebook",
+						"com"
+					],
+					"path": [
+						"v21.0",
+						"{{fb_page_id}}",
+						"feed"
+					]
+				},
+				"description": "Generated from cURL: curl -X POST \"https://graph.facebook.com/v21.0/{page_id}/feed\" \\\r\n  -H \"Content-Type: application/json\" \\\r\n  -d '{\"message\":\"Hello world, this is a test post from Postman!\",\"access_token\":\"YOUR_PAGE_ACCESS_TOKEN\"}'\r\n"
+			},
+			"response": []
+		},
+		{
+			"name": "accounts",
+			"id": "17217232-173df76c-6ec6-4786-8851-44ff3b3251b6",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://graph.facebook.com/v21.0/me/accounts?access_token={{fb_page_access_token}}",
+					"protocol": "https",
+					"host": [
+						"graph",
+						"facebook",
+						"com"
+					],
+					"path": [
+						"v21.0",
+						"me",
+						"accounts"
+					],
+					"query": [
+						{
+							"key": "access_token",
+							"value": "{{fb_page_access_token}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "insta page id",
+			"id": "17217232-9d04a2f2-20d0-4c66-a3a5-9e7179447713",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://graph.facebook.com/v21.0/{{fb_page_id}}?fields=instagram_business_account&access_token={{user_access_token}}",
+					"protocol": "https",
+					"host": [
+						"graph",
+						"facebook",
+						"com"
+					],
+					"path": [
+						"v21.0",
+						"{{fb_page_id}}"
+					],
+					"query": [
+						{
+							"key": "fields",
+							"value": "instagram_business_account"
+						},
+						{
+							"key": "access_token",
+							"value": "{{user_access_token}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "insta media upload",
+			"id": "17217232-2fb9aba6-21fd-4c50-8308-50bc80016c42",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"image_url\": \"https://www.aljazeera.com/wp-content/uploads/2023/10/3-D-IMRAN-KHAN-1697551359.jpg?resize=192%2C192&quality=80\",\r\n    \"caption\": \"This is my first Instagram post via Graph API\",\r\n    \"access_token\": \"{{fb_page_access_token}}\"\r\n  }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://graph.facebook.com/v20.0/{{ig_user_id}}/media",
+					"protocol": "https",
+					"host": [
+						"graph",
+						"facebook",
+						"com"
+					],
+					"path": [
+						"v20.0",
+						"{{ig_user_id}}",
+						"media"
+					]
+				},
+				"description": "Generated from cURL: curl -X POST \"https://graph.facebook.com/v20.0/{ig-user-id}/media\" \\\r\n  -F \"image_url=https://yourdomain.com/photo.jpg\" \\\r\n  -F \"caption=This is my first Instagram post via Graph API\" \\\r\n  -F \"access_token={PAGE_ACCESS_TOKEN}\"\r\n"
+			},
+			"response": []
+		},
+		{
+			"name": "insta video upload",
+			"id": "17217232-15c50007-8e56-4e57-97f9-24d1aecaeaac",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"media_type\": \"VIDEO\",\r\n    \"video_url\": \"https://yourdomain.com/video.mp4\",\r\n    \"caption\": \"Posting a video via Graph API\",\r\n    \"access_token\": \"{{fb_page_access_token}}\"\r\n  }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://graph.facebook.com/v20.0/{{ig_user_id}}/media",
+					"protocol": "https",
+					"host": [
+						"graph",
+						"facebook",
+						"com"
+					],
+					"path": [
+						"v20.0",
+						"{{ig_user_id}}",
+						"media"
+					]
+				},
+				"description": "Generated from cURL: curl -X POST \"https://graph.facebook.com/v20.0/{ig-user-id}/media\" \\\r\n  -F \"media_type=VIDEO\" \\\r\n  -F \"video_url=https://yourdomain.com/video.mp4\" \\\r\n  -F \"caption=Posting a video via Graph API\" \\\r\n  -F \"access_token={PAGE_ACCESS_TOKEN}\"\r\n"
+			},
+			"response": []
+		},
+		{
+			"name": "insta-media-publish",
+			"id": "17217232-34b53691-1ffc-4664-8315-edb02fac7d3f",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"creation_id\": \"18125307649489415\",\r\n    \"access_token\": \"{{fb_page_access_token}}\"\r\n  }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://graph.facebook.com/v20.0/{{ig_user_id}}/media_publish",
+					"protocol": "https",
+					"host": [
+						"graph",
+						"facebook",
+						"com"
+					],
+					"path": [
+						"v20.0",
+						"{{ig_user_id}}",
+						"media_publish"
+					]
+				},
+				"description": "Generated from cURL: curl -X POST \"https://graph.facebook.com/v20.0/{ig-user-id}/media_publish\" \\\r\n  -F \"creation_id=17879999999999999\" \\\r\n  -F \"access_token={PAGE_ACCESS_TOKEN}\"\r\n"
+			},
+			"response": []
+		},
+		{
+			"name": "fb upload photos",
+			"id": "17217232-b1799bf6-22e8-448f-8342-f391edf28e16",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"url\": \"https://www.aljazeera.com/wp-content/uploads/2022/04/2022-04-09T203047Z_934087426_RC2WJT9RAM94_RTRMADP_3_PAKISTAN-POLITICS-e1649569800725.jpg?resize=1170%2C780&quality=80\",\r\n    \"caption\": \"This is my image post via Graph API\",\r\n    \"access_token\": \"EAATHBvtWOkcBPqvKeBCo1PRjNIdd6uvF2DG0LuBVjjyxsZCeEioqmnHnNNF9nNRfFmTRlRE3gAedOwa1tLwtrZAaG0lGf1fRQTxIkvuXD5kmKD1OBU8GXQiKRsv9mFP0hZBKVjolB7DO5hiFLO5HsfqGVRRfuKdhiiuwpQ26rcWCfxZCtgMnQTQ00jOIkE2NPbVXMcHZC\"\r\n  }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://graph.facebook.com/v24.0/{{fb_page_id}}/photos",
+					"protocol": "https",
+					"host": [
+						"graph",
+						"facebook",
+						"com"
+					],
+					"path": [
+						"v24.0",
+						"{{fb_page_id}}",
+						"photos"
+					]
+				},
+				"description": "Generated from cURL: curl -X POST \"https://graph.facebook.com/v20.0/{page-id}/photos\" \\\r\n  -F \"url=https://yourdomain.com/photo.jpg\" \\\r\n  -F \"caption=This is my image post via Graph API\" \\\r\n  -F \"access_token={PAGE_ACCESS_TOKEN}\"\r\n"
+			},
+			"response": []
+		},
+		{
+			"name": "fb uplaod videos",
+			"id": "17217232-f2f2222b-3ab1-406a-901a-3616f0ab5c21",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"file_url\": \"https://yourdomain.com/video.mp4\",\r\n    \"description\": \"This is my video post via Graph API\",\r\n    \"access_token\": \"{{fb_page_access_token}}\"\r\n  }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://graph.facebook.com/v20.0/{{fb_page_id}}/videos",
+					"protocol": "https",
+					"host": [
+						"graph",
+						"facebook",
+						"com"
+					],
+					"path": [
+						"v20.0",
+						"{{fb_page_id}}",
+						"videos"
+					]
+				},
+				"description": "Generated from cURL: curl -X POST \"https://graph.facebook.com/v20.0/{page-id}/videos\" \\\r\n  -F \"file_url=https://yourdomain.com/video.mp4\" \\\r\n  -F \"description=This is my video post via Graph API\" \\\r\n  -F \"access_token={PAGE_ACCESS_TOKEN}\"\r\n"
+			},
+			"response": []
+		},
+		{
+			"name": "fb post with link",
+			"id": "17217232-16e35a0f-7943-455e-9d4e-8ea42de4872f",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"message\": \"Check out this new update!\",\r\n    \"link\": \"https://yourwebsite.com\",\r\n    \"access_token\": \"{{fb_page_access_token}}\"\r\n  }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://graph.facebook.com/v20.0/{{fb_page_id}}/feed",
+					"protocol": "https",
+					"host": [
+						"graph",
+						"facebook",
+						"com"
+					],
+					"path": [
+						"v20.0",
+						"{{fb_page_id}}",
+						"feed"
+					]
+				},
+				"description": "Generated from cURL: curl -X POST \"https://graph.facebook.com/v20.0/{page-id}/feed\" \\\r\n  -F \"message=Check out this new update!\" \\\r\n  -F \"link=https://yourwebsite.com\" \\\r\n  -F \"access_token={PAGE_ACCESS_TOKEN}\"\r\n"
+			},
+			"response": []
+		},
+		{
+			"name": "telegram sendMessage",
+			"id": "17217232-d08670af-00f1-4dc0-b54b-c61a5787e3ed",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"chat_id\": \"{{YOUR_CHAT_ID}}\",\r\n    \"text\": \"Hello from my Telegram bot via cURL!\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://api.telegram.org/bot{{YOUR_BOT_TOKEN}}/sendMessage",
+					"protocol": "https",
+					"host": [
+						"api",
+						"telegram",
+						"org"
+					],
+					"path": [
+						"bot{{YOUR_BOT_TOKEN}}",
+						"sendMessage"
+					]
+				},
+				"description": "Generated from cURL: curl -X POST \"https://api.telegram.org/bot<YOUR_BOT_TOKEN>/sendMessage\" \\\r\n  -H \"Content-Type: application/json\" \\\r\n  -d '{\r\n    \"chat_id\": \"<YOUR_CHAT_ID>\",\r\n    \"text\": \"Hello from my Telegram bot via cURL!\"\r\n  }'\r\n"
+			},
+			"response": []
+		},
+		{
+			"name": "getUpdates Copy",
+			"id": "17217232-2f47fe4f-5f7d-4797-bdda-0aa13b4375a4",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "offset",
+							"description": "Optional. Identifier of the first update to be returned. Must be greater by one than the highest among the identifiers of previously received updates. By default, updates starting with the earliest unconfirmed update are returned. An update is considered confirmed as soon as getUpdates is called with an offset higher than its update_id. The negative offset can be specified to retrieve updates starting from -offset update from the end of the updates queue. All previous updates will be forgotten.",
+							"type": "text",
+							"disabled": true
+						},
+						{
+							"key": "limit",
+							"description": "Optional. Limits the number of updates to be retrieved. Values between 1-100 are accepted. Defaults to 100.",
+							"type": "text",
+							"value": "100",
+							"disabled": true
+						},
+						{
+							"key": "timeout",
+							"description": "Optional. Timeout in seconds for long polling. Defaults to 0, i.e. usual short polling. Should be positive, short polling should be used for testing purposes only.",
+							"type": "text",
+							"disabled": true
+						},
+						{
+							"key": "allowed_updates",
+							"description": "Optional. A JSON-serialized list of the update types you want your bot to receive. For example, specify [“message”, “edited_channel_post”, “callback_query”] to only receive updates of these types. See Update for a complete list of available update types. Specify an empty list to receive all update types except chat_member (default). If not specified, the previous setting will be used.Please note that this parameter doesn't affect updates created before the call to the getUpdates, so unwanted updates may be received for a short period of time.",
+							"type": "text",
+							"disabled": true
+						}
+					]
+				},
+				"url": {
+					"raw": "https://api.telegram.org/bot{{YOUR_BOT_TOKEN}}/getUpdates",
+					"protocol": "https",
+					"host": [
+						"api",
+						"telegram",
+						"org"
+					],
+					"path": [
+						"bot{{YOUR_BOT_TOKEN}}",
+						"getUpdates"
+					]
+				},
+				"description": "Use this method to receive incoming updates using long polling (wiki). Returns an Array of Update objects."
+			},
+			"response": []
+		},
+		{
+			"name": "getMe Copy",
+			"id": "17217232-bd52c10d-711c-46d6-a485-28d3db98ebd8",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"url": {
+					"raw": "https://api.telegram.org/bot{{YOUR_BOT_TOKEN}}/getMe",
+					"protocol": "https",
+					"host": [
+						"api",
+						"telegram",
+						"org"
+					],
+					"path": [
+						"bot{{YOUR_BOT_TOKEN}}",
+						"getMe"
+					]
+				},
+				"description": "A simple method for testing your bot's authentication token. Requires no parameters. Returns basic information about the bot in form of a User object."
+			},
+			"response": []
+		},
+		{
+			"name": "New Request",
+			"id": "17217232-e69a738f-628d-4376-9b6a-85a03b27a3d7",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://graph.facebook.com/v21.0/{{ig_user_id}}/media?fields=id,caption,media_url,timestamp&access_token={{fb_page_access_token}}",
+					"protocol": "https",
+					"host": [
+						"graph",
+						"facebook",
+						"com"
+					],
+					"path": [
+						"v21.0",
+						"{{ig_user_id}}",
+						"media"
+					],
+					"query": [
+						{
+							"key": "fields",
+							"value": "id,caption,media_url,timestamp"
+						},
+						{
+							"key": "access_token",
+							"value": "{{fb_page_access_token}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "sendMessage on chnnel",
+			"id": "17217232-ff731600-58f2-47e0-a1d1-751fcfe0961d",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"type": "text",
+							"key": "chat_id",
+							"value": "{{YOUR_CHANNEL_ID}}"
+						},
+						{
+							"type": "text",
+							"key": "text",
+							"value": "Hello, this is my bot posting!"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://api.telegram.org/bot{{YOUR_BOT_TOKEN}}/sendMessage",
+					"protocol": "https",
+					"host": [
+						"api",
+						"telegram",
+						"org"
+					],
+					"path": [
+						"bot{{YOUR_BOT_TOKEN}}",
+						"sendMessage"
+					]
+				},
+				"description": "Generated from cURL: curl -X POST \"https://api.telegram.org/bot<YOUR_TOKEN>/sendMessage\" \\\r\n-d \"chat_id=@yourchannelusername\" \\\r\n-d \"text=Hello, this is my bot posting!\"\r\n"
+			},
+			"response": []
+		},
+		{
+			"name": "curl -i -X GET \\   \"https://graph.facebook.com/USER-ID?access_token=ACCESS-TOKEN\"",
+			"id": "17217232-584f7a89-a350-4591-a5b3-cff81037908e",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "https://graph.facebook.com/USER-ID?access_token=ACCESS-TOKEN",
+			"id": "17217232-779e9cf1-f10a-4683-bc37-2357c1d187c8",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://graph.facebook.com/USER-ID?access_token={{acess-token}}",
+					"protocol": "https",
+					"host": [
+						"graph",
+						"facebook",
+						"com"
+					],
+					"path": [
+						"USER-ID"
+					],
+					"query": [
+						{
+							"key": "access_token",
+							"value": "{{acess-token}}"
+						}
+					]
+				},
+				"description": "Generated from cURL: curl -i -X GET \\\r\n  \"https://graph.facebook.com/USER-ID?access_token=ACCESS-TOKEN\""
+			},
+			"response": []
+		},
+		{
+			"name": "New Request",
+			"id": "17217232-a3ecc8de-603d-4067-883d-bea9e891d2c7",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "23f77a73-d3a9-4bc0-8d19-63a0b8256c95",
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "0d1c4b0e-ff10-4728-a1e4-880218de2fdb",
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "fb_page_access_token",
+			"value": "EAATHBvtWOkcBPky2m7B1NqDHbJv7JZB0JdEVijiBQoYYZCTZCLTuB24NLYJyuUmZBf4dqVgh9ZAKK3WtCHideDnX2mbvXVICO1c2GfV4ZCH3l9zsSIC25wfLIJH1BjCZCpbFJZBJ0iSpRtHnYv2t30GVL7FoC70Y90dMld7fpBwFLtZCflt8cZB1kvJnaAn9ZCtwI5o"
+		},
+		{
+			"key": "fb_page_id",
+			"value": "723814977487357"
+		},
+		{
+			"key": "user_access_token",
+			"value": "EAATHBvtWOkcBPqvKeBCo1PRjNIdd6uvF2DG0LuBVjjyxsZCeEioqmnHnNNF9nNRfFmTRlRE3gAedOwa1tLwtrZAaG0lGf1fRQTxIkvuXD5kmKD1OBU8GXQiKRsv9mFP0hZBKVjolB7DO5hiFLO5HsfqGVRRfuKdhiiuwpQ26rcWCfxZCtgMnQTQ00jOIkE2NPbVXMcHZC"
+		},
+		{
+			"key": "ig_user_id",
+			"value": "17841401412363142"
+		},
+		{
+			"key": "YOUR_CHAT_ID",
+			"value": "1310589021"
+		},
+		{
+			"key": "YOUR_BOT_TOKEN",
+			"value": "8437839049:AAFW3qU7gDPxG_yH951oSMHt56aKz8xv_wM"
+		},
+		{
+			"key": "YOUR_CHANNEL_ID",
+			"value": "@HasniChannel"
+		},
+		{
+			"key": "x_access_token",
+			"value": ""
+		},
+		{
+			"key": "x_access_token-secret",
+			"value": ""
+		},
+		{
+			"key": "x_consumer_key",
+			"value": ""
+		},
+		{
+			"key": "x_consumer_secret",
+			"value": ""
+		},
+		{
+			"key": "x_client_id",
+			"value": ""
+		},
+		{
+			"key": "x_client_secret",
+			"value": ""
+		},
+		{
+			"key": "x_app_name",
+			"value": ""
+		},
+		{
+			"key": "x_app_id",
+			"value": ""
+		},
+		{
+			"key": "x_barrer_token",
+			"value": ""
+		},
+		{
+			"key": "x_callback",
+			"value": ""
+		},
+		{
+			"key": "x_website",
+			"value": ""
+		}
+	]
+}
