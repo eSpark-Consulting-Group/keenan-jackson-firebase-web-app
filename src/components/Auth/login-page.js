@@ -310,10 +310,10 @@ export default function Login() {
 
         {/* Footer links */}
         <div className="text-center text-sm text-gray-600">
-          <Link to="/free-entry" className="hover:text-gray-900">
+          {/* <Link to="/free-entry" className="hover:text-gray-900">
             Free entry available
           </Link>
-          {" • "}
+          {" • "} */}
           <Link to="/legal/terms" className="hover:text-gray-900">
             Terms
           </Link>

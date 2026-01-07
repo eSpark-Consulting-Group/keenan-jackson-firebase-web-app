@@ -19,8 +19,8 @@ import { GameProvider } from "./contexts/gamecontext";
 
 // Layout Components
 import Layout from "./components/layout/layout";
-import ProtectedRoute from "./components/auth/protected-route";
-import AdminRoute from "./components/auth/admin-route";
+import ProtectedRoute from "./components/Auth/protected-route.js";
+import AdminRoute from "./components/Auth/admin-route.js";
 
 // Styles
 import "./styles/index.css";
@@ -76,10 +76,10 @@ function App() {
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
 
-   useEffect(() => {
+  useEffect(() => {
     registerServiceWorker();
   }, []);
-  
+
   useEffect(() => {
     const runEligibilityCheck = async () => {
       const data = await checkEligibility();
@@ -120,18 +120,43 @@ function App() {
 
   const routesConfig = [
     { path: "/", element: <LandingPage />, layout: true },
-    { path: "/dashboard", element: <Dashboard />, layout: true, protected: true },
-    { path: "/free-entry", element: <FreeEntry />, layout: true },
-    { path: "/game/:boardId", element: <GameBoard />, layout: true, protected: true },
+    {
+      path: "/dashboard",
+      element: <Dashboard />,
+      layout: true,
+      protected: true,
+    },
+    // { path: "/free-entry", element: <FreeEntry />, layout: true },
+    {
+      path: "/game/:boardId",
+      element: <GameBoard />,
+      layout: true,
+      protected: true,
+    },
     { path: "/game/:boardId/results", element: <GameResults />, layout: true },
     { path: "/games", element: <Games />, layout: true, protected: true },
     { path: "/home", element: <LandingPage />, layout: true },
     { path: "/how-to-play", element: <HowToPlay />, layout: true },
-    { path: "/leaderboard", element: <Leaderboard />, layout: true, admin: true },
+    {
+      path: "/leaderboard",
+      element: <Leaderboard />,
+      layout: true,
+      admin: true,
+    },
     { path: "/legal/:page", element: <Legal />, layout: true },
     { path: "/login", element: <Login />, layout: true },
-    { path: "/payment-cancel", element: <PaymentCancel />, layout: true, protected: true },
-    { path: "/payment-success", element: <PaymentSuccess />, layout: true, protected: true },
+    {
+      path: "/payment-cancel",
+      element: <PaymentCancel />,
+      layout: true,
+      protected: true,
+    },
+    {
+      path: "/payment-success",
+      element: <PaymentSuccess />,
+      layout: true,
+      protected: true,
+    },
     { path: "/payouts", element: <Payouts />, layout: true, protected: true },
     { path: "/profile", element: <Profile />, layout: true, protected: true },
     { path: "/register", element: <Register />, layout: true },
@@ -140,15 +165,60 @@ function App() {
 
     // Admin routes
     { path: "/admin", element: <AdminDashboard />, layout: true, admin: true },
-    { path: "/admin/games", element: <AdminGames />, layout: true, admin: true },
-    { path: "/admin/payouts", element: <AdminPayouts />, layout: true, admin: true },
-    { path: "/admin/payouts/:payoutId", element: <AdminPayoutsSingle />, layout: true, admin: true },
-    { path: "/admin/referral-reports", element: <ReferralReports />, layout: true, admin: true },
-    { path: "/admin/reports", element: <AdminReports />, layout: true, admin: true },
-    { path: "/admin/teams-reports", element: <TeamsFanbase />, layout: true, admin: true },
-    { path: "/admin/trivia", element: <AdminTrivia />, layout: true, admin: true },
-    { path: "/admin/users", element: <AdminUsers />, layout: true, admin: true },
-    { path: "/admin/users/:userId", element: <AdminUsersSingle />, layout: true, admin: true },
+    {
+      path: "/admin/games",
+      element: <AdminGames />,
+      layout: true,
+      admin: true,
+    },
+    {
+      path: "/admin/payouts",
+      element: <AdminPayouts />,
+      layout: true,
+      admin: true,
+    },
+    {
+      path: "/admin/payouts/:payoutId",
+      element: <AdminPayoutsSingle />,
+      layout: true,
+      admin: true,
+    },
+    {
+      path: "/admin/referral-reports",
+      element: <ReferralReports />,
+      layout: true,
+      admin: true,
+    },
+    {
+      path: "/admin/reports",
+      element: <AdminReports />,
+      layout: true,
+      admin: true,
+    },
+    {
+      path: "/admin/teams-reports",
+      element: <TeamsFanbase />,
+      layout: true,
+      admin: true,
+    },
+    {
+      path: "/admin/trivia",
+      element: <AdminTrivia />,
+      layout: true,
+      admin: true,
+    },
+    {
+      path: "/admin/users",
+      element: <AdminUsers />,
+      layout: true,
+      admin: true,
+    },
+    {
+      path: "/admin/users/:userId",
+      element: <AdminUsersSingle />,
+      layout: true,
+      admin: true,
+    },
   ];
 
   return (
@@ -172,21 +242,39 @@ function App() {
             }
           >
             <Routes>
-              {routesConfig.map(({ path, element, layout, protected: isProtected, admin }) => {
-                const wrappedElement = layout ? <Layout>{element}</Layout> : element;
-
-                if (admin)
-                  return (
-                    <Route key={path} path={path} element={<AdminRoute>{wrappedElement}</AdminRoute>} />
+              {routesConfig.map(
+                ({ path, element, layout, protected: isProtected, admin }) => {
+                  const wrappedElement = layout ? (
+                    <Layout>{element}</Layout>
+                  ) : (
+                    element
                   );
 
-                if (isProtected)
-                  return (
-                    <Route key={path} path={path} element={<ProtectedRoute>{wrappedElement}</ProtectedRoute>} />
-                  );
+                  if (admin)
+                    return (
+                      <Route
+                        key={path}
+                        path={path}
+                        element={<AdminRoute>{wrappedElement}</AdminRoute>}
+                      />
+                    );
 
-                return <Route key={path} path={path} element={wrappedElement} />;
-              })}
+                  if (isProtected)
+                    return (
+                      <Route
+                        key={path}
+                        path={path}
+                        element={
+                          <ProtectedRoute>{wrappedElement}</ProtectedRoute>
+                        }
+                      />
+                    );
+
+                  return (
+                    <Route key={path} path={path} element={wrappedElement} />
+                  );
+                }
+              )}
 
               {/* Catch-all */}
               <Route

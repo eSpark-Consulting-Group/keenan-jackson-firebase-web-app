@@ -27,13 +27,13 @@ export default function PaymentCancel() {
       action: "Contact Support",
       link: "mailto:support@squaretrivia.com",
     },
-    {
-      icon: Mail,
-      title: "Try Free Entry",
-      description: "No purchase necessary - request free entry by mail.",
-      action: "Learn More",
-      link: "/free-entry",
-    },
+    // {
+    //   icon: Mail,
+    //   title: "Try Free Entry",
+    //   description: "No purchase necessary - request free entry by mail.",
+    //   action: "Learn More",
+    //   link: "/free-entry",
+    // },
   ];
 
   const benefits = [

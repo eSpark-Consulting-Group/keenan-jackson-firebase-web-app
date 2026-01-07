@@ -555,7 +555,7 @@ export default function Register() {
               </p>
             </div>
 
-            <div className="mt-6 text-center">
+            {/* <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 No purchase necessary •{" "}
                 <Link
@@ -565,7 +565,7 @@ export default function Register() {
                   Free entry available
                 </Link>
               </p>
-            </div>
+            </div> */}
           </motion.div>
         </div>
       </motion.div>

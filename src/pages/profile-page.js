@@ -29,7 +29,7 @@ import {
 import { useAuth } from "../contexts/authcontext";
 import { collections, db, formatCurrency } from "../firebase/config";
 import toast from "react-hot-toast";
-import PayoutModal from "../components/auth/payout-modal";
+import PayoutModal from "../components/Auth/payout-modal";
 import {
   collection,
   doc,

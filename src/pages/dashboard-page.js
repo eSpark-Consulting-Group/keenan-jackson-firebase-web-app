@@ -253,14 +253,14 @@ export default function Dashboard() {
               <div className="flex justify-between text-sm text-gray-600 mb-1">
                 <span>Used today</span>
                 <span>
-                  {dailyAttempts.used} / {dailyAttempts.total}
+                  {Math.min(dailyAttempts.used, 5)} / {dailyAttempts.total}
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
                 <div
                   className="bg-blue-600 h-3 rounded-full transition-all duration-300"
                   style={{
-                    width: `${(dailyAttempts.used / dailyAttempts.total) * 100}%`,
+                    width: `${Math.min((dailyAttempts.used / dailyAttempts.total) * 100, 100)}%`,
                   }}
                 />
               </div>

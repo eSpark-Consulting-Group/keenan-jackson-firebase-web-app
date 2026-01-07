@@ -15,6 +15,8 @@ import {
   Award,
 } from "lucide-react";
 
+// import largeScreenVideo from "../../public/169.mp4";
+
 export default function HowToPlay() {
   const steps = [
     {
@@ -198,17 +200,26 @@ This way, you’re always earning another shot to win big.`,
           transition={{ delay: 0.1 }}
           className="bg-white rounded-lg shadow-lg p-8 mb-12 text-center "
         >
-          <div className="bg-gray-200 rounded-lg h-96 md:h-[600px] flex items-center justify-center mb-4">
+          <div className="rounded-lg h-64 md:h-96 flex items-center justify-center mb-4">
             <video
-              className="rounded-lg h-full w-full object-cover"
-              autoPlay
-              //loop
-              // muted
+              src="/169.mp4"
+              // autoPlay
+              // loop
+              playsInline
+              className="hidden md:block w-full h-full"
               controls
-              src="/intro/final_revised_version_1.0_4k.mp4"
-            >
-              Your browser does not support the video tag.
-            </video>
+              muted
+            />
+
+            <video
+              src="/916.mp4"
+              // autoPlay
+              // loop
+              playsInline
+              className="block md:hidden w-full h-full"
+              controls
+              muted
+            />
           </div>
           <p className="text-gray-600">
             Watch our 2-minute video to see Square Trivia in action

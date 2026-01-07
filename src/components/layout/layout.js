@@ -368,12 +368,20 @@ export default function Layout({ children }) {
                     How to Play
                   </Link>
                 </li>
-                <li>
+                {/* <li>
                   <Link
                     to="/free-entry"
                     className="text-gray-400 hover:text-white"
                   >
                     Free Entry (AMOE)
+                  </Link>
+                </li> */}
+                <li>
+                  <Link
+                    to="/legal/responsible-competition"
+                    className="text-gray-400 hover:text-white"
+                  >
+                    Responsible Competition
                   </Link>
                 </li>
                 <li>
@@ -430,27 +438,24 @@ export default function Layout({ children }) {
                 </li>
                 <li className="flex items-center text-gray-400 hover:text-white">
                   <Shield className="h-4 w-4 mr-2" aria-label="Shield" />
-                    100% Legal & Secure
+                  100% Legal & Secure
                 </li>
                 <li className="flex items-center text-gray-400 hover:text-white">
                   <DollarSign
                     className="h-4 w-4 mr-2"
                     aria-label="Dollar sign"
                   />
-                    NO FEES Guarantee
+                  NO FEES Guarantee
                 </li>
               </ul>
             </div>
           </div>
 
           <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
-            <p>
-              &copy; {new Date().getFullYear()} Square Trivia. All rights
-              reserved. 18+ only.
-            </p>
+            <p>&copy; 2026 Square Trivia. All rights reserved. 18+ only.</p>
             <p className="mt-2">
-              Skill-based competition platform • Not gambling • No purchase
-              necessary
+              Skill-based competition platform • Not gambling • Responsible
+              Competition
             </p>
           </div>
         </div>
