@@ -6,7 +6,8 @@ const admin = require("firebase-admin");
 const sharp = require("sharp");
 const fs = require("fs").promises;
 const path = require("path");
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const stripeKey = functions.config().stripe.key;
+const stripe = require("stripe")(stripeKey);
 const { TIERS } = require("./constants-configuration-fixed");
 const {
   handleSuccessfulPayment,
@@ -28,7 +29,8 @@ const { getShortCode, getFirstWord } = require("./utils");
 // Initialize admin if not already done
 if (!admin.apps.length) {
   admin.initializeApp({
-    storageBucket: process.env.STORAGE_BUCKET_NAME || "YOUR-PROJECT-ID.appspot.com"
+    storageBucket:
+      process.env.STORAGE_BUCKET_NAME || "YOUR-PROJECT-ID.appspot.com",
   });
 }
 
@@ -1075,19 +1077,19 @@ async function processWinner(winnerData) {
       data: formValues,
       savePath: `savedimages/${gameId}/${boardId}/${selectedTemplate}.jpg`,
     };
-let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
+    let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
 
-try {
-  const imageResult = await generateImage(payload);
+    try {
+      const imageResult = await generateImage(payload);
 
-  if (imageResult && imageResult.response === "success") {
-    imageUrl = imageResult.path; // use generated image if successful
-  } else {
-    console.warn("Image generation failed:", imageResult);
-  }
-} catch (err) {
-  console.error("Image generation error:", err);
-}
+      if (imageResult && imageResult.response === "success") {
+        imageUrl = imageResult.path; // use generated image if successful
+      } else {
+        console.warn("Image generation failed:", imageResult);
+      }
+    } catch (err) {
+      console.error("Image generation error:", err);
+    }
     BigWinPost({
       winner: displayName,
       prize: prizeAmount,
@@ -1113,19 +1115,19 @@ try {
       data: formValues,
       savePath: `savedimages/${gameId}/${boardId}/${selectedTemplate}.jpg`,
     };
-let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
+    let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
 
-try {
-  const imageResult = await generateImage(payload);
+    try {
+      const imageResult = await generateImage(payload);
 
-  if (imageResult && imageResult.response === "success") {
-    imageUrl = imageResult.path; // use generated image if successful
-  } else {
-    console.warn("Image generation failed:", imageResult);
-  }
-} catch (err) {
-  console.error("Image generation error:", err);
-}
+      if (imageResult && imageResult.response === "success") {
+        imageUrl = imageResult.path; // use generated image if successful
+      } else {
+        console.warn("Image generation failed:", imageResult);
+      }
+    } catch (err) {
+      console.error("Image generation error:", err);
+    }
     StandardWinPost({
       winner: displayName,
       prize: prizeAmount,
@@ -1154,19 +1156,19 @@ try {
       data: formValues,
       savePath: `savedimages/${gameId}/${boardId}/${selectedTemplate}.jpg`,
     };
-let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
+    let imageUrl = "https://squaretrivia.com/apple-touch-icon.png"; // default fallback
 
-try {
-  const imageResult = await generateImage(payload);
+    try {
+      const imageResult = await generateImage(payload);
 
-  if (imageResult && imageResult.response === "success") {
-    imageUrl = imageResult.path; // use generated image if successful
-  } else {
-    console.warn("Image generation failed:", imageResult);
-  }
-} catch (err) {
-  console.error("Image generation error:", err);
-}
+      if (imageResult && imageResult.response === "success") {
+        imageUrl = imageResult.path; // use generated image if successful
+      } else {
+        console.warn("Image generation failed:", imageResult);
+      }
+    } catch (err) {
+      console.error("Image generation error:", err);
+    }
     PhotoFinishPost({
       winner: getFirstWord(displayName),
       loser: getFirstWord(displayLooserName),
@@ -1725,7 +1727,10 @@ async function generateImage({ templateID, data, savePath }) {
     const templatePath = path.join(__dirname, "templates", `${templateID}.svg`);
     let svgContent = await fs.readFile(templatePath, "utf-8");
 
-    svgContent = svgContent.replace(/{([^}]+)}/g, (match, key) => data[key] ?? "");
+    svgContent = svgContent.replace(
+      /{([^}]+)}/g,
+      (match, key) => data[key] ?? ""
+    );
 
     const jpgBuffer = await sharp(Buffer.from(svgContent))
       .jpeg({ quality: 90 })

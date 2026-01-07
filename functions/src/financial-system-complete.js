@@ -4,11 +4,12 @@ require("dotenv").config();
 
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const stripeKey = functions.config().stripe.key;
+const stripe = require("stripe")(stripeKey);
 const { Parser } = require("json2csv");
 const nodemailer = require("nodemailer");
 const { sendMail } = require("./payment-system-modified");
-console.log("Stripe secret key:", process.env.STRIPE_SECRET_KEY);
+// console.log("Stripe secret key:", process.env.STRIPE_SECRET_KEY);
 
 // Initialize mail transport
 const mailTransport = nodemailer.createTransport({

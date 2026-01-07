@@ -5,7 +5,8 @@
 const functions = require("firebase-functions");
 
 const admin = require("firebase-admin");
-const stripe = require("stripe")(functions.config().stripe.secret);
+const stripeKey = functions.config().stripe.key;
+const stripe = require("stripe")(stripeKey);
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const { default: axios } = require("axios");
