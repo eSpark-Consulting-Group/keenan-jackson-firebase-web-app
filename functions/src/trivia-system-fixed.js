@@ -110,7 +110,7 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
     if (!hasAccess) {
       throw new functions.https.HttpsError(
         "permission-denied",
-        "No active access to this tier. Please make a donation first."
+        "You do not have active access to this tier. Please pay the entry fee first."
       );
     }
 

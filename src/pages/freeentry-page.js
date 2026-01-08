@@ -283,7 +283,7 @@ Dallas, TX 75201`;
         >
           <h2 className="text-2xl font-bold mb-4">Prefer Instant Access?</h2>
           <p className="text-lg mb-6 text-blue-100">
-            Skip the wait and start playing immediately with a donation
+            Skip the wait and start playing immediately with a entry fee
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

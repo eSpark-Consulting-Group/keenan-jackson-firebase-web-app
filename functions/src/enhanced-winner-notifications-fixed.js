@@ -2,12 +2,12 @@
 // Handles all winner notifications via email, Telegram, and SMS
 // Updated for skill-based competition system with enhanced timing reveal messaging
 
-const functions = require('firebase-functions');
-const admin = require('firebase-admin');
-const nodemailer = require('nodemailer');
-const TelegramBot = require('node-telegram-bot-api');
-const twilio = require('twilio');
-const sgMail = require('@sendgrid/mail');
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+const nodemailer = require("nodemailer");
+const TelegramBot = require("node-telegram-bot-api");
+const twilio = require("twilio");
+const sgMail = require("@sendgrid/mail");
 
 // Import from constants/config using CommonJS
 const {
@@ -16,8 +16,8 @@ const {
   SUCCESS_MESSAGES,
   TIERS,
   GAME_CONFIG,
-  getTierById
-} = require('./constants-configuration-fixed');
+  getTierById,
+} = require("./constants-configuration-fixed");
 
 // Import from utils/utilities using CommonJS
 const {
@@ -27,22 +27,22 @@ const {
   retryOperation,
   createError,
   safeTransaction,
-  sanitizeInput
-} = require('./utility-functions-fixed');
+  sanitizeInput,
+} = require("./utility-functions-fixed");
 
 // Payment structure constants
 // These will eventually come from constants-configuration.js
 const INSTANT_PAYOUT_FEE = 0.08; // 8% fee for instant payouts
-const BATCH_PAYOUT_DAYS = ['tuesday', 'friday'];
+const BATCH_PAYOUT_DAYS = ["tuesday", "friday"];
 const BATCH_PAYOUT_SCHEDULE = {
   tuesday: {
-    processes: 'Friday - Monday games',
-    nextDay: 'friday'
+    processes: "Friday - Monday games",
+    nextDay: "friday",
   },
   friday: {
-    processes: 'Tuesday - Thursday games',
-    nextDay: 'tuesday'
-  }
+    processes: "Tuesday - Thursday games",
+    nextDay: "tuesday",
+  },
 };
 
 // IMPORTANT: Tier names remain unchanged throughout the system
@@ -57,7 +57,9 @@ const BATCH_PAYOUT_SCHEDULE = {
  * Generate secure token for payout choice URL
  */
 function generateSecureToken() {
-  return admin.firestore().collection('temp').doc().id + Date.now().toString(36);
+  return (
+    admin.firestore().collection("temp").doc().id + Date.now().toString(36)
+  );
 }
 
 /**
@@ -70,7 +72,7 @@ function calculateInstantPayout(prizeAmount) {
     originalAmount: prizeAmount,
     fee: fee,
     netAmount: netAmount,
-    feePercentage: INSTANT_PAYOUT_FEE * 100
+    feePercentage: INSTANT_PAYOUT_FEE * 100,
   };
 }
 
@@ -80,10 +82,10 @@ function calculateInstantPayout(prizeAmount) {
 function getNextBatchPayoutDate() {
   const today = new Date();
   const dayOfWeek = today.getDay();
-  
+
   // Tuesday = 2, Friday = 5
   let daysUntilNext;
-  
+
   if (dayOfWeek <= 2) {
     // Sunday (0), Monday (1), Tuesday (2) -> next Tuesday
     daysUntilNext = 2 - dayOfWeek;
@@ -94,19 +96,19 @@ function getNextBatchPayoutDate() {
     // Saturday (6) -> next Tuesday
     daysUntilNext = 3;
   }
-  
+
   if (daysUntilNext === 0) {
     // If it's already Tuesday or Friday, next batch is the following one
     daysUntilNext = dayOfWeek === 2 ? 3 : 4; // Tuesday -> Friday, Friday -> Tuesday
   }
-  
+
   const nextBatchDate = new Date(today);
   nextBatchDate.setDate(today.getDate() + daysUntilNext);
-  
-  return nextBatchDate.toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    month: 'long', 
-    day: 'numeric' 
+
+  return nextBatchDate.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
   });
 }
 
@@ -116,8 +118,8 @@ function getNextBatchPayoutDate() {
  * Upper 3 tiers ($250, $500, $1000): 80%
  */
 function getPayoutPercentage(tierId) {
-  const lowerTiers = ['tier_25', 'tier_50', 'tier_100'];
-  return lowerTiers.includes(tierId) ? 0.77 : 0.80;
+  const lowerTiers = ["tier_25", "tier_50", "tier_100"];
+  return lowerTiers.includes(tierId) ? 0.77 : 0.8;
 }
 
 // =====================================
@@ -135,10 +137,10 @@ class EmailService {
       // Use your SendGrid API key from environment variable
       sgMail.setApiKey(process.env.SENDGRID_API_KEY);
       this.initialized = true;
-      console.log('SendGrid email service initialized successfully');
+      console.log("SendGrid email service initialized successfully");
     } catch (error) {
-      logError(error, { context: 'EmailService.initialize' });
-      throw new Error('Failed to initialize SendGrid service');
+      logError(error, { context: "EmailService.initialize" });
+      throw new Error("Failed to initialize SendGrid service");
     }
   }
 
@@ -152,18 +154,20 @@ class EmailService {
       from: NOTIFICATION_CONFIG.EMAIL.FROM_ADDRESS, // must be a verified SendGrid sender
       subject,
       html,
-      attachments: attachments.map(att => ({
-        content: att.content.toString('base64'),
+      attachments: attachments.map((att) => ({
+        content: att.content.toString("base64"),
         filename: att.filename,
         type: att.contentType,
-        disposition: 'attachment'
-      }))
+        disposition: "attachment",
+      })),
     };
 
     return await retryOperation(
       async () => {
         const response = await sgMail.send(msg);
-        console.log(`Email sent to ${to} via SendGrid: ${response[0].statusCode}`);
+        console.log(
+          `Email sent to ${to} via SendGrid: ${response[0].statusCode}`
+        );
         return response;
       },
       3,
@@ -182,34 +186,44 @@ class EmailService {
       donation_confirm: this.getDonationConfirmTemplate(data),
       payout_sent: this.getPayoutSentTemplate(data),
       welcome: this.getWelcomeTemplate(data),
-      instant_payout_confirmation: this.getInstantPayoutConfirmationTemplate(data),
+      instant_payout_confirmation:
+        this.getInstantPayoutConfirmationTemplate(data),
       batch_payout_queued: this.getBatchPayoutQueuedTemplate(data),
       payout_choice_reminder: this.getPayoutChoiceReminderTemplate(data),
-      consolation_prize: this.getConsolationTemplate(data)
+      consolation_prize: this.getConsolationTemplate(data),
     };
 
-    return templates[templateName] || '';
+    return templates[templateName] || "";
   }
 
   /**
    * Winner notification template - ENHANCED WITH TIMING REVEAL EXCITEMENT
    */
   getWinnerTemplate(data) {
-    const { 
-      game, quarter, score, position, prizeAmount, tier, tierId, 
-      winnerTime, loserTime, hasLoser 
+    const {
+      game,
+      quarter,
+      score,
+      position,
+      prizeAmount,
+      tier,
+      tierId,
+      winnerTime,
+      loserTime,
+      hasLoser,
     } = data;
-    
+
     // Calculate instant payout option (8% fee)
     const instantPayoutFee = prizeAmount * 0.08;
     const instantPayoutAmount = prizeAmount - instantPayoutFee;
-    
+
     // Get payout percentage for tier
     const payoutPercentage = getPayoutPercentage(tierId);
-    const payoutPercentageDisplay = payoutPercentage === 0.77 ? '77%' : '80%';
-    
+    const payoutPercentageDisplay = payoutPercentage === 0.77 ? "77%" : "80%";
+
     // Enhanced skill victory section with timing reveal excitement
-    const skillSection = hasLoser ? `
+    const skillSection = hasLoser
+      ? `
       <div style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); padding: 30px; border-radius: 16px; margin: 30px 0; border: 2px solid #f97316;">
         <h3 style="margin-top: 0; color: #ea580c; font-size: 26px; text-align: center;">
           🎯 The Moment of Truth Has Arrived! 🎯
@@ -247,7 +261,8 @@ class EmailService {
           Times were hidden until this winning moment to keep the competition fair and exciting!
         </p>
       </div>
-    ` : `
+    `
+      : `
       <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 30px; border-radius: 16px; margin: 30px 0; border: 2px solid #0066FF;">
         <h3 style="margin-top: 0; color: #0066FF; font-size: 24px;">🎯 Solo Square Winner!</h3>
         <p style="font-size: 18px; margin: 15px 0;">You were the only player on this square.</p>
@@ -262,7 +277,7 @@ class EmailService {
         </div>
       </div>
     `;
-    
+
     return `
 <!DOCTYPE html>
 <html>
@@ -458,7 +473,7 @@ class EmailService {
         </div>
         
         <p style="text-align: center; margin-top: 20px;">
-          <a href="https://squaretrivia.com/winners/payout-choice/${data.winnerId || ''}?token=${data.payoutChoiceToken || ''}" class="button">Choose Payout Method</a>
+          <a href="https://squaretrivia.com/winners/payout-choice/${data.winnerId || ""}?token=${data.payoutChoiceToken || ""}" class="button">Choose Payout Method</a>
         </p>
       </div>
       
@@ -493,7 +508,7 @@ class EmailService {
    */
   getWinnerEnhancedTemplate(data) {
     const baseTemplate = this.getWinnerTemplate(data);
-    
+
     // Insert Telegram benefits section before the footer
     const telegramSection = `
     <div style="background-color: #E3F2FD; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center;">
@@ -514,7 +529,7 @@ class EmailService {
       </p>
     </div>
     `;
-    
+
     // Insert before the footer
     return baseTemplate.replace(
       '<div class="footer">',
@@ -527,7 +542,7 @@ class EmailService {
    */
   getConsolationTemplate(data) {
     const { userId, nextBoardId, game, winnerTime, loserTime } = data;
-    
+
     return `
 <!DOCTYPE html>
 <html>
@@ -656,11 +671,11 @@ class EmailService {
           ${sanitizeInput(game.teams.away)} @ ${sanitizeInput(game.teams.home)}
         </p>
         <p style="color: #666; font-size: 16px;">
-          ${new Date(game.startTime.toMillis()).toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
+          ${new Date(game.startTime.toMillis()).toLocaleDateString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
           })}
         </p>
         <div style="background-color: #fff; padding: 15px; border-radius: 8px; margin: 20px 0;">
@@ -713,7 +728,7 @@ class EmailService {
    */
   getSquareAssignedTemplate(data) {
     const { game, position, boardId } = data;
-    
+
     return `
 <!DOCTYPE html>
 <html>
@@ -759,7 +774,7 @@ class EmailService {
    */
   getDonationConfirmTemplate(data) {
     const { amount, tier, telegramUsername } = data;
-    
+
     return `
 <!DOCTYPE html>
 <html>
@@ -788,7 +803,7 @@ class EmailService {
       <h2>Thank You for Your Support! 💙</h2>
     </div>
     <div class="content">
-      <p style="font-size: 18px;">Your donation has been processed successfully!</p>
+      <p style="font-size: 18px;">Your entry fee has been processed successfully!</p>
       
       <div style="text-align: center; margin: 30px 0;">
         <div>You now have access to:</div>
@@ -805,12 +820,16 @@ class EmailService {
         </ol>
       </div>
       
-      ${telegramUsername ? `
+      ${
+        telegramUsername
+          ? `
       <div style="background-color: #e3f2fd; padding: 15px; border-radius: 8px;">
         <p style="margin: 0;"><strong>Telegram Access:</strong></p>
         <p style="margin: 5px 0 0 0;">You'll receive an invite to the ${tier} Telegram group at: ${sanitizeInput(telegramUsername)}</p>
       </div>
-      ` : ''}
+      `
+          : ""
+      }
       
       <p style="text-align: center; margin-top: 30px;">
         <a href="https://squaretrivia.com/boards" style="background-color: #0066FF; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; display: inline-block;">View Available Boards</a>
@@ -827,11 +846,13 @@ class EmailService {
    */
   getPayoutSentTemplate(data) {
     const { amount, method, transactionId, payoutType, fee } = data;
-    
-    const isInstant = payoutType === 'instant';
-    const headerColor = isInstant ? '#f59e0b' : '#10b981';
-    const headerText = isInstant ? '⚡ Your Instant Payout Has Been Sent! ⚡' : '💰 Your Prize Has Been Sent! 💰';
-    
+
+    const isInstant = payoutType === "instant";
+    const headerColor = isInstant ? "#f59e0b" : "#10b981";
+    const headerText = isInstant
+      ? "⚡ Your Instant Payout Has Been Sent! ⚡"
+      : "💰 Your Prize Has Been Sent! 💰";
+
     return `
 <!DOCTYPE html>
 <html>
@@ -859,15 +880,15 @@ class EmailService {
         <h3 style="margin-top: 0;">Payment Details:</h3>
         <p><strong>Method:</strong> ${method}</p>
         <p><strong>Transaction ID:</strong> ${transactionId}</p>
-        <p><strong>Payout Type:</strong> ${isInstant ? 'Instant (Same Day)' : 'Standard Batch'}</p>
-        ${isInstant && fee ? `<p><strong>Instant Fee:</strong> $${fee.toFixed(2)}</p>` : ''}
+        <p><strong>Payout Type:</strong> ${isInstant ? "Instant (Same Day)" : "Standard Batch"}</p>
+        ${isInstant && fee ? `<p><strong>Instant Fee:</strong> $${fee.toFixed(2)}</p>` : ""}
         <p><strong>Status:</strong> Completed ✅</p>
       </div>
       
       <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
         <p style="margin: 0;"><strong>When will I receive it?</strong></p>
         <ul style="margin: 10px 0 0 20px;">
-          ${isInstant ? '<li>Instant payouts arrive within minutes</li>' : ''}
+          ${isInstant ? "<li>Instant payouts arrive within minutes</li>" : ""}
           <li>PayPal/Venmo: Within minutes</li>
           <li>Zelle: 1-2 business days</li>
           <li>ACH/Bank: 2-3 business days</li>
@@ -890,7 +911,7 @@ class EmailService {
    */
   getWelcomeTemplate(data) {
     const { email } = data;
-    
+
     return `
 <!DOCTYPE html>
 <html>
@@ -940,7 +961,7 @@ class EmailService {
    */
   getInstantPayoutConfirmationTemplate(data) {
     const { amount, fee, netAmount, transactionId } = data;
-    
+
     return `
 <!DOCTYPE html>
 <html>
@@ -1006,7 +1027,7 @@ class EmailService {
    */
   getBatchPayoutQueuedTemplate(data) {
     const { amount, expectedDate } = data;
-    
+
     return `
 <!DOCTYPE html>
 <html>
@@ -1083,11 +1104,11 @@ class EmailService {
    */
   getPayoutChoiceReminderTemplate(data) {
     const { prizeAmount, winnerId, payoutChoiceToken } = data;
-    
+
     // Calculate instant payout option
     const instantPayoutFee = prizeAmount * 0.08;
     const instantPayoutAmount = prizeAmount - instantPayoutFee;
-    
+
     return `
 <!DOCTYPE html>
 <html>
@@ -1150,7 +1171,7 @@ class EmailService {
       </div>
       
       <div style="text-align: center;">
-        <a href="https://squaretrivia.com/winners/payout-choice/${winnerId}?token=${payoutChoiceToken || ''}" class="button-urgent">
+        <a href="https://squaretrivia.com/winners/payout-choice/${winnerId}?token=${payoutChoiceToken || ""}" class="button-urgent">
           Choose Payout Method Now
         </a>
       </div>
@@ -1187,14 +1208,14 @@ class TelegramService {
 
     try {
       this.bot = new TelegramBot(functions.config().telegram.bot_token, {
-        polling: false // We're not receiving messages, only sending
+        polling: false, // We're not receiving messages, only sending
       });
-      
+
       this.initialized = true;
-      console.log('Telegram service initialized');
+      console.log("Telegram service initialized");
     } catch (error) {
-      logError(error, { context: 'TelegramService.initialize' });
-      throw new Error('Failed to initialize Telegram service');
+      logError(error, { context: "TelegramService.initialize" });
+      throw new Error("Failed to initialize Telegram service");
     }
   }
 
@@ -1208,12 +1229,16 @@ class TelegramService {
 
     const defaultOptions = {
       parse_mode: NOTIFICATION_CONFIG.TELEGRAM.PARSE_MODE,
-      ...options
+      ...options,
     };
 
     return await retryOperation(
       async () => {
-        const result = await this.bot.sendMessage(chatId, message, defaultOptions);
+        const result = await this.bot.sendMessage(
+          chatId,
+          message,
+          defaultOptions
+        );
         console.log(`Telegram message sent to ${chatId}`);
         return result;
       },
@@ -1228,15 +1253,25 @@ class TelegramService {
   async sendWinnerDM(username, data) {
     if (!username) return null;
 
-    const { 
-      game, quarter, score, position, prizeAmount, tier, tierId, 
-      winnerId, payoutChoiceToken, winnerTime, loserTime, hasLoser 
+    const {
+      game,
+      quarter,
+      score,
+      position,
+      prizeAmount,
+      tier,
+      tierId,
+      winnerId,
+      payoutChoiceToken,
+      winnerTime,
+      loserTime,
+      hasLoser,
     } = data;
-    
+
     // Calculate instant payout option
     const instantPayoutFee = prizeAmount * 0.08;
     const instantPayoutAmount = prizeAmount - instantPayoutFee;
-    
+
     let message = `
 🎉 *WINNER ALERT!* 🎉
 
@@ -1283,8 +1318,13 @@ Congratulations! 🏆
       await this.sendMessage(username, message);
       return { success: true };
     } catch (error) {
-      console.log(`Cannot DM ${username} - user needs to start conversation with bot`);
-      return { success: false, error: 'User has not started conversation with bot' };
+      console.log(
+        `Cannot DM ${username} - user needs to start conversation with bot`
+      );
+      return {
+        success: false,
+        error: "User has not started conversation with bot",
+      };
     }
   }
 
@@ -1295,7 +1335,7 @@ Congratulations! 🏆
     if (!username) return null;
 
     const { game, winnerTime, loserTime, nextBoardId } = data;
-    
+
     const message = `
 🎁 *So Close! Consolation Prize* 🎁
 
@@ -1342,8 +1382,17 @@ _Note: Consolation squares cannot earn additional free squares._
       return null;
     }
 
-    const { username, game, quarter, score, position, prizeAmount, winnerTime, hasLoser } = data;
-    
+    const {
+      username,
+      game,
+      quarter,
+      score,
+      position,
+      prizeAmount,
+      winnerTime,
+      hasLoser,
+    } = data;
+
     const message = `
 🏆 *WINNER in the ${tier.label}!*
 
@@ -1351,9 +1400,9 @@ ${quarter}: ${this.escapeMarkdown(game)}
 Score: ${score}
 Winning Square: #${position}
 ⚡ Answer Time: *${winnerTime}s*
-${hasLoser ? '_Won by speed in head-to-head!_' : '_Solo square winner!_'}
+${hasLoser ? "_Won by speed in head-to-head!_" : "_Solo square winner!_"}
 
-Congratulations to ${username ? '@' + username.replace('@', '') : 'a lucky player'}!
+Congratulations to ${username ? "@" + username.replace("@", "") : "a lucky player"}!
 Prize: $${prizeAmount.toFixed(2)} 💰
     `.trim();
 
@@ -1362,9 +1411,9 @@ Prize: $${prizeAmount.toFixed(2)} 💰
       return { success: true };
     } catch (error) {
       logError(error, {
-        context: 'postToTierGroup',
+        context: "postToTierGroup",
         tierId,
-        groupId
+        groupId,
       });
       return { success: false, error: error.message };
     }
@@ -1376,7 +1425,7 @@ Prize: $${prizeAmount.toFixed(2)} 💰
   async sendAdminAlert(message) {
     const adminChatId = functions.config().telegram.admin_chat_id;
     if (!adminChatId) {
-      console.warn('No admin chat ID configured');
+      console.warn("No admin chat ID configured");
       return null;
     }
 
@@ -1392,7 +1441,7 @@ Time: ${new Date().toISOString()}
       await this.sendMessage(adminChatId, formattedMessage);
       return { success: true };
     } catch (error) {
-      logError(error, { context: 'sendAdminAlert' });
+      logError(error, { context: "sendAdminAlert" });
       return { success: false, error: error.message };
     }
   }
@@ -1401,8 +1450,8 @@ Time: ${new Date().toISOString()}
    * Escape markdown special characters
    */
   escapeMarkdown(text) {
-    if (!text) return '';
-    return text.replace(/[*_`\[\]()]/g, '\\$&');
+    if (!text) return "";
+    return text.replace(/[*_`\[\]()]/g, "\\$&");
   }
 }
 
@@ -1431,11 +1480,11 @@ class SMSService {
         functions.config().twilio.account_sid,
         functions.config().twilio.auth_token
       );
-      
+
       this.initialized = true;
-      console.log('SMS service initialized');
+      console.log("SMS service initialized");
     } catch (error) {
-      console.warn('SMS service not configured:', error.message);
+      console.warn("SMS service not configured:", error.message);
       this.enabled = false;
     }
   }
@@ -1445,22 +1494,23 @@ class SMSService {
    */
   async sendSMS(to, message) {
     if (!this.enabled) return null;
-    
+
     if (!this.initialized) {
       this.initialize();
     }
 
     // Truncate message if too long
-    const truncatedMessage = message.length > NOTIFICATION_CONFIG.SMS.MAX_LENGTH
-      ? message.substring(0, NOTIFICATION_CONFIG.SMS.MAX_LENGTH - 3) + '...'
-      : message;
+    const truncatedMessage =
+      message.length > NOTIFICATION_CONFIG.SMS.MAX_LENGTH
+        ? message.substring(0, NOTIFICATION_CONFIG.SMS.MAX_LENGTH - 3) + "..."
+        : message;
 
     return await retryOperation(
       async () => {
         const result = await this.client.messages.create({
           body: truncatedMessage,
           from: functions.config().twilio.phone_number,
-          to
+          to,
         });
         console.log(`SMS sent to ${to}: ${result.sid}`);
         return result;
@@ -1477,15 +1527,17 @@ class SMSService {
     if (!phone || !this.enabled) return null;
 
     const { game, prizeAmount, winnerTime, hasLoser } = data;
-    
-    const skillInfo = hasLoser ? ` Times revealed: ${winnerTime}s (fastest!)` : '';
+
+    const skillInfo = hasLoser
+      ? ` Times revealed: ${winnerTime}s (fastest!)`
+      : "";
     const message = `🎉 Square Trivia: You won $${prizeAmount.toFixed(2)} on ${game}!${skillInfo} Choose instant payout (8% fee) or standard (no fee). Check your email for details.`;
 
     try {
       await this.sendSMS(phone, message);
       return { success: true };
     } catch (error) {
-      logError(error, { context: 'sendWinnerSMS' });
+      logError(error, { context: "sendWinnerSMS" });
       return { success: false, error: error.message };
     }
   }
@@ -1498,14 +1550,14 @@ class SMSService {
 
     const { game, loserTime, winnerTime } = data;
     const diff = (loserTime - winnerTime).toFixed(1);
-    
+
     const message = `🎁 Square Trivia: So close! You were just ${diff}s slower. You earned a FREE SQUARE for ${game.teams.away} @ ${game.teams.home}! Check email for details.`;
 
     try {
       await this.sendSMS(phone, message);
       return { success: true };
     } catch (error) {
-      logError(error, { context: 'sendConsolationSMS' });
+      logError(error, { context: "sendConsolationSMS" });
       return { success: false, error: error.message };
     }
   }
@@ -1522,17 +1574,18 @@ const smsService = new SMSService();
  * Process notification queue (runs every minute)
  */
 exports.processNotificationQueue = functions.pubsub
-  .schedule('every 1 minutes')
+  .schedule("every 1 minutes")
   .onRun(async (context) => {
     const db = admin.firestore();
-    
+
     try {
       // Get pending notifications
-      const pendingNotifications = await db.collection('notificationQueue')
-        .where('status', '==', 'pending')
-        .where('attempts', '<', 3)
-        .orderBy('priority', 'desc')
-        .orderBy('createdAt', 'asc')
+      const pendingNotifications = await db
+        .collection("notificationQueue")
+        .where("status", "==", "pending")
+        .where("attempts", "<", 3)
+        .orderBy("priority", "desc")
+        .orderBy("createdAt", "asc")
         .limit(20)
         .get();
 
@@ -1543,20 +1596,19 @@ exports.processNotificationQueue = functions.pubsub
       console.log(`Processing ${pendingNotifications.size} notifications`);
 
       // Process each notification
-      const promises = pendingNotifications.docs.map(doc =>
-        processNotification(db, doc).catch(error => {
+      const promises = pendingNotifications.docs.map((doc) =>
+        processNotification(db, doc).catch((error) => {
           logError(error, {
-            context: 'processNotification',
-            notificationId: doc.id
+            context: "processNotification",
+            notificationId: doc.id,
           });
           return null;
         })
       );
 
       await Promise.all(promises);
-
     } catch (error) {
-      logError(error, { context: 'processNotificationQueue' });
+      logError(error, { context: "processNotificationQueue" });
     }
   });
 
@@ -1565,40 +1617,52 @@ exports.processNotificationQueue = functions.pubsub
  */
 async function processNotification(db, notificationDoc) {
   const notification = notificationDoc.data();
-  
+
   // Update status to processing
   await notificationDoc.ref.update({
-    status: 'processing',
+    status: "processing",
     processingAt: getTimestamp(),
-    attempts: admin.firestore.FieldValue.increment(1)
+    attempts: admin.firestore.FieldValue.increment(1),
   });
 
   try {
     let result;
-    
+
     switch (notification.type) {
-      case 'winner':
+      case "winner":
         result = await sendWinnerNotification(db, notification.winnerId);
         break;
-      case 'consolation':
-        result = await sendConsolationNotification(db, notification.userId, notification.data);
+      case "consolation":
+        result = await sendConsolationNotification(
+          db,
+          notification.userId,
+          notification.data
+        );
         break;
-      case 'square_assigned':
+      case "square_assigned":
         result = await sendSquareAssignedNotification(db, notification.claimId);
         break;
-      case 'donation_confirm':
+      case "donation_confirm":
         result = await sendDonationConfirmation(db, notification.donationId);
         break;
-      case 'payout_sent':
+      case "payout_sent":
         result = await sendPayoutNotification(db, notification.payoutId);
         break;
-      case 'instant_payout_confirmation':
-        result = await sendInstantPayoutConfirmation(db, notification.winnerId, notification.payoutData);
+      case "instant_payout_confirmation":
+        result = await sendInstantPayoutConfirmation(
+          db,
+          notification.winnerId,
+          notification.payoutData
+        );
         break;
-      case 'batch_payout_queued':
-        result = await sendBatchPayoutQueued(db, notification.winnerId, notification.payoutData);
+      case "batch_payout_queued":
+        result = await sendBatchPayoutQueued(
+          db,
+          notification.winnerId,
+          notification.payoutData
+        );
         break;
-      case 'payout_choice_reminder':
+      case "payout_choice_reminder":
         result = await sendPayoutChoiceReminder(db, notification);
         break;
       default:
@@ -1607,21 +1671,20 @@ async function processNotification(db, notificationDoc) {
 
     // Mark as completed
     await notificationDoc.ref.update({
-      status: 'completed',
+      status: "completed",
       completedAt: getTimestamp(),
-      result
+      result,
     });
 
     return result;
-
   } catch (error) {
     // Mark as failed
     const isFinal = notification.attempts >= 2;
-    
+
     await notificationDoc.ref.update({
-      status: isFinal ? 'failed' : 'pending',
+      status: isFinal ? "failed" : "pending",
       lastError: error.message,
-      nextRetryAt: isFinal ? null : new Date(Date.now() + 5 * 60 * 1000) // 5 min
+      nextRetryAt: isFinal ? null : new Date(Date.now() + 5 * 60 * 1000), // 5 min
     });
 
     throw error;
@@ -1639,27 +1702,29 @@ async function processNotification(db, notificationDoc) {
  */
 async function sendWinnerNotification(db, winnerId) {
   // Get winner details
-  const winnerDoc = await db.collection('winners').doc(winnerId).get();
+  const winnerDoc = await db.collection("winners").doc(winnerId).get();
   if (!winnerDoc.exists) {
-    throw new Error('Winner not found');
+    throw new Error("Winner not found");
   }
 
   const winner = winnerDoc.data();
-  
+
   // Get user details
-  const userDoc = await db.collection('users').doc(winner.userId).get();
+  const userDoc = await db.collection("users").doc(winner.userId).get();
   if (!userDoc.exists) {
-    throw new Error('User not found');
+    throw new Error("User not found");
   }
 
   const user = userDoc.data();
   const tier = getTierById(winner.tierId);
-  
+
   // Generate secure token for payout choice
   const payoutChoiceToken = generateSecureToken();
-  
+
   const notificationData = {
-    game: winner.gameInfo ? `${winner.gameInfo.teams.away} @ ${winner.gameInfo.teams.home}` : 'Unknown Game',
+    game: winner.gameInfo
+      ? `${winner.gameInfo.teams.away} @ ${winner.gameInfo.teams.home}`
+      : "Unknown Game",
     quarter: GAME_CONFIG.QUARTERS[winner.quarter]?.label || winner.quarter,
     score: winner.score,
     position: winner.position,
@@ -1670,30 +1735,33 @@ async function sendWinnerNotification(db, winnerId) {
     winnerId: winnerId,
     payoutChoiceToken: payoutChoiceToken,
     // Skill-based fields
-    winnerTime: winner.winnerAnswerTimeSeconds || winner.winnerAnswerTimeMs / 1000,
-    loserTime: winner.loserAnswerTimeMs ? winner.loserAnswerTimeMs / 1000 : null,
-    hasLoser: !!winner.loserUserId
+    winnerTime:
+      winner.winnerAnswerTimeSeconds || winner.winnerAnswerTimeMs / 1000,
+    loserTime: winner.loserAnswerTimeMs
+      ? winner.loserAnswerTimeMs / 1000
+      : null,
+    hasLoser: !!winner.loserUserId,
   };
 
   const results = {
     email: null,
     telegram: null,
     sms: null,
-    group: null
+    group: null,
   };
 
   // Check if user has Telegram
   const hasTelegram = user.hasTelegram || !!user.telegramUsername;
-  
+
   // Send email with enhanced subject line
   if (user.email && user.notifications?.email !== false) {
     try {
       // Use enhanced template for non-Telegram users
-      const template = hasTelegram ? 'winner' : 'winner_enhanced';
-      const subject = notificationData.hasLoser 
+      const template = hasTelegram ? "winner" : "winner_enhanced";
+      const subject = notificationData.hasLoser
         ? `🎉 You Won! Times Revealed - $${winner.prizeAmount.toFixed(2)} Prize!`
         : `🎉 You Won $${winner.prizeAmount.toFixed(2)} on Square Trivia!`;
-        
+
       await emailService.sendEmail(
         user.email,
         subject,
@@ -1704,14 +1772,18 @@ async function sendWinnerNotification(db, winnerId) {
       results.email = { success: false, error: error.message };
     }
   }
-  
+
   // Send Telegram DM only if user has Telegram
-  if (hasTelegram && user.telegramUsername && user.notifications?.telegram !== false) {
+  if (
+    hasTelegram &&
+    user.telegramUsername &&
+    user.notifications?.telegram !== false
+  ) {
     results.telegram = await telegramService.sendWinnerDM(
       user.telegramUsername,
       notificationData
     );
-    
+
     // Post to tier group only if user has Telegram
     results.group = await telegramService.postToTierGroup(
       winner.tierId,
@@ -1726,12 +1798,12 @@ async function sendWinnerNotification(db, winnerId) {
 
   // Update winner record
   await winnerDoc.ref.update({
-    notificationStatus: 'sent',
+    notificationStatus: "sent",
     notifiedAt: getTimestamp(),
     notificationResults: results,
     payoutChoicePending: true, // Track that payout choice is pending
     payoutChoiceToken: payoutChoiceToken, // Save security token
-    payoutChoiceUrl: `https://squaretrivia.com/winners/payout-choice/${winnerId}?token=${payoutChoiceToken}`
+    payoutChoiceUrl: `https://squaretrivia.com/winners/payout-choice/${winnerId}?token=${payoutChoiceToken}`,
   });
 
   return results;
@@ -1742,43 +1814,43 @@ async function sendWinnerNotification(db, winnerId) {
  */
 async function sendConsolationNotification(db, userId, data) {
   const { nextBoardId, winnerTime, loserTime, game } = data;
-  
+
   // Get user details
-  const userDoc = await db.collection('users').doc(userId).get();
+  const userDoc = await db.collection("users").doc(userId).get();
   if (!userDoc.exists) {
-    throw new Error('User not found');
+    throw new Error("User not found");
   }
-  
+
   const user = userDoc.data();
-  
+
   const notificationData = {
     userId,
     nextBoardId,
     game,
     winnerTime,
-    loserTime
+    loserTime,
   };
-  
+
   const results = {
     email: null,
     telegram: null,
-    sms: null
+    sms: null,
   };
-  
+
   // Send email with enhanced subject
   if (user.email && user.notifications?.email !== false) {
     try {
       await emailService.sendEmail(
         user.email,
-        '🎁 So Close! You Earned a Free Square!',
-        emailService.getTemplate('consolation_prize', notificationData)
+        "🎁 So Close! You Earned a Free Square!",
+        emailService.getTemplate("consolation_prize", notificationData)
       );
       results.email = { success: true };
     } catch (error) {
       results.email = { success: false, error: error.message };
     }
   }
-  
+
   // Send Telegram if available
   if (user.telegramUsername && user.notifications?.telegram !== false) {
     results.telegram = await telegramService.sendConsolationDM(
@@ -1786,12 +1858,15 @@ async function sendConsolationNotification(db, userId, data) {
       notificationData
     );
   }
-  
+
   // Send SMS if available
   if (user.phone && user.notifications?.sms !== false) {
-    results.sms = await smsService.sendConsolationSMS(user.phone, notificationData);
+    results.sms = await smsService.sendConsolationSMS(
+      user.phone,
+      notificationData
+    );
   }
-  
+
   return results;
 }
 
@@ -1799,26 +1874,28 @@ async function sendConsolationNotification(db, userId, data) {
  * Send square assigned notification
  */
 async function sendSquareAssignedNotification(db, claimId) {
-  const claimDoc = await db.collection('squareClaims').doc(claimId).get();
+  const claimDoc = await db.collection("squareClaims").doc(claimId).get();
   if (!claimDoc.exists) {
-    throw new Error('Claim not found');
+    throw new Error("Claim not found");
   }
 
   const claim = claimDoc.data();
-  
+
   // Get user and board details
   const [userDoc, boardDoc] = await Promise.all([
-    db.collection('users').doc(claim.userId).get(),
-    db.collection('boards').doc(claim.boardId).get()
+    db.collection("users").doc(claim.userId).get(),
+    db.collection("boards").doc(claim.boardId).get(),
   ]);
 
   const user = userDoc.data();
   const board = boardDoc.data();
-  
+
   const notificationData = {
-    game: board.gameInfo ? `${board.gameInfo.teams.away} @ ${board.gameInfo.teams.home}` : 'Unknown Game',
+    game: board.gameInfo
+      ? `${board.gameInfo.teams.away} @ ${board.gameInfo.teams.home}`
+      : "Unknown Game",
     position: claim.position,
-    boardId: claim.boardId
+    boardId: claim.boardId,
   };
 
   // Send email only
@@ -1826,7 +1903,7 @@ async function sendSquareAssignedNotification(db, claimId) {
     await emailService.sendEmail(
       user.email,
       `Square #${claim.position} Assigned - ${notificationData.game}`,
-      emailService.getTemplate('square_assigned', notificationData)
+      emailService.getTemplate("square_assigned", notificationData)
     );
   }
 
@@ -1837,29 +1914,29 @@ async function sendSquareAssignedNotification(db, claimId) {
  * Send donation confirmation
  */
 async function sendDonationConfirmation(db, donationId) {
-  const donationDoc = await db.collection('donations').doc(donationId).get();
+  const donationDoc = await db.collection("donations").doc(donationId).get();
   if (!donationDoc.exists) {
-    throw new Error('Donation not found');
+    throw new Error("Donation not found");
   }
 
   const donation = donationDoc.data();
   const tier = getTierById(donation.tierId);
-  
+
   const notificationData = {
     amount: donation.amount,
     tier: tier?.label || donation.tierId,
-    telegramUsername: donation.telegramUsername
+    telegramUsername: donation.telegramUsername,
   };
 
   // Get user email
-  const userDoc = await db.collection('users').doc(donation.userId).get();
+  const userDoc = await db.collection("users").doc(donation.userId).get();
   const user = userDoc.data();
 
   if (user.email) {
     await emailService.sendEmail(
       user.email,
       `Thank you for your $${donation.amount} donation to Square Trivia!`,
-      emailService.getTemplate('donation_confirm', notificationData)
+      emailService.getTemplate("donation_confirm", notificationData)
     );
   }
 
@@ -1870,44 +1947,44 @@ async function sendDonationConfirmation(db, donationId) {
  * Send payout notification
  */
 async function sendPayoutNotification(db, payoutId) {
-  const payoutDoc = await db.collection('payouts').doc(payoutId).get();
+  const payoutDoc = await db.collection("payouts").doc(payoutId).get();
   if (!payoutDoc.exists) {
-    throw new Error('Payout not found');
+    throw new Error("Payout not found");
   }
 
   const payout = payoutDoc.data();
-  
+
   const notificationData = {
     amount: payout.amount,
     method: payout.method,
     transactionId: payout.transactionId,
     payoutType: payout.payoutType,
-    fee: payout.instantPayoutFee || 0
+    fee: payout.instantPayoutFee || 0,
   };
 
   // Get user email
-  const userDoc = await db.collection('users').doc(payout.userId).get();
+  const userDoc = await db.collection("users").doc(payout.userId).get();
   const user = userDoc.data();
 
   if (user.email) {
     await emailService.sendEmail(
       user.email,
       `💰 Your $${payout.amount.toFixed(2)} prize has been sent!`,
-      emailService.getTemplate('payout_sent', notificationData)
+      emailService.getTemplate("payout_sent", notificationData)
     );
   }
 
   // Also send SMS if available
-  const smsResult = user.phone 
+  const smsResult = user.phone
     ? await smsService.sendSMS(
         user.phone,
         `Square Trivia: Your $${payout.amount.toFixed(2)} prize has been sent via ${payout.method}!`
       )
     : null;
 
-  return { 
+  return {
     email: { success: true },
-    sms: smsResult
+    sms: smsResult,
   };
 }
 
@@ -1916,30 +1993,30 @@ async function sendPayoutNotification(db, payoutId) {
  */
 async function sendInstantPayoutConfirmation(db, winnerId, payoutData) {
   const { amount, fee, netAmount, transactionId, userId } = payoutData;
-  
+
   // Get user email
-  const userDoc = await db.collection('users').doc(userId).get();
+  const userDoc = await db.collection("users").doc(userId).get();
   const user = userDoc.data();
 
   if (user.email) {
     await emailService.sendEmail(
       user.email,
       `⚡ Your $${netAmount.toFixed(2)} instant payout is on the way!`,
-      emailService.getTemplate('instant_payout_confirmation', {
+      emailService.getTemplate("instant_payout_confirmation", {
         amount,
         fee,
         netAmount,
-        transactionId
+        transactionId,
       })
     );
   }
 
   // Update winner record
-  await db.collection('winners').doc(winnerId).update({
-    payoutType: 'instant',
+  await db.collection("winners").doc(winnerId).update({
+    payoutType: "instant",
     payoutChoiceMadeAt: getTimestamp(),
     instantPayoutFee: fee,
-    instantPayoutNetAmount: netAmount
+    instantPayoutNetAmount: netAmount,
   });
 
   return { email: { success: true } };
@@ -1950,27 +2027,27 @@ async function sendInstantPayoutConfirmation(db, winnerId, payoutData) {
  */
 async function sendBatchPayoutQueued(db, winnerId, payoutData) {
   const { amount, expectedDate, userId } = payoutData;
-  
+
   // Get user email
-  const userDoc = await db.collection('users').doc(userId).get();
+  const userDoc = await db.collection("users").doc(userId).get();
   const user = userDoc.data();
 
   if (user.email) {
     await emailService.sendEmail(
       user.email,
       `📅 Your $${amount.toFixed(2)} prize is scheduled for ${expectedDate}`,
-      emailService.getTemplate('batch_payout_queued', {
+      emailService.getTemplate("batch_payout_queued", {
         amount,
-        expectedDate
+        expectedDate,
       })
     );
   }
 
   // Update winner record
-  await db.collection('winners').doc(winnerId).update({
-    payoutType: 'batch',
+  await db.collection("winners").doc(winnerId).update({
+    payoutType: "batch",
     payoutChoiceMadeAt: getTimestamp(),
-    expectedPayoutDate: expectedDate
+    expectedPayoutDate: expectedDate,
   });
 
   return { email: { success: true } };
@@ -1981,22 +2058,22 @@ async function sendBatchPayoutQueued(db, winnerId, payoutData) {
  */
 async function sendPayoutChoiceReminder(db, notification) {
   const { winnerId, prizeAmount, email, payoutChoiceToken } = notification;
-  
+
   if (email) {
     await emailService.sendEmail(
       email,
       `⏰ Reminder: Choose how to receive your $${prizeAmount.toFixed(2)} prize!`,
-      emailService.getTemplate('payout_choice_reminder', {
+      emailService.getTemplate("payout_choice_reminder", {
         prizeAmount,
         winnerId,
-        payoutChoiceToken
+        payoutChoiceToken,
       })
     );
   }
 
   // Update reminder sent timestamp
-  await db.collection('winners').doc(winnerId).update({
-    lastPayoutReminderSent: getTimestamp()
+  await db.collection("winners").doc(winnerId).update({
+    lastPayoutReminderSent: getTimestamp(),
   });
 
   return { email: { success: true } };
@@ -2011,21 +2088,21 @@ async function sendPayoutChoiceReminder(db, notification) {
  */
 exports.sendAdminAlert = functions.https.onCall(async (data, context) => {
   if (!context.auth?.token?.admin) {
-    throw createError('permission', ERROR_MESSAGES.ADMIN_ONLY);
+    throw createError("permission", ERROR_MESSAGES.ADMIN_ONLY);
   }
 
   const { message, type, details } = data;
-  
+
   const fullMessage = `
 Alert Type: ${type}
 Message: ${message}
-${details ? `Details: ${JSON.stringify(details, null, 2)}` : ''}
+${details ? `Details: ${JSON.stringify(details, null, 2)}` : ""}
   `.trim();
 
   // Send via all channels
   const results = {
     email: null,
-    telegram: null
+    telegram: null,
   };
 
   // Email admin
@@ -2053,47 +2130,52 @@ ${details ? `Details: ${JSON.stringify(details, null, 2)}` : ''}
 /**
  * Retry failed notifications
  */
-exports.retryFailedNotifications = functions.https.onCall(async (data, context) => {
-  if (!context.auth?.token?.admin) {
-    throw createError('permission', ERROR_MESSAGES.ADMIN_ONLY);
-  }
+exports.retryFailedNotifications = functions.https.onCall(
+  async (data, context) => {
+    if (!context.auth?.token?.admin) {
+      throw createError("permission", ERROR_MESSAGES.ADMIN_ONLY);
+    }
 
-  const { notificationId } = data;
-  const db = admin.firestore();
-  
-  if (notificationId) {
-    // Retry specific notification
-    const notificationRef = db.collection('notificationQueue').doc(notificationId);
-    await notificationRef.update({
-      status: 'pending',
-      attempts: 0,
-      retryRequestedBy: context.auth.uid,
-      retryRequestedAt: getTimestamp()
-    });
-    
-    return { retriedCount: 1 };
-  } else {
-    // Retry all failed notifications
-    const failed = await db.collection('notificationQueue')
-      .where('status', '==', 'failed')
-      .get();
-    
-    const batch = db.batch();
-    
-    failed.forEach(doc => {
-      batch.update(doc.ref, {
-        status: 'pending',
+    const { notificationId } = data;
+    const db = admin.firestore();
+
+    if (notificationId) {
+      // Retry specific notification
+      const notificationRef = db
+        .collection("notificationQueue")
+        .doc(notificationId);
+      await notificationRef.update({
+        status: "pending",
         attempts: 0,
         retryRequestedBy: context.auth.uid,
-        retryRequestedAt: getTimestamp()
+        retryRequestedAt: getTimestamp(),
       });
-    });
-    
-    await batch.commit();
-    
-    return { retriedCount: failed.size };
+
+      return { retriedCount: 1 };
+    } else {
+      // Retry all failed notifications
+      const failed = await db
+        .collection("notificationQueue")
+        .where("status", "==", "failed")
+        .get();
+
+      const batch = db.batch();
+
+      failed.forEach((doc) => {
+        batch.update(doc.ref, {
+          status: "pending",
+          attempts: 0,
+          retryRequestedBy: context.auth.uid,
+          retryRequestedAt: getTimestamp(),
+        });
+      });
+
+      await batch.commit();
+
+      return { retriedCount: failed.size };
+    }
   }
-});
+);
 
 // =====================================
 // WELCOME NEW USERS
@@ -2108,15 +2190,15 @@ exports.sendWelcomeEmail = functions.auth.user().onCreate(async (user) => {
   try {
     await emailService.sendEmail(
       user.email,
-      'Welcome to Square Trivia! 🎮',
-      emailService.getTemplate('welcome', { email: user.email })
+      "Welcome to Square Trivia! 🎮",
+      emailService.getTemplate("welcome", { email: user.email })
     );
-    
+
     console.log(`Welcome email sent to ${user.email}`);
   } catch (error) {
     logError(error, {
-      context: 'sendWelcomeEmail',
-      userId: user.uid
+      context: "sendWelcomeEmail",
+      userId: user.uid,
     });
   }
 });
@@ -2129,37 +2211,40 @@ exports.sendWelcomeEmail = functions.auth.user().onCreate(async (user) => {
  * Send payout choice reminder scheduler
  */
 exports.sendPayoutChoiceReminder = functions.pubsub
-  .schedule('every 12 hours')
+  .schedule("every 12 hours")
   .onRun(async (context) => {
     const db = admin.firestore();
-    
+
     try {
       // Get winners who haven't chosen payout method after 24 hours
       const cutoffTime = new Date();
       cutoffTime.setHours(cutoffTime.getHours() - 24);
-      
-      const pendingWinners = await db.collection('winners')
-        .where('payoutChoicePending', '==', true)
-        .where('notifiedAt', '<', cutoffTime)
+
+      const pendingWinners = await db
+        .collection("winners")
+        .where("payoutChoicePending", "==", true)
+        .where("notifiedAt", "<", cutoffTime)
         .limit(50)
         .get();
-        
+
       if (pendingWinners.empty) {
         return;
       }
-      
-      console.log(`Sending payout choice reminders to ${pendingWinners.size} winners`);
-      
+
+      console.log(
+        `Sending payout choice reminders to ${pendingWinners.size} winners`
+      );
+
       const promises = pendingWinners.docs.map(async (doc) => {
         const winner = doc.data();
-        const userDoc = await db.collection('users').doc(winner.userId).get();
-        
+        const userDoc = await db.collection("users").doc(winner.userId).get();
+
         if (userDoc.exists) {
           const user = userDoc.data();
-          
+
           // Queue reminder notification
-          await db.collection('notificationQueue').add({
-            type: 'payout_choice_reminder',
+          await db.collection("notificationQueue").add({
+            type: "payout_choice_reminder",
             winnerId: doc.id,
             userId: winner.userId,
             prizeAmount: winner.prizeAmount,
@@ -2167,16 +2252,15 @@ exports.sendPayoutChoiceReminder = functions.pubsub
             payoutChoiceToken: winner.payoutChoiceToken,
             priority: 5,
             createdAt: getTimestamp(),
-            status: 'pending',
-            attempts: 0
+            status: "pending",
+            attempts: 0,
           });
         }
       });
-      
+
       await Promise.all(promises);
-      
     } catch (error) {
-      logError(error, { context: 'sendPayoutChoiceReminder' });
+      logError(error, { context: "sendPayoutChoiceReminder" });
     }
   });
 
@@ -2189,123 +2273,137 @@ exports.sendPayoutChoiceReminder = functions.pubsub
  */
 exports.recordPayoutChoice = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
-    throw createError('unauthenticated', 'Must be logged in to choose payout method');
+    throw createError(
+      "unauthenticated",
+      "Must be logged in to choose payout method"
+    );
   }
 
   const { winnerId, payoutType } = data;
   const db = admin.firestore();
-  
+
   // Validate payout type
-  if (!['instant', 'batch'].includes(payoutType)) {
-    throw createError('invalid-argument', 'Invalid payout type');
+  if (!["instant", "batch"].includes(payoutType)) {
+    throw createError("invalid-argument", "Invalid payout type");
   }
-  
+
   try {
     // Get winner record
-    const winnerRef = db.collection('winners').doc(winnerId);
+    const winnerRef = db.collection("winners").doc(winnerId);
     const winnerDoc = await winnerRef.get();
-    
+
     if (!winnerDoc.exists) {
-      throw createError('not-found', 'Winner record not found');
+      throw createError("not-found", "Winner record not found");
     }
-    
+
     const winner = winnerDoc.data();
-    
+
     // Verify user owns this win
     if (winner.userId !== context.auth.uid) {
-      throw createError('permission-denied', 'Cannot choose payout for another user');
+      throw createError(
+        "permission-denied",
+        "Cannot choose payout for another user"
+      );
     }
-    
+
     // Check if choice already made
     if (winner.payoutChoiceMadeAt) {
-      throw createError('already-exists', 'Payout choice already made');
+      throw createError("already-exists", "Payout choice already made");
     }
-    
+
     // Calculate amounts based on choice
     let updateData = {
       payoutType,
       payoutChoiceMadeAt: getTimestamp(),
-      payoutChoicePending: false
+      payoutChoicePending: false,
     };
-    
-    if (payoutType === 'instant') {
+
+    if (payoutType === "instant") {
       const instantCalc = calculateInstantPayout(winner.prizeAmount);
       updateData = {
         ...updateData,
         instantPayoutFee: instantCalc.fee,
         instantPayoutNetAmount: instantCalc.netAmount,
-        status: 'instant'
+        status: "instant",
       };
-      
+
       // Trigger instant payout processing
-      await db.collection('payoutQueue').add({
-        type: 'instant',
+      await db.collection("payoutQueue").add({
+        type: "instant",
         winnerId,
         userId: winner.userId,
         amount: instantCalc.netAmount,
         fee: instantCalc.fee,
         originalAmount: winner.prizeAmount,
         createdAt: getTimestamp(),
-        status: 'pending'
+        status: "pending",
       });
-      
     } else {
       // Batch payout
       const nextBatchDate = getNextBatchPayoutDate();
       updateData = {
         ...updateData,
         expectedPayoutDate: nextBatchDate,
-        status: 'queued_for_batch'
+        status: "queued_for_batch",
       };
-      
+
       // Add to batch queue
-      await db.collection('batchPayoutQueue').add({
+      await db.collection("batchPayoutQueue").add({
         winnerId,
         userId: winner.userId,
         amount: winner.prizeAmount,
         expectedDate: nextBatchDate,
         createdAt: getTimestamp(),
-        status: 'pending'
+        status: "pending",
       });
     }
-    
+
     // Update winner record
     await winnerRef.update(updateData);
-    
+
     // Track analytics
-    await trackPayoutChoice(db, winnerId, payoutType, winner.prizeAmount, winner.tierId);
-    
+    await trackPayoutChoice(
+      db,
+      winnerId,
+      payoutType,
+      winner.prizeAmount,
+      winner.tierId
+    );
+
     // Send confirmation notification
-    await db.collection('notificationQueue').add({
-      type: payoutType === 'instant' ? 'instant_payout_confirmation' : 'batch_payout_queued',
+    await db.collection("notificationQueue").add({
+      type:
+        payoutType === "instant"
+          ? "instant_payout_confirmation"
+          : "batch_payout_queued",
       winnerId,
       payoutData: {
         amount: winner.prizeAmount,
         fee: updateData.instantPayoutFee || 0,
         netAmount: updateData.instantPayoutNetAmount || winner.prizeAmount,
         expectedDate: updateData.expectedPayoutDate || null,
-        userId: winner.userId
+        userId: winner.userId,
       },
       priority: 10,
       createdAt: getTimestamp(),
-      status: 'pending',
-      attempts: 0
+      status: "pending",
+      attempts: 0,
     });
-    
+
     return {
       success: true,
       payoutType,
-      details: payoutType === 'instant' 
-        ? calculateInstantPayout(winner.prizeAmount)
-        : { amount: winner.prizeAmount, expectedDate: nextBatchDate }
+      details:
+        payoutType === "instant"
+          ? calculateInstantPayout(winner.prizeAmount)
+          : { amount: winner.prizeAmount, expectedDate: nextBatchDate },
     };
-    
   } catch (error) {
     logError(error, {
-      context: 'recordPayoutChoice',
+      context: "recordPayoutChoice",
       winnerId,
       payoutType,
-      userId: context.auth.uid
+      userId: context.auth.uid,
     });
     throw error;
   }
@@ -2316,50 +2414,56 @@ exports.recordPayoutChoice = functions.https.onCall(async (data, context) => {
  */
 exports.processPayoutChoice = functions.https.onRequest(async (req, res) => {
   const { winnerId, choice, token } = req.query;
-  
+
   if (!winnerId || !choice || !token) {
-    return res.status(400).send('Missing required parameters');
+    return res.status(400).send("Missing required parameters");
   }
-  
+
   const db = admin.firestore();
-  
+
   try {
     // Get winner record
-    const winnerDoc = await db.collection('winners').doc(winnerId).get();
-    
+    const winnerDoc = await db.collection("winners").doc(winnerId).get();
+
     if (!winnerDoc.exists) {
-      return res.status(404).send('Winner record not found');
+      return res.status(404).send("Winner record not found");
     }
-    
+
     const winner = winnerDoc.data();
-    
+
     // Verify token
     if (winner.payoutChoiceToken !== token) {
-      return res.status(403).send('Invalid or expired token');
+      return res.status(403).send("Invalid or expired token");
     }
-    
+
     if (winner.payoutChoiceMadeAt) {
-      return res.redirect(`https://squaretrivia.com/payout-already-chosen?id=${winnerId}`);
+      return res.redirect(
+        `https://squaretrivia.com/payout-already-chosen?id=${winnerId}`
+      );
     }
-    
+
     // Process the choice
-    await exports.recordPayoutChoice({
-      winnerId,
-      payoutType: choice
-    }, {
-      auth: { uid: winner.userId }
-    });
-    
+    await exports.recordPayoutChoice(
+      {
+        winnerId,
+        payoutType: choice,
+      },
+      {
+        auth: { uid: winner.userId },
+      }
+    );
+
     // Redirect to success page
-    return res.redirect(`https://squaretrivia.com/payout-success?type=${choice}&id=${winnerId}`);
-    
+    return res.redirect(
+      `https://squaretrivia.com/payout-success?type=${choice}&id=${winnerId}`
+    );
   } catch (error) {
     logError(error, {
-      context: 'processPayoutChoice',
+      context: "processPayoutChoice",
       winnerId,
-      choice
+      choice,
     });
-    return res.status(500).send('Error processing payout choice');
+    return res.status(500).send("Error processing payout choice");
   }
 });
 
@@ -2370,20 +2474,30 @@ exports.processPayoutChoice = functions.https.onRequest(async (req, res) => {
 /**
  * Track payout choice analytics
  */
-async function trackPayoutChoice(db, winnerId, payoutType, prizeAmount, tierId) {
+async function trackPayoutChoice(
+  db,
+  winnerId,
+  payoutType,
+  prizeAmount,
+  tierId
+) {
   try {
-    await db.collection('payoutAnalytics').add({
+    await db.collection("payoutAnalytics").add({
       winnerId,
       payoutType,
       prizeAmount,
       tierId,
-      instantPayoutFee: payoutType === 'instant' ? prizeAmount * INSTANT_PAYOUT_FEE : 0,
-      netAmount: payoutType === 'instant' ? prizeAmount * (1 - INSTANT_PAYOUT_FEE) : prizeAmount,
+      instantPayoutFee:
+        payoutType === "instant" ? prizeAmount * INSTANT_PAYOUT_FEE : 0,
+      netAmount:
+        payoutType === "instant"
+          ? prizeAmount * (1 - INSTANT_PAYOUT_FEE)
+          : prizeAmount,
       timestamp: getTimestamp(),
-      date: new Date().toISOString().split('T')[0]
+      date: new Date().toISOString().split("T")[0],
     });
   } catch (error) {
-    logError(error, { context: 'trackPayoutChoice', winnerId, payoutType });
+    logError(error, { context: "trackPayoutChoice", winnerId, payoutType });
   }
 }
 
@@ -2392,26 +2506,26 @@ async function trackPayoutChoice(db, winnerId, payoutType, prizeAmount, tierId) 
  */
 exports.getPayoutStats = functions.https.onCall(async (data, context) => {
   if (!context.auth?.token?.admin) {
-    throw createError('permission', ERROR_MESSAGES.ADMIN_ONLY);
+    throw createError("permission", ERROR_MESSAGES.ADMIN_ONLY);
   }
 
   const db = admin.firestore();
   const { startDate, endDate, tierId } = data;
-  
-  let query = db.collection('payoutAnalytics');
-  
+
+  let query = db.collection("payoutAnalytics");
+
   if (startDate) {
-    query = query.where('date', '>=', startDate);
+    query = query.where("date", ">=", startDate);
   }
   if (endDate) {
-    query = query.where('date', '<=', endDate);
+    query = query.where("date", "<=", endDate);
   }
   if (tierId) {
-    query = query.where('tierId', '==', tierId);
+    query = query.where("tierId", "==", tierId);
   }
-  
+
   const snapshot = await query.get();
-  
+
   const stats = {
     total: 0,
     instant: 0,
@@ -2419,45 +2533,46 @@ exports.getPayoutStats = functions.https.onCall(async (data, context) => {
     totalFees: 0,
     avgInstantFee: 0,
     instantPercentage: 0,
-    byTier: {}
+    byTier: {},
   };
-  
-  snapshot.forEach(doc => {
+
+  snapshot.forEach((doc) => {
     const data = doc.data();
     stats.total++;
-    
-    if (data.payoutType === 'instant') {
+
+    if (data.payoutType === "instant") {
       stats.instant++;
       stats.totalFees += data.instantPayoutFee || 0;
     } else {
       stats.batch++;
     }
-    
+
     // Track by tier
     if (!stats.byTier[data.tierId]) {
       stats.byTier[data.tierId] = {
         total: 0,
         instant: 0,
         batch: 0,
-        totalFees: 0
+        totalFees: 0,
       };
     }
-    
+
     stats.byTier[data.tierId].total++;
-    if (data.payoutType === 'instant') {
+    if (data.payoutType === "instant") {
       stats.byTier[data.tierId].instant++;
       stats.byTier[data.tierId].totalFees += data.instantPayoutFee || 0;
     } else {
       stats.byTier[data.tierId].batch++;
     }
   });
-  
+
   // Calculate percentages
   if (stats.total > 0) {
     stats.instantPercentage = (stats.instant / stats.total) * 100;
-    stats.avgInstantFee = stats.instant > 0 ? stats.totalFees / stats.instant : 0;
+    stats.avgInstantFee =
+      stats.instant > 0 ? stats.totalFees / stats.instant : 0;
   }
-  
+
   return stats;
 });
 
@@ -2470,7 +2585,7 @@ module.exports = {
   emailService,
   telegramService,
   smsService,
-  
+
   // Cloud Functions
   processNotificationQueue: exports.processNotificationQueue,
   sendAdminAlert: exports.sendAdminAlert,
@@ -2480,7 +2595,7 @@ module.exports = {
   recordPayoutChoice: exports.recordPayoutChoice,
   processPayoutChoice: exports.processPayoutChoice,
   getPayoutStats: exports.getPayoutStats,
-  
+
   // Notification senders
   sendWinnerNotification,
   sendConsolationNotification,
@@ -2490,13 +2605,13 @@ module.exports = {
   sendInstantPayoutConfirmation,
   sendBatchPayoutQueued,
   sendPayoutChoiceReminder,
-  
+
   // Analytics
   trackPayoutChoice,
-  
+
   // Helper functions
   calculateInstantPayout,
   getNextBatchPayoutDate,
   getPayoutPercentage,
-  generateSecureToken
+  generateSecureToken,
 };

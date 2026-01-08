@@ -170,7 +170,7 @@ export const cfbTeams = [
   "Washington State Cougars",
   "West Virginia Mountaineers",
   "Wisconsin Badgers",
-  "Wyoming Cowboys"
+  "Wyoming Cowboys",
 ];
 
 export const TERMS_OF_SERVICE = [
@@ -220,7 +220,7 @@ export const TERMS_OF_SERVICE = [
     isCheckCircle: false,
     listItems: [
       {
-        text: "Players may enter by making a <b>donation</b> to access designated boards",
+        text: "Players may enter by making a <b>entry fee</b> to access designated boards",
       },
       {
         text: "Available boards:",

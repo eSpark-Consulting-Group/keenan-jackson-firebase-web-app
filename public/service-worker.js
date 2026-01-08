@@ -44,8 +44,6 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
 
   if (request.method !== "GET") return;
-
-  // Skip non-HTTP(S) requests
   if (!request.url.startsWith("http")) return;
 
   event.respondWith(
@@ -54,12 +52,18 @@ self.addEventListener("fetch", (event) => {
 
       return fetch(request)
         .then((networkResponse) => {
-          // Cache valid responses only
-          if (networkResponse.ok) {
+          // ✅ ONLY cache safe responses
+          if (
+            networkResponse &&
+            networkResponse.ok &&
+            networkResponse.type === "basic"
+          ) {
+            const responseClone = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, networkResponse.clone());
+              cache.put(request, responseClone);
             });
           }
+
           return networkResponse;
         })
         .catch(() => caches.match("/index.html"));
