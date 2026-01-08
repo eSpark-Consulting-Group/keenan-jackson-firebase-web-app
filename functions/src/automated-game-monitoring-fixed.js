@@ -122,6 +122,8 @@ class ApiSportsService {
           },
         });
 
+        // logger.info("Response", { response: response });
+
         logger.info(`[fetchGameScore][NFL] API raw response length`, {
           count: response.data?.response?.length,
         });
@@ -142,11 +144,15 @@ class ApiSportsService {
           headers: { accept: "application/json" },
         });
 
+        logger.info("Response", { response: response });
+
         logger.info(`[fetchGameScore][CFB] Got response keys`, {
           keys: Object.keys(response.data || {}),
         });
 
         const competition = response.data.header?.competitions?.[0];
+
+        logger.info("Competition", { competition });
         if (competition) {
           const status = competition.status.type;
           const venue = competition.venue || {};
@@ -550,19 +556,36 @@ async function monitorSingleGame(db, gameDoc) {
     );
     const fetchScores = measurePerformance(
       () =>
-        apiSportsService.fetchGameScore(game.externalGameId, "NFL", game?.week),
+        apiSportsService.fetchGameScore(
+          game.externalGameId,
+          game.sport,
+          game?.week
+        ),
       "fetchGameScore"
     );
     const liveData = await fetchScores();
     logger.info(
       `[monitorSingleGame] Received live data for gameId=${gameId}: status=${liveData.status}`
     );
+    logger.info("Live Data", { liveData });
+
+    const getCurrentQuarter = (processedQuarters, fallback = 1) => {
+      if (!processedQuarters) return fallback;
+
+      if (processedQuarters.q4) return 4;
+      if (processedQuarters.q3) return 4;
+      if (processedQuarters.q2) return 3;
+      if (processedQuarters.q1) return 2;
+
+      return fallback;
+    };
+
     // Update game with latest data
     const updates = {
       lastApiCheck: getTimestamp(),
       lastApiStatus: game?.status?.short ?? null,
       apiCheckCount: admin.firestore.FieldValue.increment(1),
-      currentQuarter: liveData.currentQuarter || game?.currentQuarter || 1,
+      currentQuarter: getCurrentQuarter(game?.processedQuarters),
     };
     // Check if game status changed
     if (liveData.status !== game.status) {
