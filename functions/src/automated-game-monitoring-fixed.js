@@ -99,79 +99,58 @@ class ApiSportsService {
    * Fetch game score from API-Sports
    */
   async fetchGameScore(gameId, sport, week = 1) {
+    logger.info("GAME ID: ", { gameId });
     if (!gameId) throw new Error("No gameId provided");
-
-    const config = SPORTS_CONFIG[sport];
-    const year = new Date().getFullYear();
 
     try {
       let apiGame = null;
 
       if (sport === "NFL") {
+        // --- NFL ---
         const url = `https://v1.american-football.api-sports.io/games`;
-        logger.info(`[fetchGameScore][NFL] Fetching single game`, {
-          url,
-          gameId,
-        });
-
         const response = await axios.get(url, {
           params: { id: gameId },
-          headers: {
-            "x-apisports-key": process.env.REACT_APP_APISPORTS_KEY,
-          },
-        });
-
-        logger.info(`[fetchGameScore][NFL] API raw response length`, {
-          count: response.data?.response?.length,
+          headers: { "x-apisports-key": process.env.REACT_APP_APISPORTS_KEY },
         });
 
         apiGame = response.data?.response?.[0] || null;
-        logger.info("API GAME HAI", { apiGame });
 
         if (apiGame?.game) {
+          // Compute currentQuarter
           let currentQuarter = 1;
-
           const short = apiGame.game.status?.short;
           const period = apiGame.game.periods?.current;
 
-          if (typeof period === "number") {
-            currentQuarter = period;
-          } else if (short === "HT") {
-            currentQuarter = 2;
-          } else if (short === "FT") {
-            currentQuarter = 4;
-          }
+          if (typeof period === "number") currentQuarter = period;
+          else if (short === "HT") currentQuarter = 2;
+          else if (short === "FT") currentQuarter = 4;
 
-          if (currentQuarter > 4) {
-            currentQuarter = "ot";
-          }
-
+          if (currentQuarter > 4) currentQuarter = "ot";
           apiGame.currentQuarter = currentQuarter;
         }
       } else if (sport === "CFB") {
-        // --- CFB: Single game from ESPN ---
+        // --- CFB ---
         const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary`;
-        logger.info(`[fetchGameScore][CFB] Fetching single game`, {
-          url,
-          gameId,
-        });
-
         const response = await axios.get(url, {
           params: { event: gameId },
           headers: { accept: "application/json" },
         });
 
-        logger.info("Response", { response: response });
-
-        logger.info(`[fetchGameScore][CFB] Got response keys`, {
-          keys: Object.keys(response.data || {}),
-        });
-
         const competition = response.data.header?.competitions?.[0];
-
-        logger.info("Competition", { competition });
         if (competition) {
-          const status = competition.status.type;
+          const statusObj = competition.status?.type;
+
+          // Convert ESPN state to short code for parseGameData
+          const statusShort = (() => {
+            const s = statusObj?.state;
+            if (s === "pre") return "NS";
+            else if (s === "in")
+              return `Q${Math.min(statusObj.period || 1, 4)}`;
+            else if (s === "post") return "FT";
+            else if (s?.toLowerCase().includes("cancel")) return "CANC";
+            return "NS";
+          })();
+
           const venue = competition.venue || {};
           const home = competition.competitors.find(
             (t) => t.homeAway === "home"
@@ -180,46 +159,19 @@ class ApiSportsService {
             (t) => t.homeAway === "away"
           );
 
-          // 🔑 Handle stage + week properly
-          const seasonType = response.data.header?.season?.type; // 2=regular, 3=postseason, 4=championship
-          let stage = "Regular Season";
-          let week = null;
-
-          if (seasonType === 2) {
-            stage = "Regular Season";
-            week = response.data.header.week;
-          } else {
-            stage = "Post Season";
-            week = response.data.header?.week?.text || "Championship";
-          }
-
-          const statusObj = competition.status;
-          const statusType = statusObj?.type;
-
-          let currentQuarter = 1;
-
-          if (statusType?.state === "pre") {
-            currentQuarter = 1;
-          } else if (
-            statusType?.state === "in" &&
-            typeof statusObj?.period === "number"
-          ) {
-            currentQuarter = statusObj.period;
-          } else if (statusType?.name === "STATUS_HALFTIME") {
-            currentQuarter = 2;
-          } else if (statusType?.state === "post") {
-            currentQuarter = 4;
-          }
-
-          if (typeof statusObj?.period === "number" && statusObj.period > 4) {
-            currentQuarter = "ot";
-          }
+          const seasonType =
+            competition.season?.type || response.data.header?.season?.type;
+          const stage = seasonType === 2 ? "Regular Season" : "Post Season";
+          const weekVal =
+            seasonType === 2
+              ? response.data.header?.week
+              : response.data.header?.week?.text || "Championship";
 
           apiGame = {
             game: {
               id: gameId,
               stage,
-              week,
+              week: weekVal,
               date: {
                 timezone: "UTC",
                 date: competition.date.split("T")[0],
@@ -232,16 +184,7 @@ class ApiSportsService {
                 name: venue.fullName || null,
                 city: venue.address?.city || null,
               },
-              status: {
-                short:
-                  status.state === "post"
-                    ? "FT"
-                    : status.state === "pre"
-                      ? "NS"
-                      : "Q1",
-                long: status.description,
-                timer: null,
-              },
+              status: { short: statusShort },
             },
             teams: {
               home: {
@@ -273,28 +216,25 @@ class ApiSportsService {
                 total: Number(away.score) || 0,
               },
             },
+            currentQuarter: (() => {
+              const scored = [
+                home.linescores?.[0]?.value,
+                home.linescores?.[1]?.value,
+                home.linescores?.[2]?.value,
+                home.linescores?.[3]?.value,
+              ].filter((v) => v !== null && v !== undefined).length;
+              if (scored > 0) return scored;
+              if (statusObj?.state === "in")
+                return Math.min(statusObj.period || 1, 4);
+              if (statusObj?.state === "post") return 4;
+              return 1;
+            })(),
           };
-
-          apiGame.currentQuarter = currentQuarter;
-
-          logger.info(`[fetchGameScore][CFB] Parsed game object created`, {
-            id: apiGame.game.id,
-            week: apiGame.game.week,
-            status: apiGame.game.status,
-            currentQuarter,
-          });
-        } else {
-          logger.warn(
-            `[fetchGameScore][CFB] No competition found in response`,
-            {
-              gameId,
-            }
-          );
         }
       }
 
-      if (!apiGame) {
-        logger.warn(`[fetchGameScore] No game found`, { sport, gameId });
+      // Fallback if no game found
+      if (!apiGame)
         return {
           apiSportsId: gameId,
           status: "unknown",
@@ -306,18 +246,13 @@ class ApiSportsService {
           lastUpdate: new Date().toISOString(),
           _notFound: true,
         };
-      }
-
-      const parsed = this.parseGameData(apiGame, sport);
-      logger.info(`[fetchGameScore] Parsed game data ready`, {
-        gameId,
-        sport,
-        status: parsed.status,
-      });
-
-      return parsed;
+      logger.info("MY GAME 1", { game });
+      return this.parseGameData(apiGame, sport);
     } catch (error) {
-      logger.error(`[fetchGameScore] Error`, { gameId, sport, error });
+      console.error(
+        `[fetchGameScore] Error for gameId: ${gameId}, sport: ${sport}`,
+        error
+      );
       throw error;
     }
   }
@@ -326,18 +261,13 @@ class ApiSportsService {
    * Parse API response into standard format
    */
   async parseGameData(apiGame, sport) {
-    logger.info("API GAME IN PARSE GAME ", { apiGame });
-
     const game = apiGame?.game;
     const teams = apiGame?.teams;
     const scores = apiGame?.scores;
-    // const game = apiGame[0]?.game;
-    // const teams = apiGame[0]?.teams;
-    // const scores = apiGame[0]?.scores;
 
-    logger.info("GAMMME parse Game: ", { game, teams, scores });
+    logger.info("MY GAME", { game });
 
-    // Map status
+    // Map status short codes to our standard
     const statusMap = {
       NS: "scheduled",
       Q1: "active",
@@ -353,37 +283,24 @@ class ApiSportsService {
       SUSP: "cancelled",
     };
     const statusShort = game?.status?.short;
-    let gameStatus = statusMap[statusShort];
-
-    logger.info("GAME STATUS: ", { gameStatus, id: game?.id });
+    let gameStatus = statusMap[statusShort] || "scheduled";
 
     const db = admin.firestore();
-
     const snapshot = await db
       .collection("games")
       .where("externalGameId", "==", String(game?.id))
       .get();
 
-    if (snapshot.empty) {
-      logger.info("No active game found", {
-        id: game?.id,
-        type: typeof game?.id,
-      });
-    } else {
-      const activeGameDoc = snapshot.docs[0];
-      const activeGameData = activeGameDoc.data();
-
+    if (!snapshot.empty) {
+      const activeGameData = snapshot.docs[0].data();
       if (activeGameData?.status === "active" && gameStatus === "scheduled") {
         gameStatus = "active";
       }
-      logger.info("GAME FOUND ", { activeGameData, id: game?.id });
     }
-    logger.info("GAME STATUS 2: ", { gameStatus, id: game?.id });
 
     // Parse quarter scores
     const quarterScores = {};
     let scoredQuarters = 0;
-
     ["quarter_1", "quarter_2", "quarter_3", "quarter_4", "overtime"].forEach(
       (q, idx) => {
         if (scores?.home?.[q] !== null && scores?.home?.[q] !== undefined) {
@@ -397,49 +314,38 @@ class ApiSportsService {
       }
     );
 
-    // Total score
-    const totalScore = {
-      home: scores?.home?.total ?? 0,
-      away: scores?.away?.total ?? 0,
-    };
-
-    // Teams
-    const parsedTeams = {
-      home: teams?.home?.name ?? "",
-      away: teams?.away?.name ?? "",
-    };
-
-    // Start time
-    let startTime = null;
-    if (game?.date?.date && game?.date?.time) {
-      startTime = new Date(`${game.date.date}T${game.date.time}:00Z`);
-    }
-
-    // 🔑 Current Quarter based on status.short
-    let currentQuarter = 0;
-    if (statusShort === "Q1") currentQuarter = 1;
-    else if (statusShort === "Q2" || statusShort === "HT") currentQuarter = 2;
-    else if (statusShort === "Q3") currentQuarter = 3;
-    else if (
-      statusShort === "Q4" ||
-      statusShort === "OT" ||
-      statusShort === "AOT" ||
-      statusShort === "FT"
-    )
-      currentQuarter = 4;
-    else currentQuarter = scoredQuarters || 1;
+    // Current quarter based on scores first, then status mapping
+    let currentQuarter =
+      scoredQuarters > 0
+        ? scoredQuarters
+        : (() => {
+            if (statusShort === "Q1") return 1;
+            if (statusShort === "Q2" || statusShort === "HT") return 2;
+            if (statusShort === "Q3") return 3;
+            if (["Q4", "OT", "AOT", "FT"].includes(statusShort)) return 4;
+            return 1;
+          })();
 
     return {
       apiSportsId: game?.id,
       status: gameStatus,
       currentQuarter,
       quarterScores,
-      totalScore,
-      teams: parsedTeams,
-      startTime,
+      totalScore: {
+        home: scores?.home?.total ?? 0,
+        away: scores?.away?.total ?? 0,
+      },
+      teams: {
+        home: teams?.home?.name ?? "",
+        away: teams?.away?.name ?? "",
+      },
+      startTime:
+        game?.date?.date && game?.date?.time
+          ? new Date(`${game.date.date}T${game.date.time}:00Z`)
+          : null,
       lastUpdate: new Date().toISOString(),
-      stage: game?.stage || null, // pass through
-      week: game?.week || null, // number for regular, string for playoffs/championship
+      stage: game?.stage || null,
+      week: game?.week || null,
     };
   }
 
