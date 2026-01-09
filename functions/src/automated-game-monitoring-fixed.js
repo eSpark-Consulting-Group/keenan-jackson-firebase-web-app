@@ -108,7 +108,6 @@ class ApiSportsService {
       let apiGame = null;
 
       if (sport === "NFL") {
-        // --- NFL: Single game from API-Sports ---
         const url = `https://v1.american-football.api-sports.io/games`;
         logger.info(`[fetchGameScore][NFL] Fetching single game`, {
           url,
@@ -122,15 +121,33 @@ class ApiSportsService {
           },
         });
 
-        // logger.info("Response", { response: response });
-
         logger.info(`[fetchGameScore][NFL] API raw response length`, {
           count: response.data?.response?.length,
         });
 
         apiGame = response.data?.response?.[0] || null;
-        // apiGame = DUMMY_GAMES;
         logger.info("API GAME HAI", { apiGame });
+
+        if (apiGame?.game) {
+          let currentQuarter = 1;
+
+          const short = apiGame.game.status?.short;
+          const period = apiGame.game.periods?.current;
+
+          if (typeof period === "number") {
+            currentQuarter = period;
+          } else if (short === "HT") {
+            currentQuarter = 2;
+          } else if (short === "FT") {
+            currentQuarter = 4;
+          }
+
+          if (currentQuarter > 4) {
+            currentQuarter = "ot";
+          }
+
+          apiGame.currentQuarter = currentQuarter;
+        }
       } else if (sport === "CFB") {
         // --- CFB: Single game from ESPN ---
         const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary`;
@@ -174,6 +191,28 @@ class ApiSportsService {
           } else {
             stage = "Post Season";
             week = response.data.header?.week?.text || "Championship";
+          }
+
+          const statusObj = competition.status;
+          const statusType = statusObj?.type;
+
+          let currentQuarter = 1;
+
+          if (statusType?.state === "pre") {
+            currentQuarter = 1;
+          } else if (
+            statusType?.state === "in" &&
+            typeof statusObj?.period === "number"
+          ) {
+            currentQuarter = statusObj.period;
+          } else if (statusType?.name === "STATUS_HALFTIME") {
+            currentQuarter = 2;
+          } else if (statusType?.state === "post") {
+            currentQuarter = 4;
+          }
+
+          if (typeof statusObj?.period === "number" && statusObj.period > 4) {
+            currentQuarter = "ot";
           }
 
           apiGame = {
@@ -236,10 +275,13 @@ class ApiSportsService {
             },
           };
 
+          apiGame.currentQuarter = currentQuarter;
+
           logger.info(`[fetchGameScore][CFB] Parsed game object created`, {
             id: apiGame.game.id,
             week: apiGame.game.week,
             status: apiGame.game.status,
+            currentQuarter,
           });
         } else {
           logger.warn(
@@ -585,7 +627,7 @@ async function monitorSingleGame(db, gameDoc) {
       lastApiCheck: getTimestamp(),
       lastApiStatus: game?.status?.short ?? null,
       apiCheckCount: admin.firestore.FieldValue.increment(1),
-      currentQuarter: getCurrentQuarter(game?.processedQuarters),
+      currentQuarter: liveData.currentQuarter ?? 1,
     };
     // Check if game status changed
     if (liveData.status !== game.status) {
