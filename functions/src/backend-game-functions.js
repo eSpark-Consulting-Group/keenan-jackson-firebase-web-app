@@ -1409,39 +1409,45 @@ exports.verifyCheckoutSession = functions.https.onCall(
 );
 
 exports.handleStripeWebhook = functions.https.onRequest(async (req, res) => {
+  if (req.method !== "POST") {
+    return res.status(405).send("Method Not Allowed");
+  }
+
   const sig = req.headers["stripe-signature"];
+  const endpointSecret = functions.config().stripe.webhook_secret;
+
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(
-      req.rawBody,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
+    event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
   } catch (err) {
-    console.error("Webhook signature verification failed:", err);
+    console.error("Webhook signature verification failed:", err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Handle the event
-  switch (event.type) {
-    case "checkout.session.completed":
-      const session = event.data.object;
+  // ✅ Respond immediately
+  res.status(200).json({ received: true });
 
-      // Grant tier access
-      await grantTierAccess(
-        session.metadata.userId,
-        session.metadata.tierId,
-        session.metadata.gameId
-      );
+  // ⏳ Process asynchronously
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object;
 
-      break;
+        await grantTierAccess(
+          session.metadata.userId,
+          session.metadata.tierId,
+          session.metadata.gameId
+        );
+        break;
+      }
 
-    default:
-      console.log(`Unhandled event type ${event.type}`);
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+  } catch (err) {
+    console.error("Error processing Stripe webhook:", err);
   }
-
-  res.json({ received: true });
 });
 
 async function grantTierAccess(userId, tierId, gameId) {
