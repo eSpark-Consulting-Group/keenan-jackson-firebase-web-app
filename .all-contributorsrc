@@ -1,0 +1,28 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "commitType": "docs",
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "syedalinaqihasni",
+      "name": "Syed Ali Naqi Hasni",
+      "avatar_url": "https://avatars.githubusercontent.com/u/48343357?v=4",
+      "profile": "https://www.syedalinaqihasni.com",
+      "contributions": [
+        "infra",
+        "test",
+        "code"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true,
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "projectName": "keenan-jackson-firebase-web-app",
+  "projectOwner": "eSpark-Cons-Group"
+}
