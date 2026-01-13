@@ -27,6 +27,10 @@ export default function LandingPage() {
   const { userData } = useAuth();
   const tiersData = userData != null ? "/tiers" : "/register";
 
+  const handleGetStarted = (id) => {
+    navigate(userData != null ? `/games?board=${id}` : "/register");
+  };
+
   useEffect(() => {
     if (hash) {
       const el = document.querySelector(hash);
@@ -108,6 +112,7 @@ export default function LandingPage() {
         "Perfect for Beginners",
       ],
       popular: false,
+      id: "tier_25",
     },
     {
       name: "Most Popular",
@@ -121,6 +126,7 @@ export default function LandingPage() {
         "Best Value for Players",
       ],
       popular: true,
+      id: "tier_100",
     },
     {
       name: "High Roller",
@@ -134,6 +140,7 @@ export default function LandingPage() {
         "For serious competitors ",
       ],
       popular: false,
+      id: "tier_500",
     },
   ];
 
@@ -419,14 +426,16 @@ export default function LandingPage() {
                 </ul>
 
                 <button
-                  onClick={() => navigate(tiersData)}
+                  // onClick={() => navigate(tiersData)}
+                  onClick={() => handleGetStarted(tier?.id)}
                   className={`w-full py-3 rounded-lg font-semibold transition-all ${
                     tier.popular
                       ? "bg-yellow-400 text-black hover:bg-yellow-500"
                       : "bg-emerald-500 text-white hover:bg-emerald-600"
                   }`}
                 >
-                  Get Started
+                  {/* Get Started */}
+                  Search Boards
                 </button>
               </motion.div>
             ))}

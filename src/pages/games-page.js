@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Grid3X3,
@@ -30,6 +30,8 @@ export default function Games() {
   const { userData } = useAuth();
   const navigate = useNavigate();
   const [games, setGames] = useState([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentBoard = searchParams?.get("board");
   const [loading, setLoading] = useState(true);
   const [selectedSport, setSelectedSport] = useState("all");
   const [selectedTier, setSelectedTier] = useState("all");
@@ -41,6 +43,26 @@ export default function Games() {
     const unsubscribe = setupRealtimeListeners();
     return () => unsubscribe?.();
   }, [userData]);
+
+  useEffect(() => {
+    if (
+      currentBoard &&
+      [
+        "tier_25",
+        "tier_50",
+        "tier_100",
+        "tier_250",
+        "tier_500",
+        "tier_1000",
+      ]?.includes(currentBoard)
+    ) {
+      setSelectedTier(currentBoard);
+    }
+  }, [currentBoard]);
+
+  useEffect(() => {
+    navigate(`/games?board=${selectedTier}`, { replace: true });
+  }, [selectedTier]);
 
   useEffect(() => {
     console.log(userData);
@@ -274,7 +296,7 @@ export default function Games() {
         </motion.div>
 
         {/* User's Active Boards */}
-        {userData?.currentTiers && userData.currentTiers.length > 0 && (
+        {/* {userData?.currentTiers && userData.currentTiers.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -307,7 +329,7 @@ export default function Games() {
               </button>
             </div>
           </motion.div>
-        )}
+        )} */}
 
         {/* Filters */}
         <motion.div
@@ -374,185 +396,191 @@ export default function Games() {
           </div>
         </motion.div>
         {/* Games List */}
-        {Object.keys(groupedGames).length > 0 ? (
-          Object.entries(groupedGames).map(([date, dateGames]) => {
-            const filteredDateGames = dateGames.filter((game) =>
-              filteredGames().includes(game)
-            );
+        {(() => {
+          const hasFilteredGames = Object.values(groupedGames).some(
+            (dateGames) =>
+              dateGames.some((game) => filteredGames().includes(game))
+          );
 
-            if (filteredDateGames.length === 0) return null;
+          return hasFilteredGames ? (
+            Object.entries(groupedGames).map(([date, dateGames]) => {
+              const filteredDateGames = dateGames.filter((game) =>
+                filteredGames().includes(game)
+              );
 
-            return (
-              <motion.div
-                key={date}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-8"
-              >
-                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                  <Calendar className="h-5 w-5 mr-2" />
-                  {date}
-                </h2>
+              if (filteredDateGames.length === 0) return null;
 
-                <EligibilityGate>
-                  <div className="grid gap-4">
-                    {filteredDateGames.map((game) => {
-                      return (
-                        <motion.div
-                          key={game.id}
-                          whileHover={{ scale: 1.01 }}
-                          className="bg-white rounded-lg shadow-md overflow-hidden"
-                        >
-                          <div className="p-6">
-                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                              {/* Game Info */}
-                              <div className="mb-4 lg:mb-0">
-                                <div className="flex items-center mb-2">
-                                  <span className="text-sm font-medium bg-gray-100 text-gray-700 px-3 py-1 rounded-full mr-3">
-                                    {game.sport}
-                                  </span>
-                                  <span className="text-sm text-gray-500 flex items-center">
-                                    <Clock className="h-4 w-4 mr-1" />
-                                    {getTimeUntilGame(game.gameDate)}
-                                  </span>
+              return (
+                <motion.div
+                  key={date}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-8"
+                >
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                    <Calendar className="h-5 w-5 mr-2" />
+                    {date}
+                  </h2>
+
+                  <EligibilityGate>
+                    <div className="grid gap-4">
+                      {filteredDateGames.map((game) => {
+                        return (
+                          <motion.div
+                            key={game.id}
+                            whileHover={{ scale: 1.01 }}
+                            className="bg-white rounded-lg shadow-md overflow-hidden"
+                          >
+                            <div className="p-6">
+                              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                                {/* Game Info */}
+                                <div className="mb-4 lg:mb-0">
+                                  <div className="flex items-center mb-2">
+                                    <span className="text-sm font-medium bg-gray-100 text-gray-700 px-3 py-1 rounded-full mr-3">
+                                      {game.sport}
+                                    </span>
+                                    <span className="text-sm text-gray-500 flex items-center">
+                                      <Clock className="h-4 w-4 mr-1" />
+                                      {getTimeUntilGame(game.gameDate)}
+                                    </span>
+                                  </div>
+                                  <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                                    {game?.teams?.away || "TBA"} @{" "}
+                                    {game.teams?.home || "TBA"}
+                                  </h3>
+                                  <p className="text-sm text-gray-600">
+                                    {new Date(
+                                      game.gameDate?.toDate?.() || game.gameDate
+                                    ).toLocaleString()}
+                                  </p>
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                                  {game?.teams?.away || "TBA"} @{" "}
-                                  {game.teams?.home || "TBA"}
-                                </h3>
-                                <p className="text-sm text-gray-600">
-                                  {new Date(
-                                    game.gameDate?.toDate?.() || game.gameDate
-                                  ).toLocaleString()}
-                                </p>
-                              </div>
 
-                              {/* Boards */}
-                              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                {game.boards.map((board) => {
-                                  const tier =
-                                    TIERS[board.tierId.toUpperCase()];
-                                  const isUserTier =
-                                    userData?.currentTiers?.includes(
-                                      board.tierId
+                                {/* Boards */}
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                  {game.boards.map((board) => {
+                                    const tier =
+                                      TIERS[board.tierId.toUpperCase()];
+                                    const isUserTier = true;
+                                    const hasAccess = userTierAccess.includes(
+                                      board.id
                                     );
-                                  const hasAccess = userTierAccess.includes(
-                                    board.id
-                                  );
-                                  const quarters = ["q1", "q2", "q3", "q4"];
-                                  const isComplete = quarters.every(
-                                    (q) => board?.[q]?.processed === true
-                                  );
-                                  return (
-                                    <div
-                                      key={board.id}
-                                      className={`
-                                      relative p-4 rounded-lg border-2 text-center
-                                      ${
-                                        isUserTier
-                                          ? "border-blue-500 bg-blue-50"
-                                          : "border-gray-200 bg-gray-50"
-                                      }
-                                    `}
-                                    >
-                                      {isUserTier && (
-                                        <div className="absolute -top-2 -right-2">
-                                          <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                                            Your Board
-                                          </span>
-                                        </div>
-                                      )}
+                                    const quarters = ["q1", "q2", "q3", "q4"];
+                                    const isComplete = quarters.every(
+                                      (q) => board?.[q]?.processed === true
+                                    );
 
+                                    return (
                                       <div
-                                        className={`text-sm font-semibold mb-1 ${tier.color} text-white px-2 py-1 rounded`}
+                                        key={board.id}
+                                        className={`
+                                  relative p-4 rounded-lg border-2 text-center
+                                  ${
+                                    isUserTier
+                                      ? "border-blue-500 bg-blue-50"
+                                      : "border-gray-200 bg-gray-50"
+                                  }
+                                `}
                                       >
-                                        {tier.name}
-                                      </div>
+                                        {isUserTier && (
+                                          <div className="absolute -top-2 -right-2">
+                                            <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                                              Your Board
+                                            </span>
+                                          </div>
+                                        )}
 
-                                      <div className="text-lg font-bold text-gray-900">
-                                        {formatCurrency(tier.prizePerQuarter)}
-                                      </div>
-                                      <div className="text-xs text-gray-600 mb-2">
-                                        per quarter
-                                      </div>
+                                        <div
+                                          className={`text-sm font-semibold mb-1 ${tier.color} text-white px-2 py-1 rounded`}
+                                        >
+                                          {tier.name}
+                                        </div>
 
-                                      <div className="flex items-center justify-center text-xs text-gray-600 mb-3">
-                                        <Grid3X3 className="h-4 w-4 mr-1" />
-                                        <span>{board.filledSquares}/50</span>
-                                      </div>
+                                        <div className="text-lg font-bold text-gray-900">
+                                          {formatCurrency(tier.prizePerQuarter)}
+                                        </div>
+                                        <div className="text-xs text-gray-600 mb-2">
+                                          per quarter
+                                        </div>
 
-                                      {isUserTier ? (
-                                        <Link
-                                          to={`/game/${board.id}`}
-                                          className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
-                                        >
-                                          Play Now
-                                        </Link>
-                                      ) : hasAccess ? (
-                                        <Link
-                                          to={`/game/${board.id}?view=true`}
-                                          className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
-                                        >
-                                          View Board
-                                        </Link>
-                                      ) : isComplete ? (
-                                        <Link
-                                          to={`/game/${board.id}/results`}
-                                          className="block w-full bg-green-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-green-700 transition-colors hover:text-white"
-                                        >
-                                          <Check className="h-4 w-4 inline mr-1" />
-                                          View Results
-                                        </Link>
-                                      ) : (
-                                        <button
-                                          disabled
-                                          className="block w-full bg-gray-300 text-gray-500 py-2 px-3 rounded text-sm font-medium cursor-not-allowed"
-                                        >
-                                          <Lock className="h-4 w-4 inline mr-1" />
-                                          Locked
-                                        </button>
-                                      )}
-                                    </div>
-                                  );
-                                })}
+                                        <div className="flex items-center justify-center text-xs text-gray-600 mb-3">
+                                          <Grid3X3 className="h-4 w-4 mr-1" />
+                                          <span>{board.filledSquares}/50</span>
+                                        </div>
+
+                                        {isUserTier ? (
+                                          <Link
+                                            to={`/game/${board.id}`}
+                                            className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
+                                          >
+                                            Play Now
+                                          </Link>
+                                        ) : hasAccess ? (
+                                          <Link
+                                            to={`/game/${board.id}?view=true`}
+                                            className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
+                                          >
+                                            View Board
+                                          </Link>
+                                        ) : isComplete ? (
+                                          <Link
+                                            to={`/game/${board.id}/results`}
+                                            className="block w-full bg-green-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-green-700 transition-colors hover:text-white"
+                                          >
+                                            <Check className="h-4 w-4 inline mr-1" />
+                                            View Results
+                                          </Link>
+                                        ) : (
+                                          <button
+                                            disabled
+                                            className="block w-full bg-gray-300 text-gray-500 py-2 px-3 rounded text-sm font-medium cursor-not-allowed"
+                                          >
+                                            <Lock className="h-4 w-4 inline mr-1" />
+                                            Locked
+                                          </button>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                </EligibilityGate>
-              </motion.div>
-            );
-          })
-        ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-white rounded-lg shadow-md p-12 text-center"
-          >
-            <AlertCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              No Games Found
-            </h3>
-            <p className="text-gray-600 mb-6">
-              {searchTerm || selectedSport !== "all" || selectedTier !== "all"
-                ? "Try adjusting your filters"
-                : "Check back soon for upcoming games"}
-            </p>
-            {(!userData?.currentTiers ||
-              userData.currentTiers.length === 0) && (
-              <button
-                onClick={() => navigate("/tiers")}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors hover:text-white"
-              >
-                Choose a Board to Get Started
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </button>
-            )}
-          </motion.div>
-        )}
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </EligibilityGate>
+                </motion.div>
+              );
+            })
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="bg-white rounded-lg shadow-md p-12 text-center"
+            >
+              <AlertCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No Games Found
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {searchTerm || selectedSport !== "all" || selectedTier !== "all"
+                  ? "Try adjusting your filters"
+                  : "Check back soon for upcoming games"}
+              </p>
+              {(!userData?.currentTiers ||
+                userData.currentTiers.length === 0) && (
+                <button
+                  onClick={() => navigate("/tiers")}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors hover:text-white"
+                >
+                  Choose a Board to Get Started
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </button>
+              )}
+            </motion.div>
+          );
+        })()}
+
         {/* CTA */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -593,7 +621,6 @@ export default function Games() {
             </Link>
           </div>
         </motion.div>
-
       </div>
     </div>
   );

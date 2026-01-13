@@ -25,7 +25,7 @@ const TIERS = {
     id: "tier_25",
     amount: 25,
     name: "$25 Board",
-    title:'Starter Board',
+    title: "Starter Board",
     color: "from-green-500 to-emerald-600",
     bgColor: "bg-green-50",
     borderColor: "border-green-500",
@@ -48,7 +48,7 @@ const TIERS = {
     id: "tier_50",
     amount: 50,
     name: "$50 Board",
-    title:'Competitive Board',
+    title: "Competitive Board",
     color: "from-blue-500 to-indigo-600",
     bgColor: "bg-blue-50",
     borderColor: "border-blue-500",
@@ -71,7 +71,7 @@ const TIERS = {
     id: "tier_100",
     amount: 100,
     name: "$100 Board",
-    title:'Popular Board',
+    title: "Popular Board",
     color: "from-purple-500 to-pink-600",
     bgColor: "bg-purple-50",
     borderColor: "border-purple-500",
@@ -95,7 +95,7 @@ const TIERS = {
     id: "tier_250",
     amount: 250,
     name: "$250 Board",
-    title:'High Stakes Board',
+    title: "High Stakes Board",
     color: "from-orange-500 to-red-600",
     bgColor: "bg-orange-50",
     borderColor: "border-orange-500",
@@ -119,7 +119,7 @@ const TIERS = {
     id: "tier_500",
     amount: 500,
     name: "$500 Board",
-    title:'Elite Board',
+    title: "Elite Board",
     color: "from-indigo-500 to-purple-700",
     bgColor: "bg-indigo-50",
     borderColor: "border-indigo-500",
@@ -143,7 +143,7 @@ const TIERS = {
     id: "tier_1000",
     amount: 1000,
     name: "$1000 Board",
-    title:'Championship Board',
+    title: "Championship Board",
     color: "from-yellow-500 to-yellow-700",
     bgColor: "bg-yellow-50",
     borderColor: "border-yellow-500",
@@ -193,8 +193,8 @@ export default function TierSelection({
   const eligibility =
     JSON.parse(localStorage.getItem("squareTrivia_eligibility") || "{}") || {};
 
-   const isRestricted = eligibility?.status === "restricted";
-console.log("Eligibility Status:", isRestricted);
+  const isRestricted = eligibility?.status === "restricted";
+  console.log("Eligibility Status:", isRestricted);
   const fetchBoardData = async () => {
     try {
       setLoading(true);
@@ -218,45 +218,45 @@ console.log("Eligibility Status:", isRestricted);
   };
 
   const processPayment = async () => {
-  if (!selectedTier) return;
+    if (!selectedTier) return;
 
-  if (!user) {
-    toast.error("Please login to continue");
-    navigate("/login");
-    return;
-  }
+    if (!user) {
+      toast.error("Please login to continue");
+      navigate("/login");
+      return;
+    }
 
-  if (isRestricted) {
-    toast.error("You are not eligible to enter paid contests.");
-    setProcessing(false); // ✅ Make sure processing is false
-    navigate("/restricted");
-    return; // ✅ Prevent further code execution
-  }
+    if (isRestricted) {
+      toast.error("You are not eligible to enter paid contests.");
+      setProcessing(false); // ✅ Make sure processing is false
+      navigate("/restricted");
+      return; // ✅ Prevent further code execution
+    }
 
-  setProcessing(true);
-  const loadingToast = toast.loading("Preparing secure checkout...");
+    setProcessing(true);
+    const loadingToast = toast.loading("Preparing secure checkout...");
 
-  try {
-    // Create Stripe checkout session
-    const { sessionId, url } = await callFunction("createCheckoutSession", {
-      tierId: selectedTier.id,
-      tierAmount: selectedTier.amount,
-      gameId: gameId,
-      userId: user.uid,
-      userEmail: user.email,
-      successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${window.location.origin}/payment-cancel`,
-    });
+    try {
+      // Create Stripe checkout session
+      const { sessionId, url } = await callFunction("createCheckoutSession", {
+        tierId: selectedTier.id,
+        tierAmount: selectedTier.amount,
+        gameId: gameId,
+        userId: user.uid,
+        userEmail: user.email,
+        successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${window.location.origin}/payment-cancel`,
+      });
 
-    toast.dismiss(loadingToast);
+      toast.dismiss(loadingToast);
 
-    if (url) {
-      window.location.href = url;
-    } else if (sessionId) {
-      const stripe = await loadStripe(
-        process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY
-      );
-      const { error } = await stripe.redirectToCheckout({ sessionId });
+      if (url) {
+        window.location.href = url;
+      } else if (sessionId) {
+        const stripe = await loadStripe(
+          process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY
+        );
+        const { error } = await stripe.redirectToCheckout({ sessionId });
 
         if (error) {
           toast.error(error.message);
@@ -324,7 +324,8 @@ console.log("Eligibility Status:", isRestricted);
                 ${isSelected ? `${tier.borderColor} ${tier.bgColor}` : "border-gray-200 hover:border-gray-300 bg-white "}
                 ${isSoldOut ? "opacity-60 cursor-not-allowed" : ""}
               `}
-              onClick={() => !isSoldOut && handleTierSelection(tier)}
+              // onClick={() => !isSoldOut && handleTierSelection(tier)}
+              onClick={() => !isSoldOut && navigate(`/games?board=${tier?.id}`)}
             >
               {/* Popular badge for $50 board */}
               {tier.id === "tier_50" && (
@@ -424,7 +425,7 @@ console.log("Eligibility Status:", isRestricted);
       {/* Action buttons */}
       {selectedTier && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-lg md:relative md:shadow-none md:border-0 md:p-0">
-          <RestrictedAlert/>
+          <RestrictedAlert />
           <div className="max-w-3xl mx-auto flex flex-col sm:flex-row gap-4 items-center justify-between">
             <div className="text-center sm:text-left">
               <p className="text-sm text-gray-600">Selected board:</p>
