@@ -128,7 +128,7 @@ export default function Layout({ children }) {
               {user ? (
                 <>
                   {/* Board badges */}
-                  {userData?.currentTiers?.length > 0 && (
+                  {/* {userData?.currentTiers?.length > 0 && (
                     <div className="hidden md:flex items-center mr-4 space-x-2">
                       {userData.currentTiers.slice(0, 3).map((tier, index) => (
                         <span
@@ -139,7 +139,7 @@ export default function Layout({ children }) {
                         </span>
                       ))}
                     </div>
-                  )}
+                  )} */}
 
                   {/* User menu */}
                   <div className="relative">
