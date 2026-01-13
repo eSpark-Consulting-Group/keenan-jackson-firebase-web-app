@@ -529,15 +529,7 @@ export default function Games() {
                                             <Check className="h-4 w-4 inline mr-1" />
                                             View Results
                                           </Link>
-                                        ) : (
-                                          <button
-                                            disabled
-                                            className="block w-full bg-gray-300 text-gray-500 py-2 px-3 rounded text-sm font-medium cursor-not-allowed"
-                                          >
-                                            <Lock className="h-4 w-4 inline mr-1" />
-                                            Locked
-                                          </button>
-                                        )}
+                                        ) : null}
                                       </div>
                                     );
                                   })}
