@@ -295,42 +295,6 @@ export default function Games() {
           </p>
         </motion.div>
 
-        {/* User's Active Boards */}
-        {/* {userData?.currentTiers && userData.currentTiers.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-lg shadow-md p-6 mb-6"
-          >
-            <h3 className="text-lg font-semibold mb-3 flex items-center">
-              <Shield className="h-5 w-5 mr-2 text-blue-600" />
-              Your Active Boards
-            </h3>
-            <div className="flex flex-wrap gap-3">
-              {userData.currentTiers.map((tierId) => {
-                const tier = TIERS[tierId.toUpperCase()];
-                return tier ? (
-                  <div
-                    key={tierId}
-                    className={`px-4 py-2 rounded-lg text-white ${tier.color}`}
-                  >
-                    <div className="font-semibold">{tier.name}</div>
-                    <div className="text-sm opacity-90">
-                      Win {formatCurrency(tier.prizePerQuarter)}/quarter
-                    </div>
-                  </div>
-                ) : null;
-              })}
-              <button
-                onClick={() => navigate("/tiers")}
-                className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors"
-              >
-                <Plus className="h-5 w-5" />
-              </button>
-            </div>
-          </motion.div>
-        )} */}
-
         {/* Filters */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -548,11 +512,11 @@ export default function Games() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="bg-white rounded-lg shadow-md p-12 text-center"
+              className="bg-white rounded-lg shadow-md p-12 text-center mb-6"
             >
               <AlertCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                No Games Found
+                {"No Boards Available"}
               </h3>
               <p className="text-gray-600 mb-6">
                 {searchTerm || selectedSport !== "all" || selectedTier !== "all"
