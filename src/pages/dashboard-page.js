@@ -229,7 +229,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Action Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Daily Trivia Attempts */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -283,7 +283,7 @@ export default function Dashboard() {
           </motion.div>
 
           {/* Active Boards */}
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
@@ -322,7 +322,7 @@ export default function Dashboard() {
                 </Link>
               </div>
             )}
-          </motion.div>
+          </motion.div> */}
 
           {/* Quick Stats */}
           <motion.div
