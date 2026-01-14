@@ -516,7 +516,7 @@ export default function Games() {
             >
               <AlertCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {"No Boards Available"}
+                {"No Games Available"}
               </h3>
               <p className="text-gray-600 mb-6">
                 {searchTerm || selectedSport !== "all" || selectedTier !== "all"
