@@ -1,9 +1,9 @@
 const functions = require("firebase-functions");
-const { onRequest, onCall } = require("firebase-functions/v2/https");
+// const { onRequest, onCall } = require("firebase-functions/v2/https");
 const { validateTelegramUsername } = require("./utility-functions-fixed");
 const admin = require("firebase-admin");
 const { grantTelegramAccess } = require("./payment-system-modified");
-const { verifyUserTierAccess } = require("./trivia-system-fixed");
+// const { verifyUserTierAccess } = require("./trivia-system-fixed");
 const { default: axios } = require("axios");
 // import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 const { logger } = require("firebase-functions");
@@ -147,14 +147,14 @@ exports.trackUserEvent = functions.https.onCall(async (data, context) => {
  */
 async function handleGrantTelegramAccess(userId, telegramUsername, tier) {
   try {
-    // Step 1: Verify user has access to the tier
-    const hasAccess = await verifyUserTierAccess(userId, tier);
-    if (!hasAccess) {
-      console.warn(
-        `User ${userId} does not have access to tier ${tier}, skipping Telegram grant`
-      );
-      return { success: false, message: "No active access to this tier" };
-    }
+    // // Step 1: Verify user has access to the tier
+    // const hasAccess = await verifyUserTierAccess(userId, tier);
+    // if (!hasAccess) {
+    //   console.warn(
+    //     `User ${userId} does not have access to tier ${tier}, skipping Telegram grant`
+    //   );
+    //   return { success: false, message: "No active access to this tier" };
+    // }
 
     // Step 2: Grant access (re-uses your existing function)
     await grantTelegramAccess(userId, telegramUsername, tier);

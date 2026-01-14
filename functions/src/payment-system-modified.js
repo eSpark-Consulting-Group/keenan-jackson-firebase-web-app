@@ -1266,13 +1266,13 @@ exports.grantTelegramAccessForTier = functions.https.onCall(
 
     try {
       // Verify user has active access to this tier
-      const hasAccess = await verifyUserTierAccess(userId, tier);
-      if (!hasAccess) {
-        throw new functions.https.HttpsError(
-          "failed-precondition",
-          "No active access to this tier"
-        );
-      }
+      // const hasAccess = await verifyUserTierAccess(userId, tier);
+      // if (!hasAccess) {
+      //   throw new functions.https.HttpsError(
+      //     "failed-precondition",
+      //     "No active access to this tier"
+      //   );
+      // }
 
       // Grant Telegram access
       await grantTelegramAccess(userId, telegramUsername, tier);
@@ -1292,24 +1292,24 @@ exports.grantTelegramAccessForTier = functions.https.onCall(
 );
 
 // Helper function for verifying tier access
-async function verifyUserTierAccess(userId, tier) {
-  const accessQuery = await admin
-    .firestore()
-    .collection("tierAccess")
-    .where("userId", "==", userId)
-    .where("tier", "==", tier)
-    .where("active", "==", true)
-    .get();
+// async function verifyUserTierAccess(userId, tier) {
+//   const accessQuery = await admin
+//     .firestore()
+//     .collection("tierAccess")
+//     .where("userId", "==", userId)
+//     .where("tier", "==", tier)
+//     .where("active", "==", true)
+//     .get();
 
-  for (const doc of accessQuery.docs) {
-    const access = doc.data();
-    if (access.expiresAt.toMillis() > Date.now()) {
-      return true;
-    }
-  }
+//   for (const doc of accessQuery.docs) {
+//     const access = doc.data();
+//     if (access.expiresAt.toMillis() > Date.now()) {
+//       return true;
+//     }
+//   }
 
-  return false;
-}
+//   return false;
+// }
 
 // =====================================
 // UTILITIES

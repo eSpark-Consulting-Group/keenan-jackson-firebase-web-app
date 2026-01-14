@@ -130,7 +130,7 @@ export default function Layout({ children }) {
                   {/* Board badges */}
                   {/* {userData?.currentTiers?.length > 0 && (
                     <div className="hidden md:flex items-center mr-4 space-x-2">
-                      {userData.currentTiers.slice(0, 3).map((tier, index) => (
+                      {userData?.currentTiers.slice(0, 3).map((tier, index) => (
                         <span
                           key={index}
                           className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"

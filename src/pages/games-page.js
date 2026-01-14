@@ -279,7 +279,7 @@ export default function Games() {
               Available Games
             </h1>
             {(!userData?.currentTiers ||
-              userData.currentTiers.length === 0) && (
+              userData?.currentTiers.length === 0) && (
               <button
                 onClick={() => navigate("/tiers")}
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors hover:text-white"
@@ -524,7 +524,7 @@ export default function Games() {
                   : "Check back soon for upcoming games"}
               </p>
               {(!userData?.currentTiers ||
-                userData.currentTiers.length === 0) && (
+                userData?.currentTiers.length === 0) && (
                 <button
                   onClick={() => navigate("/tiers")}
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors hover:text-white"

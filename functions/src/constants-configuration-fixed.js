@@ -5,92 +5,92 @@
 // TIER CONFIGURATION
 // =====================================
 // Standardized tier system - use these everywhere
-const TIERS = {
-  TIER_25: {
-    id: "tier_25",
-    amount: 25,
-    label: "$25 Tier",
-    color: "bg-gray-600",
-    textColor: "text-gray-600",
-    telegramGroupKey: "tier_25_group_id",
-    maxSquaresPerUser: 3,
-    availableIn: ["regular", "playoff", "championship"],
-    payoutPercentage: 0.64, // 64% to winners
-  },
-  TIER_50: {
-    id: "tier_50",
-    amount: 50,
-    label: "$50 Tier",
-    color: "bg-blue-600",
-    textColor: "text-blue-600",
-    telegramGroupKey: "tier_50_group_id",
-    maxSquaresPerUser: 3,
-    availableIn: ["regular", "playoff", "championship"],
-    payoutPercentage: 0.64, // 64% to winners
-  },
-  TIER_100: {
-    id: "tier_100",
-    amount: 100,
-    label: "$100 Tier",
-    color: "bg-green-600",
-    textColor: "text-green-600",
-    telegramGroupKey: "tier_100_group_id",
-    maxSquaresPerUser: 3,
-    availableIn: ["regular", "playoff", "championship"],
-    payoutPercentage: 0.64, // 64% to winners
-  },
-  TIER_250: {
-    id: "tier_250",
-    amount: 250,
-    label: "$250 Tier",
-    color: "bg-purple-600",
-    textColor: "text-purple-600",
-    telegramGroupKey: "tier_250_group_id",
-    maxSquaresPerUser: 3,
-    availableIn: ["playoff", "championship"],
-    badge: "Playoff Exclusive",
-    payoutPercentage: 0.72, // 72% to winners
-  },
-  TIER_500: {
-    id: "tier_500",
-    amount: 500,
-    label: "$500 Tier",
-    color: "bg-yellow-600",
-    textColor: "text-yellow-600",
-    telegramGroupKey: "tier_500_group_id",
-    maxSquaresPerUser: 3,
-    availableIn: ["playoff", "championship"],
-    badge: "Playoff Exclusive",
-    payoutPercentage: 0.72, // 72% to winners
-  },
-  TIER_1000: {
-    id: "tier_1000",
-    amount: 1000,
-    label: "$1000 Tier",
-    color: "bg-red-600",
-    textColor: "text-red-600",
-    telegramGroupKey: "tier_1000_group_id",
-    maxSquaresPerUser: 3,
-    availableIn: ["championship"],
-    badge: "Championship Only",
-    payoutPercentage: 0.72, // 72% to winners
-  },
-};
+// const TIERS = {
+//   TIER_25: {
+//     id: "tier_25",
+//     amount: 25,
+//     label: "$25 Tier",
+//     color: "bg-gray-600",
+//     textColor: "text-gray-600",
+//     telegramGroupKey: "tier_25_group_id",
+//     maxSquaresPerUser: 3,
+//     availableIn: ["regular", "playoff", "championship"],
+//     payoutPercentage: 0.64, // 64% to winners
+//   },
+//   TIER_50: {
+//     id: "tier_50",
+//     amount: 50,
+//     label: "$50 Tier",
+//     color: "bg-blue-600",
+//     textColor: "text-blue-600",
+//     telegramGroupKey: "tier_50_group_id",
+//     maxSquaresPerUser: 3,
+//     availableIn: ["regular", "playoff", "championship"],
+//     payoutPercentage: 0.64, // 64% to winners
+//   },
+//   TIER_100: {
+//     id: "tier_100",
+//     amount: 100,
+//     label: "$100 Tier",
+//     color: "bg-green-600",
+//     textColor: "text-green-600",
+//     telegramGroupKey: "tier_100_group_id",
+//     maxSquaresPerUser: 3,
+//     availableIn: ["regular", "playoff", "championship"],
+//     payoutPercentage: 0.64, // 64% to winners
+//   },
+//   TIER_250: {
+//     id: "tier_250",
+//     amount: 250,
+//     label: "$250 Tier",
+//     color: "bg-purple-600",
+//     textColor: "text-purple-600",
+//     telegramGroupKey: "tier_250_group_id",
+//     maxSquaresPerUser: 3,
+//     availableIn: ["playoff", "championship"],
+//     badge: "Playoff Exclusive",
+//     payoutPercentage: 0.72, // 72% to winners
+//   },
+//   TIER_500: {
+//     id: "tier_500",
+//     amount: 500,
+//     label: "$500 Tier",
+//     color: "bg-yellow-600",
+//     textColor: "text-yellow-600",
+//     telegramGroupKey: "tier_500_group_id",
+//     maxSquaresPerUser: 3,
+//     availableIn: ["playoff", "championship"],
+//     badge: "Playoff Exclusive",
+//     payoutPercentage: 0.72, // 72% to winners
+//   },
+//   TIER_1000: {
+//     id: "tier_1000",
+//     amount: 1000,
+//     label: "$1000 Tier",
+//     color: "bg-red-600",
+//     textColor: "text-red-600",
+//     telegramGroupKey: "tier_1000_group_id",
+//     maxSquaresPerUser: 3,
+//     availableIn: ["championship"],
+//     badge: "Championship Only",
+//     payoutPercentage: 0.72, // 72% to winners
+//   },
+// };
 
-// Helper to get tier by ID
-function getTierById(tierId) {
-  return Object.values(TIERS).find((tier) => tier.id === tierId);
-}
+// // Helper to get tier by ID
+// function getTierById(tierId) {
+//   return Object.values(TIERS).find((tier) => tier.id === tierId);
+// }
 
-// Helper to get tier by amount
-function getTierByAmount(amount) {
-  return Object.values(TIERS).find((tier) => tier.amount === amount);
-}
+// // Helper to get tier by amount
+// function getTierByAmount(amount) {
+//   return Object.values(TIERS).find((tier) => tier.amount === amount);
+// }
 
-// Helper to get all tier IDs
-function getAllTierIds() {
-  return Object.values(TIERS).map((tier) => tier.id);
-}
+// // Helper to get all tier IDs
+// function getAllTierIds() {
+//   return Object.values(TIERS).map((tier) => tier.id);
+// }
 
 // =====================================
 // GAME CONFIGURATION
@@ -193,7 +193,7 @@ const GAME_CONFIG = {
 // =====================================
 // PRIZE CALCULATIONS
 // =====================================
-function calculatePrizes(tierAmount, gameType = "regular") {
+function calculatePrizes(tierAmount) {
   // Get tier-specific payout percentage
   const tier = getTierByAmount(tierAmount);
   if (!tier) {

@@ -33,6 +33,7 @@ import TriviaModal from "../components/game/trivia-modal";
 import SquareGrid from "../components/game/square-grid";
 import GameScore from "../components/game/game-score";
 import toast from "react-hot-toast";
+import { loadStripe } from "@stripe/stripe-js";
 
 export default function GameBoard() {
   const { boardId } = useParams();
@@ -52,6 +53,59 @@ export default function GameBoard() {
   const [scores, setScores] = useState({ home: 0, away: 0 });
   const [winningSquares, setWinningSquares] = useState([]);
   const [revealedSquares, setRevealedSquares] = useState(new Set());
+
+  const [processing, setProcessing] = useState(false);
+
+  const processPayment = async ({ gameId, squarePosition }) => {
+    if (!user) {
+      toast.error("Please login to continue");
+      navigate("/login");
+      return;
+    }
+
+    setProcessing(true);
+    const loadingToast = toast.loading("Preparing secure checkout...");
+
+    try {
+      // Create Stripe checkout session
+      const { sessionId, url } = await callFunction("createCheckoutSession", {
+        boardId: board.id,
+        squarePosition,
+        boardPrice: board.price, // cents
+        userId: user.uid,
+        userEmail: user.email,
+        successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${window.location.origin}/payment-cancel`,
+      });
+
+      toast.dismiss(loadingToast);
+
+      if (url) {
+        window.location.href = url;
+      } else if (sessionId) {
+        const stripe = await loadStripe(
+          process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY
+        );
+        const { error } = await stripe.redirectToCheckout({ sessionId });
+
+        if (error) {
+          toast.error(error.message);
+        }
+      } else {
+        toast.error("Could not start checkout session");
+      }
+    } catch (error) {
+      console.error("Payment error:", error);
+      toast.error(error.message || "Payment failed. Please try again.");
+      // showNotification({
+      //   type: 'error',
+      //   message: 'Payment processing failed'
+      // });
+    } finally {
+      toast.dismiss(loadingToast);
+      setProcessing(false);
+    }
+  };
 
   useEffect(() => {
     if (!boardId || !user) return;
@@ -264,6 +318,17 @@ export default function GameBoard() {
       return;
     }
 
+    // ✅ Store pending square locally
+    localStorage.setItem(
+      "pendingSquare",
+      JSON.stringify({
+        boardId: board.id,
+        position,
+      })
+    );
+
+    // ✅ Start payment
+    processPayment({ boardId: board.id });
     // Set selected square and show trivia modal
     setSelectedSquare(position);
     setShowTriviaModal(true);
@@ -413,48 +478,6 @@ export default function GameBoard() {
 
   const tier = TIERS[board.tierId.toUpperCase()];
   const isGameActive = game.status === "active" || game.status === "scheduled";
-  // const winnerss = [
-  //   {
-  //     id: "2",
-  //     displayName: "Michael Brown",
-  //     email: "michael.b@example.com",
-  //     position: 24,
-  //     isFastest: false,
-  //     quarter: "Q1",
-  //   },
-  //   {
-  //     id: "3",
-  //     displayName: "Priya Patel",
-  //     email: "priya.p@example.com",
-  //     position: 33,
-  //     isFastest: false,
-  //     quarter: "Q2",
-  //   },
-  //   {
-  //     id: "4",
-  //     displayName: "Daniel Kim",
-  //     email: "daniel.k@example.com",
-  //     position: 45,
-  //     isFastest: false,
-  //     quarter: "Q3",
-  //   },
-  //   {
-  //     id: "5",
-  //     displayName: "Jessica Lee",
-  //     email: "jessica.l@example.com",
-  //     position: 57,
-  //     isFastest: false,
-  //     quarter: "Q4",
-  //   },
-  //   {
-  //     id: "1",
-  //     displayName: "Sarah Johnson",
-  //     email: "sarah.j@example.com",
-  //     position: 12,
-  //     isFastest: true,
-  //     quarter: "Q1",
-  //   },
-  // ];
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

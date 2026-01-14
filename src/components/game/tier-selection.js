@@ -168,7 +168,8 @@ const TIERS = {
 export default function TierSelection({
   gameId,
   gameType = "championship",
-  onTierSelect,
+  board,
+  squarePosition,
 }) {
   const [selectedTier, setSelectedTier] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -239,8 +240,9 @@ export default function TierSelection({
     try {
       // Create Stripe checkout session
       const { sessionId, url } = await callFunction("createCheckoutSession", {
-        tierId: selectedTier.id,
-        tierAmount: selectedTier.amount,
+        boardId: board.id,
+      squarePosition,
+      boardPrice: board.price, // cents
         gameId: gameId,
         userId: user.uid,
         userEmail: user.email,

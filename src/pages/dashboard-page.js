@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   Grid3X3,
   Trophy,
-  DollarSign,
+  // DollarSign,
   Brain,
   ChevronRight,
   Zap,
@@ -35,7 +35,6 @@ export default function Dashboard() {
     totalPrizeAmount: 0,
     averageAnswerTime: 0,
     fastestAnswerTime: 0,
-    activeTiers: [],
     recentGames: [],
     upcomingGames: [],
   });
@@ -90,7 +89,6 @@ export default function Dashboard() {
       if (userData?.currentTiers?.length > 0) {
         const boardsQuery = query(
           collection(db, collections.boards),
-          where("tierId", "in", userData.currentTiers),
           where("isActive", "==", true),
           orderBy("createdAt", "desc"),
           limit(10)
@@ -125,7 +123,6 @@ export default function Dashboard() {
         totalPrizeAmount,
         averageAnswerTime: userData?.averageAnswerTime || 0,
         fastestAnswerTime: userData?.fastestAnswerTime || 0,
-        activeTiers: userData?.currentTiers || [],
       });
 
       // Update daily attempts
@@ -146,7 +143,6 @@ export default function Dashboard() {
 
     const boardsQuery = query(
       collection(db, collections.boards),
-      where("tierId", "in", userData.currentTiers),
       where("isActive", "==", true)
     );
 
@@ -389,9 +385,9 @@ export default function Dashboard() {
             </Link>
           </div>
           <EligibilityGate>
-            {activeBoards.length > 0 ? (
+            {activeBoards?.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {activeBoards.map((board) => (
+                {activeBoards?.map((board) => (
                   <motion.div
                     key={board.id}
                     whileHover={{ scale: 1.02 }}
@@ -451,7 +447,7 @@ export default function Dashboard() {
                   No Active Games
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  {stats.activeTiers.length > 0
+                  {stats?.activeTiers?.length > 0
                     ? "No games available for your boards right now"
                     : "Choose a board to see available games"}
                 </p>
@@ -468,7 +464,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Recent Wins */}
-        {recentWins.length > 0 && (
+        {recentWins?.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

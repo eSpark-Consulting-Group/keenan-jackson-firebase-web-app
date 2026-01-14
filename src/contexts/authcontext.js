@@ -114,7 +114,6 @@ export function AuthProvider({ children }) {
         phone: additionalData.phone || null,
         referralCode,
         referredBy: additionalData.referredBy || null,
-        currentTiers: [],
         totalDonations: 0,
         totalWins: 0,
         totalPrizeAmount: 0,
@@ -404,7 +403,6 @@ export function AuthProvider({ children }) {
     // Helper
     isAdmin: userData?.isAdmin || false,
     hasTelegram: userData?.hasTelegram || false,
-    currentTiers: userData?.currentTiers || [],
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

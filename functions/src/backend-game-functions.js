@@ -1255,71 +1255,70 @@ exports.createCheckoutSession = functions.https.onCall(
       );
     }
 
-    const { tierId, gameId } = data;
+    const { boardId, squarePosition, boardPrice } = data;
     const userId = context.auth.uid;
 
-    // Get tier info
-    const tierPrices = {
-      tier_25: 2500, // in cents
-      tier_50: 5000,
-      tier_100: 10000,
-      tier_250: 25000,
-      tier_500: 50000,
-      tier_1000: 100000,
-    };
-
-    const price = tierPrices[tierId];
-    if (!price) {
-      throw new functions.https.HttpsError("invalid-argument", "Invalid tier");
+    if (!boardId || !squarePosition || !boardPrice) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Missing boardId, squarePosition, or boardPrice"
+      );
     }
 
-    const payoutPercentage = Object.values(TIERS).find(
-      (t) => t.id === tierId
-    )?.payoutPercentage;
+    // boardPrice must be in cents (e.g. 2500 = $25)
+    if (typeof boardPrice !== "number" || boardPrice <= 0) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Invalid board price"
+      );
+    }
 
-    const donationRef = admin.firestore().collection("donations").doc();
-    const donationId = donationRef.id;
+    // Create payment intent record
+    const paymentRef = admin.firestore().collection("payments").doc();
+    const paymentId = paymentRef.id;
 
-    await donationRef.set({
+    await paymentRef.set({
       userId,
-      tier: tierId,
-      tierId,
+      boardId,
+      squarePosition,
+      amount: boardPrice,
       status: "pending",
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     try {
       const DOMAIN = process.env.DOMAIN || "http://localhost:3000";
+
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
+        mode: "payment",
         line_items: [
           {
             price_data: {
               currency: "usd",
               product_data: {
-                name: `Square Trivia ${tierId.replace("tier_", "$")} Tier`,
-                description: `Access to ${tierId.replace("tier_", "$")} tier games`,
+                name: `Square ${squarePosition}`,
+                description: `Claim square ${squarePosition} on board ${boardId}`,
               },
-              unit_amount: price,
+              unit_amount: boardPrice,
             },
             quantity: 1,
           },
         ],
-        mode: "payment",
         success_url: `${DOMAIN}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${DOMAIN}/payment-cancel`,
         metadata: {
+          paymentId,
           userId,
-          donationId,
-          payoutPercentage,
-          tierId,
-          gameId: gameId || "general",
+          boardId,
+          squarePosition,
+          amount: boardPrice,
         },
       });
 
       return {
         sessionId: session.id,
-        url: session.url || null,
+        url: session.url,
       };
     } catch (error) {
       console.error("Checkout session error:", error);
@@ -1327,6 +1326,7 @@ exports.createCheckoutSession = functions.https.onCall(
     }
   }
 );
+
 
 exports.verifyCheckoutSession = functions.https.onCall(
   async (data, context) => {

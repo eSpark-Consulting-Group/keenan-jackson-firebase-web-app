@@ -1178,9 +1178,9 @@ exports.grantTierAccess = functions.https.onCall(async (data, context) => {
 
   const { userId, tier, days, reason } = data;
 
-  if (!TIER_CONFIG[tier]) {
-    throw new functions.https.HttpsError("invalid-argument", "Invalid tier");
-  }
+  // if (!TIER_CONFIG[tier]) {
+  //   throw new functions.https.HttpsError("invalid-argument", "Invalid tier");
+  // }
 
   try {
     // Create donation record with payout percentage
@@ -1220,9 +1220,6 @@ exports.grantTierAccess = functions.https.onCall(async (data, context) => {
       .firestore()
       .collection("users")
       .doc(userId)
-      .update({
-        currentTiers: admin.firestore.FieldValue.arrayUnion(tier),
-      });
 
     await logAdminAction(adminId, "grant_tier_access", {
       userId,

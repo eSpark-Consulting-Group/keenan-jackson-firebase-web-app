@@ -106,13 +106,13 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
 
   try {
     // Verify user has active tier access
-    const hasAccess = await verifyUserTierAccess(userId, tier);
-    if (!hasAccess) {
-      throw new functions.https.HttpsError(
-        "permission-denied",
-        "You do not have active access to this tier. Please pay the entry fee first."
-      );
-    }
+    // const hasAccess = await verifyUserTierAccess(userId, tier);
+    // if (!hasAccess) {
+    //   throw new functions.https.HttpsError(
+    //     "permission-denied",
+    //     "You do not have active access to this tier. Please pay the entry fee first."
+    //   );
+    // }
 
     // Get user data to check Telegram status
     const userDoc = await admin
@@ -1040,19 +1040,19 @@ exports.getAvailableBoards = functions.https.onCall(async (data, context) => {
   const { tier } = data;
   const userId = context.auth.uid;
 
-  if (!tier || !TIER_CONFIG[tier]) {
-    throw new functions.https.HttpsError("invalid-argument", "Invalid tier");
-  }
+  // if (!tier || !TIER_CONFIG[tier]) {
+  //   throw new functions.https.HttpsError("invalid-argument", "Invalid tier");
+  // }
 
   try {
     // Verify tier access
-    const hasAccess = await verifyUserTierAccess(userId, tier);
-    if (!hasAccess) {
-      throw new functions.https.HttpsError(
-        "permission-denied",
-        "No access to this tier"
-      );
-    }
+    // const hasAccess = await verifyUserTierAccess(userId, tier);
+    // if (!hasAccess) {
+    //   throw new functions.https.HttpsError(
+    //     "permission-denied",
+    //     "No access to this tier"
+    //   );
+    // }
 
     // Get active games
     const activeGames = await admin
@@ -1334,29 +1334,29 @@ async function sendSquarePlacementConfirmation(userId, boardId, position) {
 /**
  * Verify user has active tier access
  */
-async function verifyUserTierAccess(userId, tier) {
-  try {
-    const accessQuery = await admin
-      .firestore()
-      .collection("tierAccess")
-      .where("userId", "==", userId)
-      .where("tier", "==", tier)
-      .where("active", "==", true)
-      .get();
+// async function verifyUserTierAccess(userId, tier) {
+//   try {
+//     const accessQuery = await admin
+//       .firestore()
+//       .collection("tierAccess")
+//       .where("userId", "==", userId)
+//       .where("tier", "==", tier)
+//       .where("active", "==", true)
+//       .get();
 
-    for (const doc of accessQuery.docs) {
-      const access = doc.data();
-      if (access.expiresAt.toMillis() > Date.now()) {
-        return true;
-      }
-    }
+//     for (const doc of accessQuery.docs) {
+//       const access = doc.data();
+//       if (access.expiresAt.toMillis() > Date.now()) {
+//         return true;
+//       }
+//     }
 
-    return false;
-  } catch (error) {
-    console.error("Error verifying tier access:", error);
-    return false;
-  }
-}
+//     return false;
+//   } catch (error) {
+//     console.error("Error verifying tier access:", error);
+//     return false;
+//   }
+// }
 
 /**
  * Record trivia attempt
@@ -1760,5 +1760,5 @@ module.exports = {
   // Export helper functions for use in other modules
   grantConsolationSquare,
   updateUserStats,
-  verifyUserTierAccess,
+  // verifyUserTierAccess,
 };

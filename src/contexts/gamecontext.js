@@ -257,7 +257,6 @@ export function GameProvider({ children }) {
 
     try {
       const result = await callFunction('createCheckoutSession', {
-        tier,
         successUrl: `${window.location.origin}/payment/success`,
         cancelUrl: `${window.location.origin}/payment/cancel`
       });
