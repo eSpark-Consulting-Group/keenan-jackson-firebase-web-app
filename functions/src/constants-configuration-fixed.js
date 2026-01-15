@@ -647,7 +647,7 @@ const DUMMY_GAMES = [
 
 //  everything as default for easy importing
 module.exports = {
-  TIERS,
+  // TIERS,
   GAME_CONFIG,
   SPORTS_CONFIG,
   API_CONFIG,
@@ -660,9 +660,9 @@ module.exports = {
   TIMEZONE_CONFIG,
   TIER_CONFIG,
   // Helper functions
-  getTierById,
-  getTierByAmount,
-  getAllTierIds,
+  // getTierById,
+  // getTierByAmount,
+  // getAllTierIds,
   calculatePrizes,
   calculateInstantPayout,
   DUMMY_GAMES,
