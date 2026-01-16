@@ -26,15 +26,8 @@ function getFirstWord(teamName) {
 // getShortCodeWithDots("Kolkata Knight Riders"); // "K.K.R"
 // getFIrstWord("Kolkata Knight Riders"); // "Kolkata"
 
-function getWeekNumber(date) {
-  const firstDay = new Date(date.getFullYear(), 0, 1);
-  const pastDays = Math.floor((date - firstDay) / (24 * 60 * 60 * 1000));
-  return Math.ceil((pastDays + firstDay.getDay() + 1) / 7);
-}
-
 module.exports = {
   getFirstWord,
   getShortCode,
   getShortCodeWithDots,
-  getWeekNumber,
 };

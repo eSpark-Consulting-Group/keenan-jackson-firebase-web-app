@@ -7,8 +7,8 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const stripeKey = functions.config().stripe.key;
 const stripe = require("stripe")(stripeKey);
-// const crypto = require("crypto");
-// const nodemailer = require("nodemailer");
+const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 const { default: axios } = require("axios");
 const TelegramBot = require("node-telegram-bot-api");
 const bot = new TelegramBot(functions.config().telegram.bot_token, {
@@ -126,7 +126,7 @@ const DONATION_STATUS = {
 
 // Payout constants
 const INSTANT_PAYOUT_FEE = 0.08; // 8% fee for instant payouts
-// const BATCH_PAYOUT_DAYS = ["tuesday", "friday"];
+const BATCH_PAYOUT_DAYS = ["tuesday", "friday"];
 
 // =====================================
 // STRIPE PAYMENT PROCESSING
@@ -242,12 +242,12 @@ exports.createPaymentIntent = functions.https.onCall(async (data, context) => {
     console.error("Payment intent creation error:", error);
 
     // Clean up failed donation record
-    // if (donationRef) {
-    //   await donationRef.update({
-    //     status: DONATION_STATUS.FAILED,
-    //     error: error.message,
-    //   });
-    // }
+    if (donationRef) {
+      await donationRef.update({
+        status: DONATION_STATUS.FAILED,
+        error: error.message,
+      });
+    }
 
     throw new functions.https.HttpsError(
       "internal",
@@ -500,8 +500,8 @@ async function handleRefund(charge) {
 
   // Update donation status
   const donationRef = admin.firestore().collection("donations").doc(donationId);
-  // const donationDoc = await donationRef.get();
-  // const donation = donationDoc.data();
+  const donationDoc = await donationRef.get();
+  const donation = donationDoc.data();
 
   batch.update(donationRef, {
     status: DONATION_STATUS.REFUNDED,
@@ -565,9 +565,7 @@ async function handleRefund(charge) {
 /**
  * Process free entry submissions
  */
-exports.processFreeEntry = functions.https.onCall(async (data, 
-  // context
-) => {
+exports.processFreeEntry = functions.https.onCall(async (data, context) => {
   const { entryCode, email, mailingAddress, tier } = data;
 
   // Validate entry code (sent via mail)
@@ -729,7 +727,7 @@ async function grantTelegramAccess(userId, telegramUsername, tier) {
       );
     } catch (dmError) {
       console.log(
-        "Could not DM user, they need to start conversation with bot first", dmError
+        "Could not DM user, they need to start conversation with bot first"
       );
     }
   } catch (error) {
@@ -827,14 +825,14 @@ async function processInstantPayout(winnerId, prizeAmount, tierInfo) {
 /**
  * Calculate instant payout amount after fee
  */
-// function calculateInstantPayout(prizeAmount) {
-//   const fee = prizeAmount * INSTANT_PAYOUT_FEE;
-//   return {
-//     originalAmount: prizeAmount,
-//     fee: fee,
-//     finalAmount: prizeAmount - fee,
-//   };
-// }
+function calculateInstantPayout(prizeAmount) {
+  const fee = prizeAmount * INSTANT_PAYOUT_FEE;
+  return {
+    originalAmount: prizeAmount,
+    fee: fee,
+    finalAmount: prizeAmount - fee,
+  };
+}
 
 // =====================================
 // EMAIL NOTIFICATIONS
@@ -913,9 +911,7 @@ async function sendPaymentConfirmation(userId, donationId, tier) {
   await sendMail(mailOptions);
 }
 
-async function sendPaymentFailureNotification(userId, 
-  // donationId
-) {
+async function sendPaymentFailureNotification(userId, donationId) {
   const userDoc = await admin.firestore().collection("users").doc(userId).get();
   const user = userDoc.data();
 
@@ -1370,7 +1366,7 @@ async function updateAnalytics(event, data) {
  */
 exports.cleanupExpiredAccess = functions.pubsub
   .schedule("every 24 hours")
-  .onRun(async () => {
+  .onRun(async (context) => {
     const now = admin.firestore.Timestamp.now();
 
     const expiredQuery = await admin
@@ -1411,10 +1407,10 @@ exports.cleanupExpiredAccess = functions.pubsub
   });
 
 module.exports = {
+  sendMail,
   handleSuccessfulPayment,
   handleFailedPayment,
   handleRefund,
   grantTelegramAccess,
   sendMail,
-
 };
