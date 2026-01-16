@@ -1248,7 +1248,14 @@ Stay sharp, your comeback is coming! 🔥
 
 exports.createCheckoutSession = functions.https.onCall(
   async (data, context) => {
+    functions.logger.info("createCheckoutSession called", {
+      data,
+      auth: context.auth ? { uid: context.auth.uid } : null,
+    });
+
+    // Auth check
     if (!context.auth) {
+      functions.logger.warn("Unauthenticated request");
       throw new functions.https.HttpsError(
         "unauthenticated",
         "Must be logged in"
@@ -1258,24 +1265,46 @@ exports.createCheckoutSession = functions.https.onCall(
     const { boardId, squarePosition, boardPrice } = data;
     const userId = context.auth.uid;
 
-    if (!boardId || !squarePosition || !boardPrice) {
+    functions.logger.debug("Parsed request data", {
+      userId,
+      boardId,
+      squarePosition,
+      boardPrice,
+    });
+    // Validation
+    if (!boardId || squarePosition === undefined || !boardPrice) {
+      functions.logger.error("Missing required parameters", {
+        boardId,
+        squarePosition,
+        boardPrice,
+      });
+
       throw new functions.https.HttpsError(
         "invalid-argument",
         "Missing boardId, squarePosition, or boardPrice"
       );
     }
 
-    // boardPrice must be in cents (e.g. 2500 = $25)
     if (typeof boardPrice !== "number" || boardPrice <= 0) {
+      functions.logger.error("Invalid board price", { boardPrice });
+
       throw new functions.https.HttpsError(
         "invalid-argument",
         "Invalid board price"
       );
     }
 
-    // Create payment intent record
+    // Create payment record
     const paymentRef = admin.firestore().collection("payments").doc();
     const paymentId = paymentRef.id;
+
+    functions.logger.info("Creating payment record", {
+      paymentId,
+      userId,
+      boardId,
+      squarePosition,
+      amount: boardPrice,
+    });
 
     await paymentRef.set({
       userId,
@@ -1288,6 +1317,11 @@ exports.createCheckoutSession = functions.https.onCall(
 
     try {
       const DOMAIN = process.env.DOMAIN || "http://localhost:3000";
+
+      functions.logger.info("Creating Stripe checkout session", {
+        paymentId,
+        DOMAIN,
+      });
 
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
@@ -1316,12 +1350,147 @@ exports.createCheckoutSession = functions.https.onCall(
         },
       });
 
+      functions.logger.info("Stripe checkout session created", {
+        paymentId,
+        sessionId: session.id,
+      });
+
       return {
         sessionId: session.id,
         url: session.url,
       };
     } catch (error) {
-      console.error("Checkout session error:", error);
+      functions.logger.error("Stripe checkout session failed", {
+        paymentId,
+        error: error.message,
+        stack: error.stack,
+      });
+
+      throw new functions.https.HttpsError("internal", error.message);
+    }
+  }
+);
+exports.createCheckoutSession1 = functions.https.onCall(
+  async (data, context) => {
+    functions.logger.info("createCheckoutSession called", {
+      data,
+      auth: context.auth ? { uid: context.auth.uid } : null,
+    });
+
+    // Auth check
+    if (!context.auth) {
+      functions.logger.warn("Unauthenticated request");
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Must be logged in"
+      );
+    }
+
+    const { boardId, squarePosition, boardPrice } = data;
+    const userId = context.auth.uid;
+
+    functions.logger.debug("Parsed request data", {
+      userId,
+      boardId,
+      squarePosition,
+      boardPrice,
+    });
+
+    // Validation
+    if (!boardId || squarePosition === undefined || !boardPrice) {
+      functions.logger.error("Missing required parameters", {
+        boardId,
+        squarePosition,
+        boardPrice,
+      });
+
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Missing boardId, squarePosition, or boardPrice"
+      );
+    }
+
+    if (typeof boardPrice !== "number" || boardPrice <= 0) {
+      functions.logger.error("Invalid board price", { boardPrice });
+
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Invalid board price"
+      );
+    }
+
+    // Create payment record
+    const paymentRef = admin.firestore().collection("payments").doc();
+    const paymentId = paymentRef.id;
+
+    functions.logger.info("Creating payment record", {
+      paymentId,
+      userId,
+      boardId,
+      squarePosition,
+      amount: boardPrice,
+    });
+
+    await paymentRef.set({
+      userId,
+      boardId,
+      squarePosition,
+      amount: boardPrice,
+      status: "pending",
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    try {
+      const DOMAIN = process.env.DOMAIN || "http://localhost:3000";
+
+      functions.logger.info("Creating Stripe checkout session", {
+        paymentId,
+        DOMAIN,
+      });
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        mode: "payment",
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: `Square ${squarePosition}`,
+                description: `Claim square ${squarePosition} on board ${boardId}`,
+              },
+              unit_amount: boardPrice,
+            },
+            quantity: 1,
+          },
+        ],
+        success_url: `${DOMAIN}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${DOMAIN}/payment-cancel`,
+        metadata: {
+          paymentId,
+          userId,
+          boardId,
+          squarePosition,
+          amount: boardPrice,
+        },
+      });
+
+      functions.logger.info("Stripe checkout session created", {
+        paymentId,
+        sessionId: session.id,
+      });
+
+      return {
+        sessionId: session.id,
+        url: session.url,
+      };
+    } catch (error) {
+      functions.logger.error("Stripe checkout session failed", {
+        paymentId,
+        error: error.message,
+        stack: error.stack,
+      });
+
       throw new functions.https.HttpsError("internal", error.message);
     }
   }
@@ -1797,6 +1966,7 @@ module.exports = {
   determineWinners: exports.determineWinners,
   cleanupClaims: exports.cleanupClaims,
   createCheckoutSession: exports.createCheckoutSession,
+  createCheckoutSession1: exports.createCheckoutSession1,
   verifyCheckoutSession: exports.verifyCheckoutSession,
   handleStripeWebhook: exports.handleStripeWebhook,
   processPayout: exports.processPayout,

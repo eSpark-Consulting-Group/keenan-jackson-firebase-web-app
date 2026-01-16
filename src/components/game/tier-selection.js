@@ -239,7 +239,7 @@ export default function TierSelection({
 
     try {
       // Create Stripe checkout session
-      const { sessionId, url } = await callFunction("createCheckoutSession", {
+      const { sessionId, url } = await callFunction("createCheckoutSession1", {
         boardId: board.id,
       squarePosition,
       boardPrice: board.price, // cents

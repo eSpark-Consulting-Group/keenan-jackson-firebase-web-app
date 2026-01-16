@@ -68,10 +68,10 @@ export default function GameBoard() {
 
     try {
       // Create Stripe checkout session
-      const { sessionId, url } = await callFunction("createCheckoutSession", {
-        boardId: board.id,
-        squarePosition,
-        boardPrice: board.price, // cents
+      const { sessionId, url } = await callFunction("createCheckoutSession1", {
+        boardId: boardId,
+        squarePosition: squarePosition,
+        boardPrice: Number(board.tierId.split("_")[1]) * 100, // cents
         userId: user.uid,
         userEmail: user.email,
         successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
@@ -330,8 +330,8 @@ export default function GameBoard() {
     // ✅ Start payment
     processPayment({ boardId: board.id });
     // Set selected square and show trivia modal
-    setSelectedSquare(position);
-    setShowTriviaModal(true);
+    // setSelectedSquare(position);
+    // setShowTriviaModal(true);
   };
 
   const handleTriviaComplete = async (success, answerTime, token) => {
