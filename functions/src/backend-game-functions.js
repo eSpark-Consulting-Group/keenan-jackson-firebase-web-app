@@ -48,7 +48,7 @@ async function sendTelegramNotification(chatId, message) {
     {
       chat_id: chatId,
       text: message,
-    }
+    },
   );
 }
 
@@ -77,7 +77,7 @@ exports.createGame = functions.https.onCall(async (data, context) => {
     if (isNaN(parsedDate.getTime())) {
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "Invalid gameDate format"
+        "Invalid gameDate format",
       );
     }
     // Create game document
@@ -116,7 +116,7 @@ exports.createGame = functions.https.onCall(async (data, context) => {
     functions.logger.info(enabledTiers, enabledTiers);
     // Create boards for each enabled tier
     const boardPromises = enabledTiers.map((tierId) =>
-      createBoardForTier(gameRef.id, tierId)
+      createBoardForTier(gameRef.id, tierId),
     );
 
     await Promise.all(boardPromises);
@@ -219,7 +219,7 @@ exports.createGame = functions.https.onCall(async (data, context) => {
         });
 
         console.log(
-          `📢 New Board Alert posted for ${teams?.away || ""} vs ${teams?.home || ""} (${day} ${time})`
+          `📢 New Board Alert posted for ${teams?.away || ""} vs ${teams?.home || ""} (${day} ${time})`,
         );
       } catch (err) {
         console.error("❌ Error posting New Board Alert:", err);
@@ -279,7 +279,7 @@ exports.claimSquare = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "Must be logged in"
+      "Must be logged in",
     );
   }
 
@@ -320,21 +320,21 @@ exports.claimSquare = functions.https.onCall(async (data, context) => {
     if (token.userId !== userId) {
       throw new functions.https.HttpsError(
         "permission-denied",
-        "Token does not belong to user"
+        "Token does not belong to user",
       );
     }
 
     if (token.used) {
       throw new functions.https.HttpsError(
         "already-exists",
-        "Token already used"
+        "Token already used",
       );
     }
 
     if (token.expiresAt.toMillis() < Date.now()) {
       throw new functions.https.HttpsError(
         "deadline-exceeded",
-        "Token expired"
+        "Token expired",
       );
     }
 
@@ -366,7 +366,7 @@ exports.claimSquare = functions.https.onCall(async (data, context) => {
     if (squareData.claims && squareData.claims.length >= 2) {
       throw new functions.https.HttpsError(
         "resource-exhausted",
-        "Square is full"
+        "Square is full",
       );
     }
 
@@ -377,7 +377,7 @@ exports.claimSquare = functions.https.onCall(async (data, context) => {
     ) {
       throw new functions.https.HttpsError(
         "already-exists",
-        "You already have this square"
+        "You already have this square",
       );
     }
 
@@ -452,7 +452,7 @@ exports.determineWinners = functions.pubsub
         console.log("🎮 Processing Game", { gameId, status: game.status });
         console.log(
           "Full quarterScores",
-          JSON.stringify(game.quarterScores, null, 2)
+          JSON.stringify(game.quarterScores, null, 2),
         );
 
         // Decide which quarter (if any) just finished
@@ -492,7 +492,7 @@ exports.determineWinners = functions.pubsub
         const gameRef = db.collection("games").doc(gameId);
         const gameSnap = await gameRef.get();
         const alreadyProcessed = gameSnap.get(
-          `quarterScores.${quarterToProcess}.processed`
+          `quarterScores.${quarterToProcess}.processed`,
         );
 
         if (alreadyProcessed) {
@@ -517,7 +517,7 @@ exports.determineWinners = functions.pubsub
           new Set([
             `${homeLastDigit}${awayLastDigit}`.padStart(2, "0"),
             `${awayLastDigit}${homeLastDigit}`.padStart(2, "0"),
-          ])
+          ]),
         );
 
         console.log("🧮 Computed winning digits", {
@@ -572,7 +572,7 @@ exports.determineWinners = functions.pubsub
                 if (winnerTelegramId) {
                   await sendTelegramNotification(
                     winnerTelegramId,
-                    `🎉 Congratulations! 🎉 You’ve won in *Quarter ${quarterToProcess.toUpperCase()}* 🏆🔥`
+                    `🎉 Congratulations! 🎉 You’ve won in *Quarter ${quarterToProcess.toUpperCase()}* 🏆🔥`,
                   );
                 }
               } catch (err) {
@@ -603,7 +603,7 @@ exports.determineWinners = functions.pubsub
             } else {
               // Multiple claims → sort by fastest
               const sorted = [...square.claims].sort(
-                (a, b) => a.answerTime - b.answerTime
+                (a, b) => a.answerTime - b.answerTime,
               );
               const winner = sorted[0];
               const loser = sorted[1];
@@ -622,7 +622,7 @@ exports.determineWinners = functions.pubsub
                 if (winnerTelegramId) {
                   await sendTelegramNotification(
                     winnerTelegramId,
-                    `🎉 Congratulations! 🎉\n\nYou’ve won in *Quarter ${quarterToProcess.toUpperCase()}* 🏆🔥`
+                    `🎉 Congratulations! 🎉\n\nYou’ve won in *Quarter ${quarterToProcess.toUpperCase()}* 🏆🔥`,
                   );
                 }
               } catch (err) {
@@ -676,7 +676,7 @@ exports.determineWinners = functions.pubsub
 
                 // Remove loser from board
                 const updatedClaims = square.claims.filter(
-                  (c) => c.userId !== loser.userId
+                  (c) => c.userId !== loser.userId,
                 );
                 await db
                   .collection("boards")
@@ -779,7 +779,7 @@ async function processClaimForTeam(game, claim) {
         [favTeam]: teamData,
       },
     },
-    { merge: true }
+    { merge: true },
   );
 
   console.log(`✅ Updated ${sport} - ${favTeam}`, teamData);
@@ -812,7 +812,7 @@ async function cleanupOldClaims(boardId, board, currentQuarter, game) {
     // 1. Find the fastest claim in this square (using answerTime)
     const fastestClaim = square.claims.reduce(
       (best, c) => (!best || c.answerTime < best.answerTime ? c : best),
-      null
+      null,
     );
 
     if (fastestClaim) {
@@ -859,7 +859,7 @@ async function cleanupOldClaims(boardId, board, currentQuarter, game) {
 
     if (!existingFastest.empty) {
       console.log(
-        `⚠️ Fastest winner already exists for board ${boardId}, skipping.`
+        `⚠️ Fastest winner already exists for board ${boardId}, skipping.`,
       );
       return;
     }
@@ -978,7 +978,7 @@ async function processWinner(winnerData) {
 
   if (!existingWinnerSnap.empty) {
     console.log(
-      `⚠️ Duplicate winner skipped: ${userId}, ${gameId}, ${quarter}, ${position}`
+      `⚠️ Duplicate winner skipped: ${userId}, ${gameId}, ${quarter}, ${position}`,
     );
     return existingWinnerSnap.docs[0].id;
   }
@@ -1221,7 +1221,7 @@ But don’t worry – you’ve earned **${consolationCount} consolation chance${
       }** for the next rounds. 💪
 
 Stay sharp, your comeback is coming! 🔥
-`
+`,
     );
     console.log(`LOOSER MESSAGE SENT`);
   }
@@ -1382,7 +1382,7 @@ exports.createCheckoutSession1 = functions.https.onCall(
       functions.logger.warn("Unauthenticated request");
       throw new functions.https.HttpsError(
         "unauthenticated",
-        "Must be logged in"
+        "Must be logged in",
       );
     }
 
@@ -1406,7 +1406,7 @@ exports.createCheckoutSession1 = functions.https.onCall(
 
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "Missing boardId, squarePosition, or boardPrice"
+        "Missing boardId, squarePosition, or boardPrice",
       );
     }
 
@@ -1415,7 +1415,7 @@ exports.createCheckoutSession1 = functions.https.onCall(
 
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "Invalid board price"
+        "Invalid board price",
       );
     }
 
@@ -1493,16 +1493,15 @@ exports.createCheckoutSession1 = functions.https.onCall(
 
       throw new functions.https.HttpsError("internal", error.message);
     }
-  }
+  },
 );
-
 
 exports.verifyCheckoutSession = functions.https.onCall(
   async (data, context) => {
     if (!context.auth) {
       throw new functions.https.HttpsError(
         "unauthenticated",
-        "Must be logged in"
+        "Must be logged in",
       );
     }
 
@@ -1526,7 +1525,7 @@ exports.verifyCheckoutSession = functions.https.onCall(
       const eventDoc = await eventRef.get();
       if (eventDoc.exists) {
         console.log(
-          `⚠️ Duplicate verification detected for session ${session.id}`
+          `⚠️ Duplicate verification detected for session ${session.id}`,
         );
         return {
           success: true,
@@ -1574,7 +1573,7 @@ exports.verifyCheckoutSession = functions.https.onCall(
       console.error("Verification error:", error);
       throw new functions.https.HttpsError("internal", error.message);
     }
-  }
+  },
 );
 
 exports.handleStripeWebhook = functions.https.onRequest(async (req, res) => {
@@ -1606,7 +1605,7 @@ exports.handleStripeWebhook = functions.https.onRequest(async (req, res) => {
         await grantTierAccess(
           session.metadata.userId,
           session.metadata.tierId,
-          session.metadata.gameId
+          session.metadata.gameId,
         );
         break;
       }
@@ -1668,7 +1667,7 @@ exports.processPayout = functions.https.onCall(async (data, context) => {
     const payoutResult = await processPaymentProvider(
       winner.userId,
       payoutAmount,
-      method
+      method,
     );
 
     // Update winner record
@@ -1708,7 +1707,7 @@ exports.validateAnswer = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "Must be logged in"
+      "Must be logged in",
     );
   }
 
@@ -1731,7 +1730,7 @@ exports.validateAnswer = functions.https.onCall(async (data, context) => {
     if (session.userId !== userId) {
       throw new functions.https.HttpsError(
         "permission-denied",
-        "Invalid session"
+        "Invalid session",
       );
     }
 
@@ -1757,7 +1756,7 @@ exports.validateAnswer = functions.https.onCall(async (data, context) => {
         used: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         expiresAt: admin.firestore.Timestamp.fromDate(
-          new Date(Date.now() + 48 * 60 * 60 * 1000) // 48 hours
+          new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours
         ),
       });
 
@@ -1806,7 +1805,7 @@ async function sendWinnerNotification(userId, amount, quarter) {
   if (userData.telegramChatId) {
     await sendTelegramMessage(
       userData.telegramChatId,
-      `🎉 YOU WON $${amount}!\n\nQuarter: ${quarter}\nChoose payout method in the app.`
+      `🎉 YOU WON $${amount}!\n\nQuarter: ${quarter}\nChoose payout method in the app.`,
     );
   }
 
@@ -1826,7 +1825,7 @@ async function sendLoserNotification(
   userId,
   position,
   winnerTime,
-  consolationCount
+  consolationCount,
 ) {
   const userDoc = await db.collection("users").doc(userId).get();
   const userData = userDoc.data();
@@ -1839,7 +1838,7 @@ async function sendLoserNotification(
   if (userData.telegramChatId) {
     await sendTelegramMessage(
       userData.telegramChatId,
-      `⏱️ Close Call!\n\n${message}`
+      `⏱️ Close Call!\n\n${message}`,
     );
   }
 
@@ -1904,7 +1903,7 @@ async function generateImage({ templateID, data, savePath }) {
 
     svgContent = svgContent.replace(
       /{([^}]+)}/g,
-      (match, key) => data[key] ?? ""
+      (match, key) => data[key] ?? "",
     );
 
     const jpgBuffer = await sharp(Buffer.from(svgContent))
