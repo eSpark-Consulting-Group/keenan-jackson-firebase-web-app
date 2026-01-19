@@ -116,7 +116,7 @@ export default function Games() {
       const gamesQuery = query(
         collection(db, collections.games),
         where("status", "in", ["scheduled", "active"]),
-        orderBy("gameDate", "asc")
+        orderBy("gameDate", "asc"),
       );
 
       const gamesSnapshot = await getDocs(gamesQuery);
@@ -132,7 +132,7 @@ export default function Games() {
         const boardsQuery = query(
           collection(db, collections.boards),
           where("gameId", "in", gameIds),
-          where("isActive", "==", true)
+          where("isActive", "==", true),
         );
         boardsSnap = await getDocs(boardsQuery);
       }
@@ -144,7 +144,7 @@ export default function Games() {
 
         // Count filled squares
         const filledSquares = Object.values(boardData.squares || {}).filter(
-          (square) => square.claims && square.claims.length > 0
+          (square) => square.claims && square.claims.length > 0,
         ).length;
 
         boardData.filledSquares = filledSquares;
@@ -190,7 +190,7 @@ export default function Games() {
     // Listen for game updates
     const gamesQuery = query(
       collection(db, collections.games),
-      where("status", "in", ["scheduled", "active"])
+      where("status", "in", ["scheduled", "active"]),
     );
 
     return onSnapshot(gamesQuery, (snapshot) => {
@@ -209,7 +209,7 @@ export default function Games() {
     // Filter by boards
     if (selectedTier !== "all") {
       filtered = filtered.filter((game) =>
-        game.boards.some((board) => board.tierId === selectedTier)
+        game.boards.some((board) => board.tierId === selectedTier),
       );
     }
 
@@ -363,13 +363,13 @@ export default function Games() {
         {(() => {
           const hasFilteredGames = Object.values(groupedGames).some(
             (dateGames) =>
-              dateGames.some((game) => filteredGames().includes(game))
+              dateGames.some((game) => filteredGames().includes(game)),
           );
 
           return hasFilteredGames ? (
             Object.entries(groupedGames).map(([date, dateGames]) => {
               const filteredDateGames = dateGames.filter((game) =>
-                filteredGames().includes(game)
+                filteredGames().includes(game),
               );
 
               if (filteredDateGames.length === 0) return null;
@@ -414,89 +414,79 @@ export default function Games() {
                                   </h3>
                                   <p className="text-sm text-gray-600">
                                     {new Date(
-                                      game.gameDate?.toDate?.() || game.gameDate
+                                      game.gameDate?.toDate?.() ||
+                                        game.gameDate,
                                     ).toLocaleString()}
                                   </p>
                                 </div>
 
                                 {/* Boards */}
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                  {game.boards.map((board) => {
-                                    const tier =
-                                      TIERS[board.tierId.toUpperCase()];
-                                    const isUserTier = true;
-                                    const hasAccess = userTierAccess.includes(
-                                      board.id
-                                    );
-                                    const quarters = ["q1", "q2", "q3", "q4"];
-                                    const isComplete = quarters.every(
-                                      (q) => board?.[q]?.processed === true
-                                    );
+                                  {game.boards
+                                    // Sort boards by tier amount
+                                    .slice() // make a copy so we don't mutate original
+                                    .sort((a, b) => {
+                                      const tierA =
+                                        TIERS[a.tierId.toUpperCase()];
+                                      const tierB =
+                                        TIERS[b.tierId.toUpperCase()];
+                                      return tierA.amount - tierB.amount;
+                                    })
+                                    .map((board) => {
+                                      const quarters = ["q1", "q2", "q3", "q4"];
+                                      const isComplete = quarters.every(
+                                        (q) => board?.[q]?.processed === true,
+                                      );
 
-                                    return (
-                                      <div
-                                        key={board.id}
-                                        className={`
-                                  relative p-4 rounded-lg border-2 text-center
-                                  ${
-                                    isUserTier
-                                      ? "border-blue-500 bg-blue-50"
-                                      : "border-gray-200 bg-gray-50"
-                                  }
-                                `}
-                                      >
-                                        {isUserTier && (
-                                          <div className="absolute -top-2 -right-2">
-                                            <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                                              Your Board
+                                      const tier =
+                                        TIERS[board.tierId.toUpperCase()];
+
+                                      return (
+                                        <div
+                                          key={board.id}
+                                          className="relative p-4 rounded-lg border-2 text-center border-gray-200 bg-gray-50"
+                                        >
+                                          <div
+                                            className={`text-sm font-semibold mb-1 ${tier.color} text-white px-2 py-1 rounded`}
+                                          >
+                                            {tier.name}
+                                          </div>
+
+                                          <div className="text-lg font-bold text-gray-900">
+                                            {formatCurrency(
+                                              tier.prizePerQuarter,
+                                            )}
+                                          </div>
+                                          <div className="text-xs text-gray-600 mb-2">
+                                            per quarter
+                                          </div>
+
+                                          <div className="flex items-center justify-center text-xs text-gray-600 mb-3">
+                                            <Grid3X3 className="h-4 w-4 mr-1" />
+                                            <span>
+                                              {board.filledSquares}/50
                                             </span>
                                           </div>
-                                        )}
 
-                                        <div
-                                          className={`text-sm font-semibold mb-1 ${tier.color} text-white px-2 py-1 rounded`}
-                                        >
-                                          {tier.name}
+                                          {isComplete ? (
+                                            <Link
+                                              to={`/game/${board.id}/results`}
+                                              className="block w-full bg-green-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-green-700 transition-colors hover:text-white"
+                                            >
+                                              <Check className="h-4 w-4 inline mr-1" />
+                                              View Results
+                                            </Link>
+                                          ) : (
+                                            <Link
+                                              to={`/game/${board.id}`}
+                                              className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
+                                            >
+                                              Play Now
+                                            </Link>
+                                          )}
                                         </div>
-
-                                        <div className="text-lg font-bold text-gray-900">
-                                          {formatCurrency(tier.prizePerQuarter)}
-                                        </div>
-                                        <div className="text-xs text-gray-600 mb-2">
-                                          per quarter
-                                        </div>
-
-                                        <div className="flex items-center justify-center text-xs text-gray-600 mb-3">
-                                          <Grid3X3 className="h-4 w-4 mr-1" />
-                                          <span>{board.filledSquares}/50</span>
-                                        </div>
-
-                                        {isUserTier ? (
-                                          <Link
-                                            to={`/game/${board.id}`}
-                                            className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
-                                          >
-                                            Play Now
-                                          </Link>
-                                        ) : hasAccess ? (
-                                          <Link
-                                            to={`/game/${board.id}?view=true`}
-                                            className="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors hover:text-white"
-                                          >
-                                            View Board
-                                          </Link>
-                                        ) : isComplete ? (
-                                          <Link
-                                            to={`/game/${board.id}/results`}
-                                            className="block w-full bg-green-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-green-700 transition-colors hover:text-white"
-                                          >
-                                            <Check className="h-4 w-4 inline mr-1" />
-                                            View Results
-                                          </Link>
-                                        ) : null}
-                                      </div>
-                                    );
-                                  })}
+                                      );
+                                    })}
                                 </div>
                               </div>
                             </div>
