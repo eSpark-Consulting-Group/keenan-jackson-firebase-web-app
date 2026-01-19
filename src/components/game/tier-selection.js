@@ -181,7 +181,7 @@ export default function TierSelection({
 
   // Get available board based on game type
   const availableTiers = Object.values(TIERS).filter((tier) =>
-    tier.availability.includes(gameType)
+    tier.availability.includes(gameType),
   );
 
   // Fetch board data for availability
@@ -241,8 +241,8 @@ export default function TierSelection({
       // Create Stripe checkout session
       const { sessionId, url } = await callFunction("createCheckoutSession1", {
         boardId: board.id,
-      squarePosition,
-      boardPrice: board.price, // cents
+        squarePosition: squarePosition,
+        boardPrice: board.price, // cents
         gameId: gameId,
         userId: user.uid,
         userEmail: user.email,
@@ -256,7 +256,7 @@ export default function TierSelection({
         window.location.href = url;
       } else if (sessionId) {
         const stripe = await loadStripe(
-          process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY
+          process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY,
         );
         const { error } = await stripe.redirectToCheckout({ sessionId });
 

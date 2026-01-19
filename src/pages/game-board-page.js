@@ -70,7 +70,7 @@ export default function GameBoard() {
       // Create Stripe checkout session
       const { sessionId, url } = await callFunction("createCheckoutSession1", {
         boardId: boardId,
-        squarePosition: squarePosition,
+        squarePosition: selectedSquare,
         boardPrice: Number(board.tierId.split("_")[1]) * 100, // cents
         userId: user.uid,
         userEmail: user.email,
