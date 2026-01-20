@@ -34,6 +34,7 @@ import SquareGrid from "../components/game/square-grid";
 import GameScore from "../components/game/game-score";
 import toast from "react-hot-toast";
 import { loadStripe } from "@stripe/stripe-js";
+import { useSearchParams } from "react-router-dom";
 
 export default function GameBoard() {
   const { boardId } = useParams();
@@ -53,6 +54,8 @@ export default function GameBoard() {
   const [scores, setScores] = useState({ home: 0, away: 0 });
   const [winningSquares, setWinningSquares] = useState([]);
   const [revealedSquares, setRevealedSquares] = useState(new Set());
+  const pending = JSON.parse(localStorage.getItem("pendingSquare"));
+  const [searchParams] = useSearchParams();
 
   const [processing, setProcessing] = useState(false);
 
@@ -70,11 +73,11 @@ export default function GameBoard() {
       // Create Stripe checkout session
       const { sessionId, url } = await callFunction("createCheckoutSession1", {
         boardId: boardId,
-        squarePosition: selectedSquare,
+        squarePosition, // ✅ ALWAYS correct now
         boardPrice: Number(board.tierId.split("_")[1]) * 100, // cents
         userId: user.uid,
         userEmail: user.email,
-        successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        successUrl: `${window.location.origin}/game/${board.id}?paid=true&session_id={CHECKOUT_SESSION_ID}`,
         cancelUrl: `${window.location.origin}/payment-cancel`,
       });
 
@@ -84,7 +87,7 @@ export default function GameBoard() {
         window.location.href = url;
       } else if (sessionId) {
         const stripe = await loadStripe(
-          process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY
+          process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY,
         );
         const { error } = await stripe.redirectToCheckout({ sessionId });
 
@@ -106,6 +109,20 @@ export default function GameBoard() {
       setProcessing(false);
     }
   };
+  useEffect(() => {
+    const paid = searchParams.get("paid");
+    if (paid !== "true") return;
+
+    const pending = JSON.parse(localStorage.getItem("pendingSquare"));
+    if (!pending || pending.boardId !== boardId) return;
+
+    setSelectedSquare(pending.position);
+    setShowTriviaModal(true);
+
+    // cleanup
+    localStorage.removeItem("pendingSquare");
+    window.history.replaceState({}, "", `/game/${boardId}`);
+  }, [searchParams, boardId]);
 
   useEffect(() => {
     if (!boardId || !user) return;
@@ -141,7 +158,7 @@ export default function GameBoard() {
       // Load game data
       if (boardData.gameId) {
         const gameDoc = await getDoc(
-          doc(db, collections.games, boardData.gameId)
+          doc(db, collections.games, boardData.gameId),
         );
         if (gameDoc.exists()) {
           const gameData = { id: gameDoc.id, ...gameDoc.data() };
@@ -182,7 +199,7 @@ export default function GameBoard() {
       if (boardData.squares) {
         Object.entries(boardData.squares).forEach(([position, squareData]) => {
           const userClaim = squareData.claims?.find(
-            (claim) => claim.userId === user.uid
+            (claim) => claim.userId === user.uid,
           );
           console.log(userClaim, "USER CLAIM");
           if (userClaim) {
@@ -302,12 +319,12 @@ export default function GameBoard() {
 
     // Check if user has reached max squares
     const userSquareCount = Object.values(board.squares || {}).filter((sq) =>
-      sq.claims?.some((claim) => claim.userId === user.uid)
+      sq.claims?.some((claim) => claim.userId === user.uid),
     ).length;
 
     if (userSquareCount >= GAME_CONFIG.MAX_SQUARES_PER_USER) {
       toast.error(
-        `You can only have ${GAME_CONFIG.MAX_SQUARES_PER_USER} squares per board`
+        `You can only have ${GAME_CONFIG.MAX_SQUARES_PER_USER} squares per board`,
       );
       return;
     }
@@ -324,14 +341,18 @@ export default function GameBoard() {
       JSON.stringify({
         boardId: board.id,
         position,
-      })
+      }),
     );
 
     // ✅ Start payment
-    processPayment({ boardId: board.id });
-    // Set selected square and show trivia modal
-    // setSelectedSquare(position);
-    // setShowTriviaModal(true);
+    // set state for UI
+    setSelectedSquare(position);
+
+    // ✅ PASS position explicitly
+    await processPayment({
+      boardId: board.id,
+      squarePosition: position,
+    });
   };
 
   const handleTriviaComplete = async (success, answerTime, token) => {
@@ -354,7 +375,7 @@ export default function GameBoard() {
 
       if (result.success) {
         toast.success(
-          `Square ${selectedSquare} claimed! Answer time: ${answerTime}s`
+          `Square ${selectedSquare} claimed! Answer time: ${answerTime}s`,
         );
         setShowTriviaModal(false);
         setSelectedSquare(null);
