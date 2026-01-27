@@ -164,7 +164,12 @@ exports.searchApiSportsGames = functions.https.onCall(async (data, context) => {
     teamName,
     week,
     gameType = "regular", // new
-    year = new Date().getFullYear(),
+    year = (() => {
+      const now = new Date();
+      // If Jan (0) or Feb (1), it's part of previous year's season for NFL/CFB
+      if (now.getMonth() <= 1) return now.getFullYear() - 1;
+      return now.getFullYear();
+    })(),
   } = data;
 
   if (!sport) {
