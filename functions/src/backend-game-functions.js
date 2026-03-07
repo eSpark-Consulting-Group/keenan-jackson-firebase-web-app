@@ -23,6 +23,8 @@ const {
   tierAmounts,
 } = require("./social-posts-functions");
 const { getShortCode, getFirstWord } = require("./utils");
+const { assignBoardQuestions } = require("./trivia-system-fixed");
+const { CONSOLATION_CONFIG, TIER_CONFIG } = require("./constants-configuration-fixed");
 
 // const { query, collection, where } = require("firebase/firestore");
 
@@ -258,6 +260,7 @@ async function createBoardForTier(gameId, tierId) {
     gameId,
     tierId,
     squares: {}, // Will be filled as players claim squares
+    squareQuestions: {},
     totalSquares: 50,
     claimedSquares: 0,
     maxPlayersPerSquare: 2,
@@ -267,6 +270,46 @@ async function createBoardForTier(gameId, tierId) {
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
   functions.logger.info("gameData", { gameData });
+
+  // ========================================
+  // Assign questions to all 50 squares
+  // Must succeed or board is deleted (rollback)
+  // ========================================
+  try {
+    await assignBoardQuestions(
+      db,
+      boardRef.id,
+      tierId,
+      gameData.sport,
+    );
+    functions.logger.info("✅ Board questions assigned successfully", {
+      boardId: boardRef.id,
+      tierId,
+      sport: gameData.sport,
+    });
+  } catch (assignmentError) {
+    // ❌ Assignment failed - DELETE board and propagate error (rollback)
+    functions.logger.error("❌ Board question assignment failed - rolling back", {
+      boardId: boardRef.id,
+      tierId,
+      sport: gameData.sport,
+      error: assignmentError.message,
+    });
+
+    try {
+      await db.collection("boards").doc(boardRef.id).delete();
+      functions.logger.info("✅ Rolled back: board deleted", {
+        boardId: boardRef.id,
+      });
+    } catch (deleteError) {
+      functions.logger.error(
+        "❌ Failed to rollback board deletion",
+        { boardId: boardRef.id, error: deleteError.message },
+      );
+    }
+
+    throw assignmentError; // Re-throw to prevent game creation
+  }
 
   return boardRef.id;
 }
@@ -335,6 +378,32 @@ exports.claimSquare = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError(
         "deadline-exceeded",
         "Token expired",
+      );
+    }
+
+    // ========================================
+    // Validate predetermined square position
+    // If token was created with a specific square, enforce it
+    // ========================================
+    if (
+      token.squarePosition !== null &&
+      token.squarePosition !== undefined
+    ) {
+      if (token.squarePosition !== squarePosition) {
+        throw new functions.https.HttpsError(
+          "permission-denied",
+          `This token is only valid for square ${token.squarePosition}. You answered the pre-assigned question for that square.`,
+        );
+      }
+      functions.logger.info("✅ Token square position validated", {
+        tokenSquarePosition: token.squarePosition,
+        claimedSquarePosition: squarePosition,
+      });
+    } else {
+      // Random placement - squarePosition can be anything
+      functions.logger.info(
+        "✅ Token allows random placement (no predetermined square)",
+        { squarePosition },
       );
     }
 
@@ -547,6 +616,15 @@ exports.determineWinners = functions.pubsub
           const boardId = boardDoc.id;
           console.log("📝 Processing Board", { gameId, boardId });
 
+          // ================================================
+          // Quarter-by-Quarter Activation Defense
+          // ================================================
+          // Each position may activate multiple times across different quarters.
+          // The "quarter" field in duplicate prevention ensures:
+          // 1. Same position can activate in different quarters
+          // 2. Each activation is a separate contest
+          // 3. Each creates independent winner records with separate prizes
+          // ================================================
           for (const position of winningPositions) {
             console.log("➡️ Checking position", { gameId, position });
             const square = board.squares?.[position];
@@ -714,6 +792,19 @@ exports.determineWinners = functions.pubsub
         } else {
           console.log("⚠️ No winners found", { gameId, quarterToProcess });
         }
+
+        // ================================================
+        // Award Board Champion (Q4 only)
+        // Determined by fastest answer time across entire board,
+        // independent of Square winners or sporting event outcome
+        // ================================================
+        if (quarterToProcess === "q4") {
+          console.log("🏆 Determining board champions for game", { gameId });
+          for (const boardDoc of boardsSnapshot.docs) {
+            const board = boardDoc.data();
+            await determineAndAwardBoardChampion(boardDoc.id, board, gameId);
+          }
+        }
       });
 
       await Promise.all(perGameTasks);
@@ -724,6 +815,132 @@ exports.determineWinners = functions.pubsub
       return null;
     }
   });
+
+/**
+ * Board Champion Award
+ * Determines and awards board champion based on fastest correct answer time.
+ * Runs immediately when Q4 is processed (not dependent on cleanup job).
+ * Fields isFastest, sportingEventIndependent, and winType mark it as
+ * independent of game outcome and square winners.
+ */
+async function determineAndAwardBoardChampion(boardId, boardData, gameId) {
+  try {
+    // 1. Find fastest claim across entire board
+    let fastest = null;
+
+    for (const [position, square] of Object.entries(boardData.squares || {})) {
+      if (!square.claims || square.claims.length === 0) continue;
+
+      for (const claim of square.claims) {
+        if (!fastest || claim.answerTime < fastest.time) {
+          fastest = {
+            userId: claim.userId,
+            time: claim.answerTime,
+            position: String(position),
+            quarter: claim.currentQuarter,
+          };
+        }
+      }
+    }
+
+    if (!fastest) {
+      console.log(`⚠️ No claims found on board ${boardId}, skipping board champion`);
+      return;
+    }
+
+    // 2. Check if champion already awarded (prevent duplicates)
+    const existingChampion = await db
+      .collection("winners")
+      .where("boardId", "==", boardId)
+      .where("gameId", "==", gameId)
+      .where("isFastest", "==", true)
+      .limit(1)
+      .get();
+
+    if (!existingChampion.empty) {
+      console.log(`⏭️ Board champion already awarded for ${boardId}, skipping.`);
+      return;
+    }
+
+    // 3. Create champion winner record
+    const tierId = boardData.tierId;
+    const tierAmounts = {
+      tier_25: { quarter: 200 },
+      tier_50: { quarter: 450 },
+      tier_100: { quarter: 900 },
+      tier_250: { quarter: 2250 },
+      tier_500: { quarter: 4500 },
+      tier_1000: { quarter: 9000 },
+    };
+
+    const prizeAmount = tierAmounts[tierId]?.quarter || 0;
+
+    const winnerDoc = {
+      boardId,
+      gameId,
+      tierId,
+      quarter: 4,
+      prizeAmount,
+      answerTime: fastest.time,
+      position: parseInt(fastest.position),
+      userId: fastest.userId,
+      payoutType: "standard",
+      status: "pending_payout",
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      isTelegramSend: false,
+      isFastest: true,
+      sportingEventIndependent: true,
+      winType: "board_champion",
+    };
+
+    await db.collection("winners").add(winnerDoc);
+
+    console.log(`🏆 Board Champion awarded for board ${boardId}`, {
+      userId: fastest.userId,
+      time: fastest.time,
+      position: fastest.position,
+      prizeAmount,
+    });
+
+    // 4. Send Telegram notification
+    try {
+      const userSnap = await db.collection("users").doc(fastest.userId).get();
+      if (userSnap.exists) {
+        const telegramId = userSnap.data().telegramChatId;
+        if (telegramId) {
+          const tierName = TIER_CONFIG[tierId]?.name || tierId;
+          const message =
+            `🏆 *BOARD CHAMPION* 🏆\n\n` +
+            `Fastest Answer: *${fastest.time}s* on Square ${fastest.position}\n` +
+            `Tier: ${tierName}\n` +
+            `Prize: $${prizeAmount}\n\n` +
+            `Congratulations! You dominated the entire board! 🎉🔥`;
+
+          await sendTelegramNotification(telegramId, message);
+        }
+      }
+    } catch (err) {
+      console.error("📱 Board champion Telegram notification failed", err);
+    }
+
+    // 5. Update board with champion info
+    await db.collection("boards").doc(boardId).update({
+      fastest: {
+        userId: fastest.userId,
+        time: fastest.time,
+        position: parseInt(fastest.position),
+        awardedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      boardChampionAwarded: true,
+    });
+  } catch (error) {
+    console.error("❌ Error determining board champion", {
+      boardId,
+      gameId,
+      error: error.message,
+    });
+  }
+}
 
 async function processClaimForTeam(game, claim) {
   const { userId, answerTime, tokenId } = claim;
@@ -965,7 +1182,17 @@ async function processWinner(winnerData) {
 
   const prizeAmount = tierAmounts[tierId]?.quarter || 0;
 
-  // 🧩 Duplicate prevention
+  // ========================================
+  // Independent Quarterly Activations
+  // ========================================
+  // Duplicate prevention uses quarter field, allowing the same square
+  // to activate multiple times across different quarters. Each activation
+  // (identified by unique userId+gameId+quarter+position+boardId) creates
+  // a separate winner record with independent prize distribution.
+  // Example: User A wins position 00 in Q1 → winner record created.
+  //          User A wins position 00 in Q2 → different winner record (quarter differs).
+  //          Both are valid, separate contests, each with separate prize.
+  // ========================================
   const existingWinnerSnap = await db
     .collection("winners")
     .where("userId", "==", userId)
@@ -1197,16 +1424,12 @@ async function processLoser(loserData) {
     console.log(`LOOSER TELEGRAM EXIST: ${looserTelegramId}`);
   }
 
-  // ✅ Define consolationCount before using it
-  const consolationCount =
-    {
-      tier_25: 1,
-      tier_50: 1,
-      tier_100: 1,
-      tier_250: 2,
-      tier_500: 2,
-      tier_1000: 4,
-    }[tierId] || 1;
+  // ========================================
+  // Consolation Credit — Universal $25
+  // Always 1x Entry tier ($25) regardless of loss tier
+  // ========================================
+  const consolationCount = CONSOLATION_CONFIG.CREDITS_PER_LOSS;  // Always 1
+  const consolationTier = CONSOLATION_CONFIG.TIER;               // Always "tier_25"
 
   if (looserTelegramId) {
     console.log(`LOOSER TELEGRAM MESSAGE STARTS: ${looserTelegramId}`);
@@ -1226,13 +1449,15 @@ Stay sharp, your comeback is coming! 🔥
     console.log(`LOOSER MESSAGE SENT`);
   }
 
-  // Create consolation record
+    // Create consolation record with original loss tier tracking
   await db.collection("consolations").add({
     userId,
     originalBoardId: boardId,
     originalPosition: position,
-    tierId,
-    consolationCount,
+    originalBoardTierId: tierId,          // Track which tier the loss occurred on
+    consolationTier: consolationTier,
+    consolationCount: consolationCount,
+    consolationAmount: CONSOLATION_CONFIG.AMOUNT,  // $25
     winnerTime,
     usedCount: 0,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -1258,7 +1483,7 @@ exports.createCheckoutSession = functions.https.onCall(
       functions.logger.warn("Unauthenticated request");
       throw new functions.https.HttpsError(
         "unauthenticated",
-        "Must be logged in"
+        "Must be logged in",
       );
     }
 
@@ -1281,7 +1506,7 @@ exports.createCheckoutSession = functions.https.onCall(
 
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "Missing boardId, squarePosition, or boardPrice"
+        "Missing boardId, squarePosition, or boardPrice",
       );
     }
 
@@ -1290,7 +1515,7 @@ exports.createCheckoutSession = functions.https.onCall(
 
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "Invalid board price"
+        "Invalid board price",
       );
     }
 
@@ -1332,7 +1557,7 @@ exports.createCheckoutSession = functions.https.onCall(
               currency: "usd",
               product_data: {
                 name: `Square ${squarePosition}`,
-                description: `Claim square ${squarePosition} on board ${boardId}`,
+                description: `Square ${squarePosition} - Individual Contest Entry`,
               },
               unit_amount: boardPrice,
             },
@@ -1368,7 +1593,7 @@ exports.createCheckoutSession = functions.https.onCall(
 
       throw new functions.https.HttpsError("internal", error.message);
     }
-  }
+  },
 );
 exports.createCheckoutSession1 = functions.https.onCall(
   async (data, context) => {
@@ -1457,7 +1682,7 @@ exports.createCheckoutSession1 = functions.https.onCall(
               currency: "usd",
               product_data: {
                 name: `Square ${squarePosition}`,
-                description: `Claim square ${squarePosition} on board ${boardId}`,
+                description: `Square ${squarePosition} - Individual Contest Entry`,
               },
               unit_amount: boardPrice,
             },

@@ -9,6 +9,16 @@ const { logger } = require("firebase-functions");
 
 const crypto = require("crypto");
 
+// Import BAAT System
+const {
+  BAAT_CONFIG,
+  collectAnswerTimes,
+  calculateFullBAAT,
+} = require("./baat-system");
+
+// Import Consolation Config
+const { CONSOLATION_CONFIG } = require("./constants-configuration-fixed");
+
 // =====================================
 // CONSTANTS
 // =====================================
@@ -81,27 +91,48 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "User must be authenticated"
+      "User must be authenticated",
     );
   }
 
-  const { tier, boardId } = data;
+  const { tier, boardId, squarePosition } = data;
   const userId = context.auth.uid;
-  logger.info("Trivia question request started", { userId, tier, boardId });
+  logger.info("Trivia question request started", {
+    userId,
+    tier,
+    boardId,
+    squarePosition,
+  });
 
   // Validate inputs
   if (!tier || !TIER_CONFIG[tier]) {
     throw new functions.https.HttpsError(
       "invalid-argument",
-      "Invalid tier specified"
+      "Invalid tier specified",
     );
   }
 
   if (!boardId) {
     throw new functions.https.HttpsError(
       "invalid-argument",
-      "Board ID required"
+      "Board ID required",
     );
+  }
+
+  // Validate squarePosition if provided
+  let targetSquarePosition = null;
+  if (squarePosition !== null && squarePosition !== undefined) {
+    if (
+      !Number.isInteger(squarePosition) ||
+      squarePosition < 0 ||
+      squarePosition > 49
+    ) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Square position must be 0-49",
+      );
+    }
+    targetSquarePosition = squarePosition;
   }
 
   try {
@@ -140,7 +171,7 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
     const attemptsCheck = await checkAndUpdateDailyAttempts(
       userId,
       dailyLimit,
-      userData
+      userData,
     );
 
     logger.info("Attempts check result", {
@@ -155,7 +186,7 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
     if (!attemptsCheck.canMakeAttempt) {
       throw new functions.https.HttpsError(
         "resource-exhausted",
-        attemptsCheck.message
+        attemptsCheck.message,
       );
     }
 
@@ -173,7 +204,7 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
     if (board.tierId !== tier) {
       throw new functions.https.HttpsError(
         "permission-denied",
-        "Board tier mismatch"
+        "Board tier mismatch",
       );
     }
 
@@ -182,23 +213,73 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
     if (userSquaresOnBoard.length >= TIER_CONFIG[tier].maxSquaresPerBoard) {
       throw new functions.https.HttpsError(
         "resource-exhausted",
-        `Maximum ${TIER_CONFIG[tier].maxSquaresPerBoard} squares per board reached`
+        `Maximum ${TIER_CONFIG[tier].maxSquaresPerBoard} squares per board reached`,
       );
     }
 
-    // Get appropriate trivia question based on sport
-    const gameDoc = await admin
-      .firestore()
-      .collection("games")
-      .doc(board.gameId)
-      .get();
-    const game = gameDoc.data();
-    const question = await getRandomTriviaQuestion(game.sport, tier);
+    // ========================================
+    // Get pre-assigned or random question
+    // ========================================
+    let question = null;
+
+    if (targetSquarePosition !== null) {
+      // Player specified a square - get the PRE-ASSIGNED question for that square
+      logger.info("Getting pre-assigned question for square", {
+        boardId,
+        squarePosition: targetSquarePosition,
+      });
+
+      if (!board.squareQuestions) {
+        throw new functions.https.HttpsError(
+          "failed-precondition",
+          "Board has no pre-assigned questions (corrupted board)",
+        );
+      }
+
+      const preAssignedQuestionId = board.squareQuestions[String(targetSquarePosition)];
+      if (!preAssignedQuestionId) {
+        throw new functions.https.HttpsError(
+          "not-found",
+          `No pre-assigned question for square ${targetSquarePosition}`,
+        );
+      }
+
+      question = await getTriviaQuestionById(preAssignedQuestionId);
+      if (!question) {
+        throw new functions.https.HttpsError(
+          "not-found",
+          `Pre-assigned question ${preAssignedQuestionId} not found in database`,
+        );
+      }
+
+      logger.info("✅ Got pre-assigned question", {
+        squarePosition: targetSquarePosition,
+        questionId: question.id,
+      });
+    } else {
+      // No square specified - get random question (backward compatible)
+      logger.info("Getting random question (no square position specified)");
+
+      const gameDoc = await admin
+        .firestore()
+        .collection("games")
+        .doc(board.gameId)
+        .get();
+      const game = gameDoc.data();
+      question = await getRandomTriviaQuestion(game.sport, tier);
+
+      logger.info(
+        "✅ Got random question (player will select square after answering)",
+        {
+          questionId: question?.id,
+        },
+      );
+    }
 
     if (!question) {
       throw new functions.https.HttpsError(
         "not-found",
-        "No questions available"
+        "No questions available",
       );
     }
 
@@ -210,6 +291,7 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
         sessionId: admin.firestore().collection("triviaSessions").doc().id,
         userId,
         boardId,
+        squarePosition: targetSquarePosition, // NEW: Track which square (if predetermined)
         questionId: question.id,
 
         // Timing fields for skill-based competition
@@ -229,8 +311,8 @@ exports.getTriviaQuestion = functions.https.onCall(async (data, context) => {
         startedAt: admin.firestore.FieldValue.serverTimestamp(),
         expiresAt: admin.firestore.Timestamp.fromDate(
           new Date(
-            Date.now() + TRIVIA_CONFIG.SESSION_TIMEOUT_MINUTES * 60 * 1000
-          )
+            Date.now() + TRIVIA_CONFIG.SESSION_TIMEOUT_MINUTES * 60 * 1000,
+          ),
         ),
 
         // Metadata
@@ -406,7 +488,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "User must be authenticated"
+      "User must be authenticated",
     );
   }
   const userId = context.auth.uid;
@@ -425,7 +507,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
   if (!sessionId) {
     throw new functions.https.HttpsError(
       "invalid-argument",
-      "Session ID required"
+      "Session ID required",
     );
   }
 
@@ -444,7 +526,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
     if (!sessionDoc.exists) {
       throw new functions.https.HttpsError(
         "not-found",
-        "Invalid trivia session"
+        "Invalid trivia session",
       );
     }
 
@@ -455,7 +537,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
     if (session.userId !== userId) {
       throw new functions.https.HttpsError(
         "permission-denied",
-        "Session does not belong to user"
+        "Session does not belong to user",
       );
     }
 
@@ -463,7 +545,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
     if (session.answered) {
       throw new functions.https.HttpsError(
         "already-exists",
-        "Question already answered"
+        "Question already answered",
       );
     }
 
@@ -471,7 +553,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
     if (session.expiresAt.toMillis() < Date.now()) {
       throw new functions.https.HttpsError(
         "deadline-exceeded",
-        "Session expired"
+        "Session expired",
       );
     }
 
@@ -500,7 +582,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
           if (index === -1) {
             throw new functions.https.HttpsError(
               "failed-precondition",
-              "Tier not available in user’s currentTiers"
+              "Tier not available in user’s currentTiers",
             );
           }
           currentTiers.splice(index, 1);
@@ -540,7 +622,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
     if (normalizedAnswerIndex < 0 || normalizedAnswerIndex > 3) {
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "Invalid answer index"
+        "Invalid answer index",
       );
     }
 
@@ -593,6 +675,9 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
           boardId: session.boardId,
           tier: session.tier,
 
+          // Store square position if predetermined
+          squarePosition: session.squarePosition || null, // null if random placement
+
           // SKILL-BASED: Include timing for square placement and winner determination
           answerTimeMs: answerTimeMs,
           answerTimeSeconds: answerTimeSeconds,
@@ -600,8 +685,8 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           expiresAt: admin.firestore.Timestamp.fromDate(
             new Date(
-              Date.now() + TRIVIA_CONFIG.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000
-            )
+              Date.now() + TRIVIA_CONFIG.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000,
+            ),
           ),
           used: false,
 
@@ -638,7 +723,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
           if (index === -1) {
             throw new functions.https.HttpsError(
               "failed-precondition",
-              "Tier not available in user’s currentTiers"
+              "Tier not available in user’s currentTiers",
             );
           }
           currentTiers.splice(index, 1);
@@ -703,7 +788,7 @@ exports.submitTriviaAnswer = functions.https.onCall(async (data, context) => {
           if (index === -1) {
             throw new functions.https.HttpsError(
               "failed-precondition",
-              "Tier not available in user’s currentTiers"
+              "Tier not available in user’s currentTiers",
             );
           }
           currentTiers.splice(index, 1);
@@ -758,7 +843,7 @@ exports.placeSquare = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "User must be authenticated"
+      "User must be authenticated",
     );
   }
 
@@ -769,7 +854,7 @@ exports.placeSquare = functions.https.onCall(async (data, context) => {
   if (!tokenId) {
     throw new functions.https.HttpsError(
       "invalid-argument",
-      "Token ID required"
+      "Token ID required",
     );
   }
 
@@ -778,7 +863,7 @@ exports.placeSquare = functions.https.onCall(async (data, context) => {
     if (!Number.isInteger(position) || position < 0 || position > 49) {
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "Invalid square position"
+        "Invalid square position",
       );
     }
   }
@@ -801,7 +886,7 @@ exports.placeSquare = functions.https.onCall(async (data, context) => {
     if (token.userId !== userId) {
       throw new functions.https.HttpsError(
         "permission-denied",
-        "Token does not belong to user"
+        "Token does not belong to user",
       );
     }
 
@@ -809,7 +894,7 @@ exports.placeSquare = functions.https.onCall(async (data, context) => {
     if (token.used) {
       throw new functions.https.HttpsError(
         "already-exists",
-        "Token already used"
+        "Token already used",
       );
     }
 
@@ -817,8 +902,33 @@ exports.placeSquare = functions.https.onCall(async (data, context) => {
     if (token.expiresAt.toMillis() < Date.now()) {
       throw new functions.https.HttpsError(
         "deadline-exceeded",
-        "Token expired"
+        "Token expired",
       );
+    }
+
+    // ========================================
+    // Validate predetermined square position
+    // If token was created with a specific square, enforce it
+    // ========================================
+    if (
+      token.squarePosition !== null &&
+      token.squarePosition !== undefined
+    ) {
+      if (token.squarePosition !== position) {
+        throw new functions.https.HttpsError(
+          "permission-denied",
+          `This token is only valid for square ${token.squarePosition}. You answered the pre-assigned question for that square.`,
+        );
+      }
+      logger.info("✅ Token square position validated in placeSquare", {
+        tokenSquarePosition: token.squarePosition,
+        placedSquarePosition: position,
+      });
+    } else {
+      // Random placement - position can be anything
+      logger.info("✅ Token allows random placement in placeSquare", {
+        position,
+      });
     }
 
     // Use transaction for atomic square placement
@@ -856,20 +966,20 @@ exports.placeSquare = functions.https.onCall(async (data, context) => {
           ) {
             throw new functions.https.HttpsError(
               "resource-exhausted",
-              "This square is full (2 players maximum)"
+              "This square is full (2 players maximum)",
             );
           }
 
           // Check if user already has a claim on this square
           if (squareData.claims) {
             const userAlreadyOnSquare = squareData.claims.some(
-              (claim) => claim.userId === userId
+              (claim) => claim.userId === userId,
             );
 
             if (userAlreadyOnSquare) {
               throw new functions.https.HttpsError(
                 "already-exists",
-                "You already have this square"
+                "You already have this square",
               );
             }
           }
@@ -898,7 +1008,7 @@ exports.placeSquare = functions.https.onCall(async (data, context) => {
           if (availablePositions.length === 0) {
             throw new functions.https.HttpsError(
               "resource-exhausted",
-              "No available squares on this board"
+              "No available squares on this board",
             );
           }
 
@@ -918,7 +1028,7 @@ exports.placeSquare = functions.https.onCall(async (data, context) => {
         if (userSquareCount >= TIER_CONFIG[token.tier].maxSquaresPerBoard) {
           throw new functions.https.HttpsError(
             "resource-exhausted",
-            `Maximum ${TIER_CONFIG[token.tier].maxSquaresPerBoard} squares per board reached`
+            `Maximum ${TIER_CONFIG[token.tier].maxSquaresPerBoard} squares per board reached`,
           );
         }
 
@@ -1000,7 +1110,7 @@ exports.placeSquare = functions.https.onCall(async (data, context) => {
     await sendSquarePlacementConfirmation(
       userId,
       token.boardId,
-      result.position
+      result.position,
     );
 
     // Update user stats
@@ -1033,7 +1143,7 @@ exports.getAvailableBoards = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "User must be authenticated"
+      "User must be authenticated",
     );
   }
 
@@ -1157,7 +1267,7 @@ exports.getUserSquares = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "User must be authenticated"
+      "User must be authenticated",
     );
   }
 
@@ -1267,6 +1377,10 @@ exports.getUserSquares = functions.https.onCall(async (data, context) => {
 /**
  * Update user statistics
  */
+/**
+ * Update user statistics including BAAT (Board Average Answer Time)
+ * Uses centralized BAAT system with 0.30-10.00s filtering
+ */
 async function updateUserStats(userId, action, metadata = {}) {
   try {
     const userRef = admin.firestore().collection("users").doc(userId);
@@ -1279,6 +1393,55 @@ async function updateUserStats(userId, action, metadata = {}) {
           admin.firestore.FieldValue.increment(1);
         if (metadata.answerTimeSeconds) {
           updates.lastAnswerTime = metadata.answerTimeSeconds;
+
+          // ========================================
+          // BAAT CALCULATION
+          // Calculate average answer time using centralized BAAT system
+          // Only include times between 0.30s - 10.00s
+          // ========================================
+          try {
+            // Fetch all valid squareClaims for this user
+            const claimsSnapshot = await admin
+              .firestore()
+              .collection("squareClaims")
+              .where("userId", "==", userId)
+              .get();
+
+            // Convert to format expected by BAAT system
+            const claims = claimsSnapshot.docs.map((doc) => ({
+              ...doc.data(),
+              answerTime: doc.data().triviaAnswerTimeSeconds || 0,
+            }));
+
+            // Use centralized BAAT calculation with proper filtering
+            const result = calculateFullBAAT(claims);
+
+            if (result.baat && result.validCount > 0) {
+              // Calculate fastest from valid times
+              const allValidTimes = collectAnswerTimes(claims);
+              const fastestTime = Math.min(...allValidTimes);
+
+              updates.averageAnswerTime = parseFloat(result.baat.toFixed(2));
+              updates.fastestAnswerTime = parseFloat(fastestTime.toFixed(2));
+              updates.validAnswerCount = result.validCount;
+
+              console.log(
+                `✅ BAAT Updated for ${userId}: Avg ${updates.averageAnswerTime}s (${result.validCount}/${result.totalCount} valid times)`,
+              );
+            } else {
+              // No valid times yet, set to 0
+              updates.averageAnswerTime = 0;
+              updates.fastestAnswerTime = 0;
+              updates.validAnswerCount = 0;
+
+              console.log(
+                `⚠️ BAAT: No valid times in range ${BAAT_CONFIG.MIN_RESPONSE_TIME}-${BAAT_CONFIG.MAX_RESPONSE_TIME}s for ${userId}`,
+              );
+            }
+          } catch (baatError) {
+            console.error("Error calculating BAAT:", baatError);
+            // Don't throw - let stats update proceed even if BAAT fails
+          }
         }
         break;
       case "trivia_incorrect":
@@ -1458,6 +1621,36 @@ async function getRandomTriviaQuestion(sport, tier) {
 }
 
 /**
+ * Get trivia question by ID from trivia collection
+ * Used to retrieve pre-assigned board questions
+ */
+async function getTriviaQuestionById(questionId) {
+  try {
+    const db = admin.firestore();
+    const questionDoc = await db
+      .collection("trivia")
+      .doc(questionId)
+      .get();
+
+    if (!questionDoc.exists) {
+      logger.warn("Question not found in trivia collection", { questionId });
+      return null;
+    }
+
+    return {
+      id: questionDoc.id,
+      ...questionDoc.data(),
+    };
+  } catch (error) {
+    logger.error("Error getting trivia question by ID", {
+      questionId,
+      error: error.message,
+    });
+    return null;
+  }
+}
+
+/**
  * Get random available position using crypto for true randomness
  */
 async function getRandomAvailablePosition(availablePositions) {
@@ -1514,6 +1707,106 @@ function getAvailableTiersForGameType(gameType) {
 }
 
 // =====================================
+// BOARD QUESTION ASSIGNMENT
+// =====================================
+
+/**
+ * Assign unique trivia questions to all 50 board squares
+ * Every square MUST have a question, or board creation fails
+ * Ensures both players on same square get identical question
+ *
+ * @param {object} db - Firestore database instance
+ * @param {string} boardId - ID of board to assign questions to
+ * @param {string} tierId - Tier ID (determines difficulty)
+ * @param {string} sport - Sport type (determines question pool)
+ * @returns {object} squareQuestions mapping
+ * @throws {Error} If sufficient unique questions not available
+ */
+async function assignBoardQuestions(db, boardId, tierId, sport) {
+  const squareQuestions = {};
+  const usedQuestionIds = new Set();
+  const TOTAL_SQUARES = 50;
+  const MAX_ATTEMPTS_PER_SQUARE = 100;
+
+  console.log(
+    `📋 Starting question assignment for board ${boardId} (${sport}, ${tierId})`,
+  );
+
+  try {
+    // Loop through all 50 squares
+    for (let pos = 0; pos < TOTAL_SQUARES; pos++) {
+      let question = null;
+      let attempts = 0;
+
+      // Keep trying to find a unique question for this square
+      do {
+        question = await getRandomTriviaQuestion(sport, tierId);
+        attempts++;
+
+        if (!question) {
+          // ❌ NO QUESTIONS AVAILABLE IN ENTIRE POOL
+          const errorMsg = `Cannot create board: no trivia questions available for position ${pos} (sport=${sport}, tier=${tierId}). Add more questions before creating games.`;
+          logger.error(errorMsg, { boardId, pos, sport, tierId });
+          throw new Error(errorMsg);
+        }
+
+        // Check if this question was already assigned to another square
+        if (usedQuestionIds.has(question.id)) {
+          // Try again with a different question
+          question = null;
+          continue;
+        }
+
+        // Check if we've tried too many times (not enough unique questions)
+        if (attempts > MAX_ATTEMPTS_PER_SQUARE) {
+          const errorMsg = `Cannot create board: not enough unique questions for position ${pos} (sport=${sport}, tier=${tierId}). Need ${TOTAL_SQUARES} unique questions but only ~${pos} available.`;
+          logger.error(errorMsg, {
+            boardId,
+            pos,
+            sport,
+            tierId,
+            attempts,
+          });
+          throw new Error(errorMsg);
+        }
+      } while (!question || usedQuestionIds.has(question.id));
+
+      // ✅ Successfully found a unique question for this square
+      squareQuestions[String(pos)] = question.id;
+      usedQuestionIds.add(question.id);
+
+      console.log(
+        `   ✅ Square ${pos}: Assigned question ${question.id} (${question.question?.substring(0, 50)}...)`,
+      );
+    }
+
+    // ✅ All 50 squares assigned successfully with unique questions
+    // Update board document with question assignments
+    await db.collection("boards").doc(boardId).update({
+      squareQuestions: squareQuestions,
+      questionAssignmentStatus: "complete",
+      questionsAssignedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log(
+      `✅ Board ${boardId}: All ${TOTAL_SQUARES} squares assigned with unique questions`,
+    );
+    return squareQuestions;
+  } catch (error) {
+    // ❌ FAILED - Log detailed error
+    logger.error("❌ Board question assignment failed", {
+      boardId,
+      tierId,
+      sport,
+      error: error.message,
+      stack: error.stack,
+    });
+
+    throw error; // Re-throw so createBoardForTier can handle cleanup
+  }
+}
+
+// =====================================
 // SKILL-BASED CONSOLATION FUNCTIONS
 // =====================================
 
@@ -1542,11 +1835,16 @@ async function grantConsolationSquare(userId, boardId, winnerId) {
       return null;
     }
 
-    // Find next available board for same tier
+    // ========================================
+    // Always grant consolation on Entry tier ($25)
+    // ========================================
+    const consolationTier = CONSOLATION_CONFIG.TIER;  // Always "tier_25"
+
+    // Find next available board for Entry tier ($25)
     const nextBoardQuery = await admin
       .firestore()
       .collection("boards")
-      .where("tier", "==", currentBoard.tier)
+      .where("tierId", "==", consolationTier)
       .where("gameId", "!=", currentBoard.gameId)
       .where("status", "==", "active")
       .orderBy("gameId")
@@ -1568,7 +1866,8 @@ async function grantConsolationSquare(userId, boardId, winnerId) {
       .add({
         userId,
         boardId: nextBoard.id,
-        tier: currentBoard.tier,
+        tier: consolationTier,
+        originalBoardTier: currentBoard.tierId,   // Track which tier the loss occurred on
 
         // Mark as consolation
         isConsolationToken: true,
@@ -1581,8 +1880,8 @@ async function grantConsolationSquare(userId, boardId, winnerId) {
 
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         expiresAt: admin.firestore.Timestamp.fromDate(
-          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        ), // 30 days
+          new Date(Date.now() + CONSOLATION_CONFIG.EXPIRY_DAYS * 24 * 60 * 60 * 1000),
+        ),
         used: false,
       });
 
@@ -1601,7 +1900,8 @@ async function grantConsolationSquare(userId, boardId, winnerId) {
         data: {
           nextBoardId: nextBoard.id,
           nextBoardGameId: nextBoard.data().gameId,
-          tier: currentBoard.tier,
+          consolationTier: consolationTier,         // Always Entry tier ($25)
+          originalBoardTier: currentBoard.tierId,   // For analytics
         },
         status: "pending",
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -1625,7 +1925,7 @@ exports.addTriviaQuestions = functions.https.onCall(async (data, context) => {
   if (!context.auth?.token?.admin) {
     throw new functions.https.HttpsError(
       "permission-denied",
-      "Admin access required"
+      "Admin access required",
     );
   }
 
@@ -1634,7 +1934,7 @@ exports.addTriviaQuestions = functions.https.onCall(async (data, context) => {
   if (!Array.isArray(questions) || questions.length === 0) {
     throw new functions.https.HttpsError(
       "invalid-argument",
-      "Questions array required"
+      "Questions array required",
     );
   }
 
@@ -1687,7 +1987,7 @@ exports.manualSquareAssignment = functions.https.onCall(
     if (!context.auth?.token?.admin) {
       throw new functions.https.HttpsError(
         "permission-denied",
-        "Admin access required"
+        "Admin access required",
       );
     }
 
@@ -1716,7 +2016,7 @@ exports.manualSquareAssignment = functions.https.onCall(
           tier: board.tier,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           expiresAt: admin.firestore.Timestamp.fromDate(
-            new Date(Date.now() + 1 * 60 * 60 * 1000)
+            new Date(Date.now() + 1 * 60 * 60 * 1000),
           ), // 1 hour
           used: false,
           adminAssigned: true,
@@ -1739,10 +2039,10 @@ exports.manualSquareAssignment = functions.https.onCall(
       console.error("Error creating manual assignment:", error);
       throw new functions.https.HttpsError(
         "internal",
-        "Failed to create manual assignment"
+        "Failed to create manual assignment",
       );
     }
-  }
+  },
 );
 
 /**
@@ -1760,5 +2060,8 @@ module.exports = {
   // Export helper functions for use in other modules
   grantConsolationSquare,
   updateUserStats,
+  assignBoardQuestions,
+  getRandomTriviaQuestion, // Helper to get random questions
+  getTriviaQuestionById,
   // verifyUserTierAccess,
 };

@@ -13,6 +13,7 @@ const {
   GAME_CONFIG,
   VALIDATION_RULES,
   ERROR_MESSAGES,
+  CONSOLATION_CONFIG,
 } = require("./constants-configuration-fixed");
 
 // Import utility functions - using CommonJS
@@ -25,6 +26,12 @@ const {
   getTierById,
   calculatePrizes,
 } = require("./utility-functions-fixed");
+
+// Import BAAT System
+const {
+  BAAT_CONFIG,
+  calculateFullBAAT,
+} = require("./baat-system");
 
 // Note: Removed non-existent notification function imports
 // Notifications will be queued to 'notificationQueue' collection instead
@@ -171,7 +178,7 @@ function getAvailablePositions(board, userId = null) {
       // If userId provided, check if user already has this square
       if (userId) {
         const userAlreadyOnSquare = squareData.claims.some(
-          (claim) => claim.userId === userId
+          (claim) => claim.userId === userId,
         );
         if (!userAlreadyOnSquare) {
           available.push(i);
@@ -193,7 +200,7 @@ async function assignRandomSquare(
   userId,
   boardId,
   accessTokenId,
-  tokenData = {}
+  tokenData = {},
 ) {
   return await safeTransaction(db, async (transaction) => {
     // Get board within transaction
@@ -223,7 +230,7 @@ async function assignRandomSquare(
     Object.values(board.squares || {}).forEach((squareData) => {
       if (squareData.claims) {
         userSquareCount += squareData.claims.filter(
-          (claim) => claim.userId === userId
+          (claim) => claim.userId === userId,
         ).length;
       }
     });
@@ -319,7 +326,7 @@ async function selectSquare(
   boardId,
   position,
   accessTokenId,
-  tokenData = {}
+  tokenData = {},
 ) {
   // Validate position
   const positionValidation = validateSquarePosition(position);
@@ -346,13 +353,13 @@ async function selectSquare(
     if (squareData.claims.length >= 2) {
       throw createError(
         "resource-exhausted",
-        "This square is full (2 players maximum)"
+        "This square is full (2 players maximum)",
       );
     }
 
     // Check if user already has this square
     const userAlreadyOnSquare = squareData.claims.some(
-      (claim) => claim.userId === userId
+      (claim) => claim.userId === userId,
     );
 
     if (userAlreadyOnSquare) {
@@ -364,7 +371,7 @@ async function selectSquare(
     Object.values(board.squares || {}).forEach((sq) => {
       if (sq.claims) {
         userSquareCount += sq.claims.filter(
-          (claim) => claim.userId === userId
+          (claim) => claim.userId === userId,
         ).length;
       }
     });
@@ -438,6 +445,54 @@ async function selectSquare(
 }
 
 // =====================================
+// =====================================
+// BAAT CALCULATION (using centralized baat-system.js)
+// =====================================
+
+/**
+ * Calculate Board Average Answer Time (BAAT) from squareClaims collection
+ * Only includes answer times between 0.30 and 10.00 seconds
+ */
+async function calculateBoardBAAT(db, boardId) {
+  try {
+    // Fetch all squareClaims for this board
+    const claimsSnapshot = await db
+      .collection("squareClaims")
+      .where("boardId", "==", boardId)
+      .get();
+
+    if (claimsSnapshot.empty) {
+      console.warn(`⚠️ No claims found for board ${boardId}`);
+      return null;
+    }
+
+    // Convert documents to data format
+    const claims = claimsSnapshot.docs.map((doc) => ({
+      ...doc.data(),
+      answerTime: doc.data().triviaAnswerTimeSeconds || 0,
+    }));
+
+    // Use centralized BAAT calculation with proper filtering
+    const result = calculateFullBAAT(claims);
+
+    if (result.baat) {
+      console.log(
+        `✅ Board BAAT: ${result.baat.toFixed(2)}s (${result.validCount}/${result.totalCount} valid times)`,
+      );
+    } else {
+      console.warn(
+        `⚠️ No valid answer times in range ${BAAT_CONFIG.MIN_RESPONSE_TIME}-${BAAT_CONFIG.MAX_RESPONSE_TIME}s for board ${boardId}`,
+      );
+    }
+
+    return result.baat;
+  } catch (error) {
+    console.error("❌ Error calculating board BAAT:", error);
+    return null;
+  }
+}
+
+// =====================================
 // SKILL-BASED WINNER PROCESSING
 // =====================================
 
@@ -462,152 +517,190 @@ async function processQuarterWinners(db, gameId, quarter, score, gameData) {
   const batch = db.batch();
 
   for (const boardDoc of boardsSnapshot.docs) {
-  const board = boardDoc.data();
-  console.log("🔎 Processing board:", boardDoc.id, "tierId=", board.tierId);
+    const board = boardDoc.data();
+    console.log("🔎 Processing board:", boardDoc.id, "tierId=", board.tierId);
 
-  const tier = getTierById(board.tierId);
-  console.log("   → Tier:", tier);
+    const tier = getTierById(board.tierId);
+    console.log("   → Tier:", tier);
 
-  const quarterPrize = calculatePrizes(tier.amount).quarterPrize;
-  console.log("   → Quarter prize:", quarterPrize);
+    const quarterPrize = calculatePrizes(tier.amount).quarterPrize;
+    console.log("   → Quarter prize:", quarterPrize);
 
-  // Initialize consolation counter if not present
-  const currentConsolations = board.consolationSquaresAwarded || 0;
-  console.log("   → Current consolations:", currentConsolations);
+    // Initialize consolation counter if not present
+    const currentConsolations = board.consolationSquaresAwarded || 0;
+    console.log("   → Current consolations:", currentConsolations);
 
-  // Check each winning position
-  for (const position of winningPositions) {
-    console.log("⚡ Checking position:", position);
+    // Check each winning position
+    for (const position of winningPositions) {
+      console.log("⚡ Checking position:", position);
 
-    const squareData = board.squares?.[position];
-    if (!squareData) {
-      console.log("   → No square data at", position);
-      continue;
-    }
-
-    if (!squareData.claims || squareData.claims.length === 0) {
-      console.log("   → No claims for position", position);
-      continue;
-    }
-
-    console.log("   → Claims count:", squareData.claims.length);
-
-    // SKILL-BASED: Find fastest answer time
-    let winner = null;
-    let loser = null;
-
-    if (squareData.claims.length === 1) {
-      winner = squareData.claims[0];
-      console.log("   ✅ Single claim → winner:", winner);
-    } else {
-      const sorted = [...squareData.claims].sort(
-        (a, b) => a.answerTimeSeconds - b.answerTimeSeconds
-      );
-      winner = sorted[0];
-      loser = sorted[1];
-      console.log("   ✅ Multi-claim sorted:", { winner, loser });
-    }
-
-    // Get full claim data for winner
-    const winnerClaimDoc = await db
-      .collection("squareClaims")
-      .doc(winner.claimId)
-      .get();
-    const winnerClaim = winnerClaimDoc.data();
-    console.log("   → Winner claim data:", winnerClaim);
-
-    // Get loser claim data if exists
-    let loserClaim = null;
-    if (loser) {
-      try {
-        const loserClaimDoc = await db
-          .collection("squareClaims")
-          .doc(loser.claimId)
-          .get();
-        loserClaim = loserClaimDoc.exists ? loserClaimDoc.data() : null;
-        console.log("   → Loser claim data:", loserClaim);
-      } catch (error) {
-        console.error("❌ Error fetching loser claim:", {
-          message: error.message,
-          stack: error.stack,
-          loser,
-        });
-        loserClaim = { triviaAnswerTimeMs: 0 }; // Default fallback
+      const squareData = board.squares?.[position];
+      if (!squareData) {
+        console.log("   → No square data at", position);
+        continue;
       }
-    }
 
-    // Create winner record
-    const winnerRef = db.collection("winners").doc();
-    const winnerData = {
-      userId: winner.userId,
-      gameId,
-      boardId: boardDoc.id,
-      claimId: winner.claimId,
-      position,
-      quarter,
-      score: `${score.home}-${score.away}`,
-      tierId: board.tierId,
-      prizeAmount: quarterPrize,
+      if (!squareData.claims || squareData.claims.length === 0) {
+        console.log("   → No claims for position", position);
+        continue;
+      }
 
-      // Skill-based fields
-      winnerAnswerTimeMs: winnerClaim?.triviaAnswerTimeMs || null,
-      winnerAnswerTimeSeconds: winner.answerTimeSeconds,
-      loserUserId: loser?.userId || null,
-      loserAnswerTimeMs: loserClaim?.triviaAnswerTimeMs || null,
-      loserAnswerTimeSeconds: loser?.answerTimeSeconds || null,
-      consolationSquareGranted: false,
-      consolationSquareId: null,
+      console.log("   → Claims count:", squareData.claims.length);
 
-      gameInfo: gameData.teams,
-      notificationStatus: "pending",
-      status: "pending_payout",
-      createdAt: getTimestamp(),
-    };
+      // SKILL-BASED: Find fastest answer time
+      let winner = null;
+      let loser = null;
+      let beatBAAT = null; // Track if winner beat board average
 
-    console.log("🏆 Winner data to save:", winnerData);
+      if (squareData.claims.length === 1) {
+        winner = squareData.claims[0];
+        console.log("   ✅ Single occupancy - checking against BAAT:", winner);
 
-    batch.set(winnerRef, winnerData);
+        // ========================================
+        // SINGLE OCCUPANCY: Compare vs BAAT
+        // ========================================
+        try {
+          // Calculate board BAAT
+          const boardBAAT = await calculateBoardBAAT(db, boardId);
 
-    // Update winner's claim
-    batch.update(db.collection("squareClaims").doc(winner.claimId), {
-      isWinner: true,
-      winningQuarter: quarter,
-      prizeAmount: quarterPrize,
-    });
-    console.log("   → Winner claim updated:", winner.claimId);
+          if (boardBAAT !== null) {
+            const winnerTime = winner.answerTimeSeconds;
+            beatBAAT = winnerTime < boardBAAT;
 
-    // Handle consolation prize for loser
-    if (
-      loser &&
-      winnerClaim?.canEarnConsolation &&
-      currentConsolations < 4
-    ) {
-      console.log("🎁 Consolation grant triggered:", {
-        winnerId: winnerRef.id,
-        loserId: loser.userId,
-        winnerTime: winner.answerTimeSeconds,
-        loserTime: loser.answerTimeSeconds,
-      });
+            console.log(
+              `   📊 BAAT Check: Player ${winner.userId} (${winnerTime}s) vs Board BAAT (${boardBAAT}s)`,
+            );
+            console.log(`   ${beatBAAT ? "✅ BEAT" : "❌ LOST"} board average`);
 
-      consolationGrants.push({
-        winnerId: winnerRef.id,
-        loserUserId: loser.userId,
+            if (!beatBAAT) {
+              // Player did NOT beat BAAT
+              console.log(
+                `   ⚠️ Single occupancy winner did not beat BAAT, skipping`,
+              );
+              continue; // Skip creating winner record
+            }
+          } else {
+            // Could not calculate BAAT, default to accepting winner
+            console.log(
+              `   ⚠️ Could not calculate BAAT, accepting single occupancy as winner`,
+            );
+            beatBAAT = true;
+          }
+        } catch (baatError) {
+          console.error("❌ Error in BAAT calculation:", baatError);
+          // Safe fallback: accept single occupancy
+          beatBAAT = true;
+        }
+      } else {
+        const sorted = [...squareData.claims].sort(
+          (a, b) => a.answerTimeSeconds - b.answerTimeSeconds,
+        );
+        winner = sorted[0];
+        loser = sorted[1];
+        beatBAAT = true; // Multi-claim always goes through
+        console.log("   ✅ Multi-claim sorted:", { winner, loser });
+      }
+
+      // Get full claim data for winner
+      const winnerClaimDoc = await db
+        .collection("squareClaims")
+        .doc(winner.claimId)
+        .get();
+      const winnerClaim = winnerClaimDoc.data();
+      console.log("   → Winner claim data:", winnerClaim);
+
+      // Get loser claim data if exists
+      let loserClaim = null;
+      if (loser) {
+        try {
+          const loserClaimDoc = await db
+            .collection("squareClaims")
+            .doc(loser.claimId)
+            .get();
+          loserClaim = loserClaimDoc.exists ? loserClaimDoc.data() : null;
+          console.log("   → Loser claim data:", loserClaim);
+        } catch (error) {
+          console.error("❌ Error fetching loser claim:", {
+            message: error.message,
+            stack: error.stack,
+            loser,
+          });
+          loserClaim = { triviaAnswerTimeMs: 0 }; // Default fallback
+        }
+      }
+
+      // Create winner record
+      const winnerRef = db.collection("winners").doc();
+      const winnerData = {
+        userId: winner.userId,
+        gameId,
         boardId: boardDoc.id,
+        claimId: winner.claimId,
+        position,
+        quarter,
+        score: `${score.home}-${score.away}`,
         tierId: board.tierId,
-        winnerTime: winner.answerTimeSeconds,
-        loserTime: loser.answerTimeSeconds,
-      });
+        prizeAmount: quarterPrize,
 
-      batch.update(winnerRef, { consolationSquareGranted: true });
-      batch.update(boardDoc.ref, {
-        consolationSquaresAwarded: admin.firestore.FieldValue.increment(1),
+        // Skill-based fields
+        winnerAnswerTimeMs: winnerClaim?.triviaAnswerTimeMs || null,
+        winnerAnswerTimeSeconds: winner.answerTimeSeconds,
+        loserUserId: loser?.userId || null,
+        loserAnswerTimeMs: loserClaim?.triviaAnswerTimeMs || null,
+        loserAnswerTimeSeconds: loser?.answerTimeSeconds || null,
+
+        // BAAT fields (for single occupancy tracking)
+        isSingleOccupancy: squareData.claims.length === 1,
+        beatBAAT: beatBAAT === true, // True if beat BAAT or multi-claim
+
+        consolationSquareGranted: false,
+        consolationSquareId: null,
+
+        gameInfo: gameData.teams,
+        notificationStatus: "pending",
+        status: "pending_payout",
+        createdAt: getTimestamp(),
+      };
+
+      console.log("🏆 Winner data to save:", winnerData);
+
+      batch.set(winnerRef, winnerData);
+
+      // Update winner's claim
+      batch.update(db.collection("squareClaims").doc(winner.claimId), {
+        isWinner: true,
+        winningQuarter: quarter,
+        prizeAmount: quarterPrize,
       });
+      console.log("   → Winner claim updated:", winner.claimId);
+
+      // Handle consolation prize for loser
+      if (loser && winnerClaim?.canEarnConsolation && currentConsolations < 4) {
+        console.log("🎁 Consolation grant triggered:", {
+          winnerId: winnerRef.id,
+          loserId: loser.userId,
+          winnerTime: winner.answerTimeSeconds,
+          loserTime: loser.answerTimeSeconds,
+        });
+
+        consolationGrants.push({
+          winnerId: winnerRef.id,
+          loserUserId: loser.userId,
+          boardId: boardDoc.id,
+          tierId: board.tierId,
+          winnerTime: winner.answerTimeSeconds,
+          loserTime: loser.answerTimeSeconds,
+        });
+
+        batch.update(winnerRef, { consolationSquareGranted: true });
+        batch.update(boardDoc.ref, {
+          consolationSquaresAwarded: admin.firestore.FieldValue.increment(1),
+        });
+      }
+
+      winners.push({ id: winnerRef.id, ...winnerData });
     }
-
-    winners.push({ id: winnerRef.id, ...winnerData });
   }
-}
-
 
   // Commit all updates
   await batch.commit();
@@ -631,13 +724,15 @@ async function grantConsolationSquare(db, grant) {
     grant;
 
   try {
-    // Find next available board for same tier
-    const currentBoardDoc = await db.collection("boards").doc(boardId).get();
-    const currentBoard = currentBoardDoc.data();
+    // Find next available board for Entry tier ($25)
+    // ========================================
+    // Always grant consolation on Entry tier ($25)
+    // ========================================
+    const consolationTier = CONSOLATION_CONFIG.TIER;  // Always "tier_25"
 
     const nextBoardQuery = await db
       .collection("boards")
-      .where("tierId", "==", tierId)
+      .where("tierId", "==", consolationTier)
       .where("gameId", "!=", currentBoard.gameId)
       .where("isActive", "==", true)
       .orderBy("gameId")
@@ -657,7 +752,8 @@ async function grantConsolationSquare(db, grant) {
     const tokenRef = await db.collection("accessTokens").add({
       userId: loserUserId,
       boardId: nextBoard.id,
-      tier: tierId,
+      tier: consolationTier,
+      originalBoardTier: tierId,              // Track which tier the loss occurred on
 
       // Mark as consolation
       isConsolationToken: true,
@@ -669,7 +765,7 @@ async function grantConsolationSquare(db, grant) {
       answerTimeSeconds: 0,
 
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      expiresAt: new Date(Date.now() + CONSOLATION_CONFIG.EXPIRY_DAYS * 24 * 60 * 60 * 1000),
       used: false,
 
       metadata: {
@@ -682,7 +778,7 @@ async function grantConsolationSquare(db, grant) {
     try {
       if (!winnerId || !tokenRef?.id) {
         throw new Error(
-          `Invalid winnerId (${winnerId}) or tokenRef.id (${tokenRef?.id})`
+          `Invalid winnerId (${winnerId}) or tokenRef.id (${tokenRef?.id})`,
         );
       }
 
@@ -714,7 +810,7 @@ async function grantConsolationSquare(db, grant) {
     });
 
     console.log(
-      `Granted consolation square to user ${loserUserId} for board ${nextBoard.id}`
+      `Granted consolation square to user ${loserUserId} for board ${nextBoard.id}`,
     );
 
     return {
@@ -757,7 +853,7 @@ function UserSquareGrid({
 
     // Check if current user has this square
     const userClaim = squareData.claims.find(
-      (claim) => claim.userId === currentUserId
+      (claim) => claim.userId === currentUserId,
     );
     if (userClaim) {
       return "mine";
@@ -807,7 +903,7 @@ function UserSquareGrid({
       React.createElement(
         "h3",
         { className: "text-lg font-bold" },
-        `${board.gameInfo?.teams?.away} @ ${board.gameInfo?.teams?.home}`
+        `${board.gameInfo?.teams?.away} @ ${board.gameInfo?.teams?.home}`,
       ),
       React.createElement(
         "div",
@@ -818,14 +914,14 @@ function UserSquareGrid({
         React.createElement(
           "span",
           null,
-          `Tier: $${board.tierId?.replace("tier_", "")}`
+          `Tier: $${board.tierId?.replace("tier_", "")}`,
         ),
         React.createElement(
           "span",
           null,
-          `${Object.values(board.squares || {}).filter((s) => s.claims?.length > 0).length} squares claimed`
-        )
-      )
+          `${Object.values(board.squares || {}).filter((s) => s.claims?.length > 0).length} squares claimed`,
+        ),
+      ),
     ),
 
     // Column headers
@@ -840,9 +936,9 @@ function UserSquareGrid({
             key: digit,
             className: "text-center text-xs font-bold text-gray-700",
           },
-          digit
-        )
-      )
+          digit,
+        ),
+      ),
     ),
 
     // Grid with row headers
@@ -857,7 +953,7 @@ function UserSquareGrid({
             className:
               "flex items-center justify-center text-xs font-bold text-gray-700 pr-1",
           },
-          rowDigits.join("/")
+          rowDigits.join("/"),
         ),
 
         // Squares
@@ -882,10 +978,10 @@ function UserSquareGrid({
               ${hoveredSquare === position ? "z-10 shadow-lg" : ""}
             `,
             },
-            getSquareText(position)
+            getSquareText(position),
           );
-        })
-      )
+        }),
+      ),
     ),
 
     // Legend
@@ -898,7 +994,7 @@ function UserSquareGrid({
         React.createElement("div", {
           className: "w-4 h-4 bg-white border-2 border-gray-300 rounded",
         }),
-        React.createElement("span", null, "Open (0/2)")
+        React.createElement("span", null, "Open (0/2)"),
       ),
       React.createElement(
         "div",
@@ -906,7 +1002,7 @@ function UserSquareGrid({
         React.createElement("div", {
           className: "w-4 h-4 bg-yellow-200 border-2 border-yellow-400 rounded",
         }),
-        React.createElement("span", null, "Partial (1/2)")
+        React.createElement("span", null, "Partial (1/2)"),
       ),
       React.createElement(
         "div",
@@ -914,7 +1010,7 @@ function UserSquareGrid({
         React.createElement("div", {
           className: "w-4 h-4 bg-red-400 border-2 border-red-500 rounded",
         }),
-        React.createElement("span", null, "Full (2/2)")
+        React.createElement("span", null, "Full (2/2)"),
       ),
       React.createElement(
         "div",
@@ -922,8 +1018,8 @@ function UserSquareGrid({
         React.createElement("div", {
           className: "w-4 h-4 bg-blue-500 border-2 border-blue-600 rounded",
         }),
-        React.createElement("span", null, "Your squares")
-      )
+        React.createElement("span", null, "Your squares"),
+      ),
     ),
 
     // Skill-based explanation
@@ -933,21 +1029,21 @@ function UserSquareGrid({
       React.createElement(
         "p",
         { className: "font-semibold mb-1" },
-        "🏃 Skill-Based Competition:"
+        "🏃 Skill-Based Competition:",
       ),
       React.createElement(
         "p",
         null,
         "Up to 2 players can claim each square. When a square's numbers match the game score, the player with the ",
         React.createElement("strong", null, "fastest trivia answer time"),
-        " wins!"
+        " wins!",
       ),
       React.createElement(
         "p",
         { className: "mt-1 text-xs text-gray-600" },
-        "Didn't win? You'll get a free square for the next game as consolation."
-      )
-    )
+        "Didn't win? You'll get a free square for the next game as consolation.",
+      ),
+    ),
   );
 }
 
@@ -964,7 +1060,7 @@ function AdminSquareGrid({ board, onSquareClick }) {
     if (testScore.home && testScore.away) {
       const positions = calculateWinningPositions(
         parseInt(testScore.home),
-        parseInt(testScore.away)
+        parseInt(testScore.away),
       );
       setWinningPositions(positions);
     } else {
@@ -1014,7 +1110,7 @@ function AdminSquareGrid({ board, onSquareClick }) {
       React.createElement(
         "h4",
         { className: "font-semibold mb-2" },
-        "Test Winner Calculation"
+        "Test Winner Calculation",
       ),
       React.createElement(
         "div",
@@ -1038,9 +1134,9 @@ function AdminSquareGrid({ board, onSquareClick }) {
           React.createElement(
             "span",
             { className: "text-yellow-600 font-semibold" },
-            `Winners: ${winningPositions.join(", ")}`
-          )
-      )
+            `Winners: ${winningPositions.join(", ")}`,
+          ),
+      ),
     ),
 
     // Grid
@@ -1056,9 +1152,9 @@ function AdminSquareGrid({ board, onSquareClick }) {
           React.createElement(
             "div",
             { key: digit, className: "text-center text-xs font-bold" },
-            digit
-          )
-        )
+            digit,
+          ),
+        ),
       ),
 
       // Grid with row headers
@@ -1073,7 +1169,7 @@ function AdminSquareGrid({ board, onSquareClick }) {
               className:
                 "flex items-center justify-center text-xs font-bold pr-1",
             },
-            rowDigits.join("/")
+            rowDigits.join("/"),
           ),
 
           // Squares
@@ -1100,12 +1196,12 @@ function AdminSquareGrid({ board, onSquareClick }) {
                 React.createElement(
                   "div",
                   { className: "text-[10px] opacity-75" },
-                  info.subtext
-                )
+                  info.subtext,
+                ),
             );
-          })
-        )
-      )
+          }),
+        ),
+      ),
     ),
 
     // Selected square info
@@ -1116,14 +1212,14 @@ function AdminSquareGrid({ board, onSquareClick }) {
         React.createElement(
           "h4",
           { className: "font-semibold" },
-          `Square ${selectedSquare} Details`
+          `Square ${selectedSquare} Details`,
         ),
         React.createElement(
           "pre",
           { className: "mt-2 text-xs bg-white p-2 rounded overflow-auto" },
-          JSON.stringify(board.squares?.[selectedSquare] || {}, null, 2)
-        )
-      )
+          JSON.stringify(board.squares?.[selectedSquare] || {}, null, 2),
+        ),
+      ),
   );
 }
 
@@ -1139,7 +1235,7 @@ function generateTestBoard(fillPercentage = 0.5) {
   const numSquares = Math.floor(GRID_CONFIG.TOTAL_SQUARES * fillPercentage);
   const positions = Array.from(
     { length: GRID_CONFIG.TOTAL_SQUARES },
-    (_, i) => i
+    (_, i) => i,
   );
 
   // Shuffle and take first N positions
@@ -1219,7 +1315,7 @@ function testSkillBasedWinners() {
     console.log(`Score ${home}-${away}:`);
     console.log(`  Winning positions: ${positions.join(", ")}`);
     console.log(
-      `  Players: ${players.map((p) => `${p.userId} (${p.time}s)`).join(", ")}`
+      `  Players: ${players.map((p) => `${p.userId} (${p.time}s)`).join(", ")}`,
     );
     console.log(`  Expected: ${expected}\n`);
   });

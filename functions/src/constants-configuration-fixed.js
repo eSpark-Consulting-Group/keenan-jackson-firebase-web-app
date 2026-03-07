@@ -188,11 +188,28 @@ const GAME_CONFIG = {
     q4: { id: "q4", label: "4th Quarter (Final)", order: 4 },
     ot: { id: "ot", label: "Overtime", order: 5 },
   },
+
+  // Quarter-by-Quarter Independence: Same square can win in multiple quarters
+  INDEPENDENT_QUARTERLY_ACTIVATION: true,
+};
+
+// =====================================
+// CONSOLATION CREDIT CONFIGURATION
+// =====================================
+// Universal $25: all consolation credits are the Entry tier ($25) only,
+// regardless of the tier on which the player lost. This ensures equal
+// consolation value across all entry levels.
+const CONSOLATION_CONFIG = {
+  TIER: "tier_25", // Always Entry tier ($25)
+  AMOUNT: 25, // Always $25 value
+  CREDITS_PER_LOSS: 1, // Always 1 consolation credit per loss
+  MAX_PER_BOARD: 4, // Maximum 4 consolation credits per board
+  EXPIRY_DAYS: 30, // Consolation token expiry (30 days)
 };
 
 // =====================================
 // PRIZE CALCULATIONS
-// =====================================
+// ====================================="
 function calculatePrizes(tierAmount) {
   // Get tier-specific payout percentage
   const tier = getTierByAmount(tierAmount);
@@ -477,12 +494,32 @@ const TIMEZONE_CONFIG = {
 };
 
 const TIER_CONFIG = {
-  tier_25: { id: "tier_25", amount: 25, payoutPercentage: 0.77 },
-  tier_50: { id: "tier_50", amount: 50, payoutPercentage: 0.77 },
-  tier_100: { id: "tier_100", amount: 100, payoutPercentage: 0.77 },
-  tier_250: { id: "tier_250", amount: 250, payoutPercentage: 0.8 },
-  tier_500: { id: "tier_500", amount: 500, payoutPercentage: 0.8 },
-  tier_1000: { id: "tier_1000", amount: 1000, payoutPercentage: 0.8 },
+  tier_25: { id: "tier_25", name: "Entry", amount: 25, payoutPercentage: 0.77 },
+  tier_50: { id: "tier_50", name: "$50", amount: 50, payoutPercentage: 0.77 },
+  tier_100: {
+    id: "tier_100",
+    name: "$100",
+    amount: 100,
+    payoutPercentage: 0.77,
+  },
+  tier_250: {
+    id: "tier_250",
+    name: "$250",
+    amount: 250,
+    payoutPercentage: 0.8,
+  },
+  tier_500: {
+    id: "tier_500",
+    name: "$500",
+    amount: 500,
+    payoutPercentage: 0.8,
+  },
+  tier_1000: {
+    id: "tier_1000",
+    name: "$1000",
+    amount: 1000,
+    payoutPercentage: 0.8,
+  },
 };
 
 // const DUMMY_GAMES = [
@@ -649,6 +686,7 @@ const DUMMY_GAMES = [
 module.exports = {
   // TIERS,
   GAME_CONFIG,
+  CONSOLATION_CONFIG,
   SPORTS_CONFIG,
   API_CONFIG,
   NOTIFICATION_CONFIG,
