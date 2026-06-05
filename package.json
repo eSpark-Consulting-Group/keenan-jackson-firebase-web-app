@@ -7,7 +7,7 @@
     "@headlessui/react": "^1.7.17",
     "@stripe/react-stripe-js": "^2.4.0",
     "@stripe/stripe-js": "^2.2.0",
-    "axios": "^1.6.2",
+    "axios": "^1.16.0",
     "canvas-confetti": "^1.9.3",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
