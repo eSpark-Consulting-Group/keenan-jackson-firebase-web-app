@@ -6,7 +6,7 @@
   "dependencies": {
     "@headlessui/react": "^1.7.17",
     "@stripe/react-stripe-js": "^2.4.0",
-    "@stripe/stripe-js": "^2.2.0",
+    "@stripe/stripe-js": "^9.8.0",
     "axios": "^1.6.2",
     "canvas-confetti": "^1.9.3",
     "clsx": "^2.0.0",
