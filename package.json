@@ -4,7 +4,7 @@
   "description": "Square Trivia - Skill-Based Sports Competition Platform",
   "private": true,
   "dependencies": {
-    "@headlessui/react": "^1.7.17",
+    "@headlessui/react": "^2.2.10",
     "@stripe/react-stripe-js": "^6.6.0",
     "@stripe/stripe-js": "^2.2.0",
     "axios": "^1.6.2",
